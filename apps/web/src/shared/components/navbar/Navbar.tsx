@@ -36,7 +36,7 @@ export function Navbar() {
 
           <div className="hidden md:flex items-center gap-6 text-sm">
             <Link
-              to="/"
+              to="/home"
               className="px-4 py-1.5 rounded-full bg-gradient-to-r from-orange-500 to-pink-500 text-white font-medium"
             >
               Home
@@ -72,7 +72,7 @@ export function Navbar() {
           {isAuthenticated && (
             user?.role === UserRole.SELLER ? (
               <button
-                onClick={() => navigate('/profile')}
+                onClick={() => navigate('/seller/dashboard')}
                 className="p-2 rounded-full hover:bg-white/5 transition"
               >
                 <BuildingStorefrontIcon className="w-6 h-6 text-orange-500" />

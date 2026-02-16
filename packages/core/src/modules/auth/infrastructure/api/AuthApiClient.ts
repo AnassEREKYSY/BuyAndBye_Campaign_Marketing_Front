@@ -45,12 +45,12 @@ export class AuthApiClient {
   }
 
   async me(): Promise<ApiUserResponse> {
-    const response = await this.httpClient.get<ApiResponse<ApiUserResponse>>('/auth/me');
-
-    if (!response.data.success || !response.data.data) {
-      throw new Error(response.data.message || 'Failed to fetch user');
+    const response = await this.httpClient.get<{ data: ApiUserResponse }>('/auth/me');
+  
+    if (!response.data || !response.data.data) {
+      throw new Error('Failed to fetch user');
     }
-
+  
     return response.data.data;
   }
 }

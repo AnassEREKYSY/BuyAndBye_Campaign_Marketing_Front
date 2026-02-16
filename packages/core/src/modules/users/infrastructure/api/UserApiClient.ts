@@ -48,7 +48,7 @@ export class UserApiClient {
       )
 
     await this.httpClient.put(
-      '/users/profile/update',
+      '/users/profile',
       formData,
       { headers: { 'Content-Type': 'multipart/form-data' } }
     )

@@ -7,7 +7,7 @@ import {
   LoginUseCase,
   LogoutUseCase,
   GetCurrentUserUseCase,
-} from '../../application/use-cases';
+} from '@core/modules/auth/application/use-cases';
 
 export class AuthContainer {
   private static instance: AuthContainer;

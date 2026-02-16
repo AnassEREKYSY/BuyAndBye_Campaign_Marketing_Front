@@ -5,6 +5,16 @@ import { MainLayout } from './MainLayout'
 import { AuthGuard } from './guards/AuthGuard'
 import { ProfilePage } from '@/modules/users/presentation/pages/ProfilePage'
 import { BecomeSellerPage } from '@/modules/users/presentation/pages/BecomeSellerPage'
+import { SellerDashboardPage } from '@/modules/seller/presentation/pages/SellerDashboardPage'
+import { SellerProvider } from '@/modules/seller/application/context/SellerProvider'
+import { SellerContainer } from '@core/modules/seller/infrastructure/container/SellerContainer'
+import { HttpClient } from '@core/shared/services/http/HttpClient'
+import { TokenStorage } from '@/shared/services/storage/TokenStorage'
+import { env } from '@/shared/config/env'
+
+const tokenStorage = new TokenStorage()
+const httpClient = new HttpClient(env.API_BASE_URL, tokenStorage)
+const sellerContainer = SellerContainer.getInstance(httpClient, env.BACKEND_BASE_URL)
 
 export const routes: RouteObject[] = [
   {
@@ -29,17 +39,32 @@ export const routes: RouteObject[] = [
       {
         element: <MainLayout />,
         children: [
+          { path: '/home', element: <HomePage /> },
+          { path: '/profile', element: <ProfilePage /> },
+          { path: '/become-seller', element: <BecomeSellerPage /> },
+        ],
+      },
+      {
+        element: <AuthGuard requireSeller />,
+        children: [
           {
-            path: '/home',
-            element: <HomePage />,
-          },
-          {
-            path: '/profile',
-            element: <ProfilePage />,
-          },
-          {
-            path: '/become-seller',
-            element: <BecomeSellerPage />,
+            element: (
+              <SellerProvider
+                getSellerProductsUseCase={sellerContainer.getSellerProductsUseCase}
+                createProductUseCase={sellerContainer.createProductUseCase}
+                updateProductUseCase={sellerContainer.updateProductUseCase}
+                deleteProductUseCase={sellerContainer.deleteProductUseCase}
+                updateProductStatusUseCase={sellerContainer.updateProductStatusUseCase}
+              >
+                <MainLayout />
+              </SellerProvider>
+            ),
+            children: [
+              {
+                path: '/seller/dashboard',
+                element: <SellerDashboardPage />,
+              },
+            ],
           },
         ],
       },
