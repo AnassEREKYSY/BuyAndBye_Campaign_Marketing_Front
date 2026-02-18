@@ -12,7 +12,7 @@ interface BecomeSellerFormState {
 
 export function BecomeSellerPage() {
   const navigate = useNavigate()
-  const { becomeSeller, updateSellerProfile } = useAuth()
+  const { becomeSeller, updateSellerProfile, refreshUser } = useAuth() as any
 
   const [loading, setLoading] = useState(false)
 
@@ -46,7 +46,11 @@ export function BecomeSellerPage() {
         storeBanner: form.storeBanner,
       })
 
-      navigate("/")
+      if (typeof refreshUser === "function") {
+        await refreshUser()
+      }
+
+      navigate("/seller/dashboard", { replace: true })
     } finally {
       setLoading(false)
     }
@@ -58,13 +62,9 @@ export function BecomeSellerPage() {
   return (
     <div className="min-h-screen bg-[#0e0f12] flex justify-center items-center px-6 py-16">
       <div className="w-full max-w-2xl bg-[#15161a] border border-white/10 rounded-3xl p-10">
-
-        <h1 className="text-2xl font-semibold text-white mb-8">
-          Become a Seller 🚀
-        </h1>
+        <h1 className="text-2xl font-semibold text-white mb-8">Become a Seller 🚀</h1>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-
           <input
             placeholder="Store Name"
             value={form.storeName}
@@ -100,11 +100,7 @@ export function BecomeSellerPage() {
             <span className="text-sm text-white/60">
               {form.storeBanner ? form.storeBanner.name : "Choose store banner"}
             </span>
-            <input
-              type="file"
-              hidden
-              onChange={e => handleChange("storeBanner", e.target.files?.[0])}
-            />
+            <input type="file" hidden onChange={e => handleChange("storeBanner", e.target.files?.[0])} />
           </label>
 
           <button
@@ -114,7 +110,6 @@ export function BecomeSellerPage() {
           >
             {loading ? "Creating..." : "Create Seller Account"}
           </button>
-
         </form>
       </div>
     </div>

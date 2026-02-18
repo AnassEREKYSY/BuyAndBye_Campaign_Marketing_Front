@@ -1,4 +1,3 @@
-import { ApiResponse } from '../../../auth/infrastructure/api/types/ApiResponse'
 import { UpdateUserProfileDTO } from '../../domain/dtos/UpdateUserProfileDTO'
 import { UpdateSellerProfileDTO } from '../../domain/dtos/UpdateSellerProfileDTO'
 import { BecomeSellerDTO } from '../../domain/dtos/BecomeSellerDTO'
@@ -8,16 +7,20 @@ export class UserApiClient {
   constructor(private httpClient: HttpClient) {}
 
   async becomeSeller(payload: BecomeSellerDTO): Promise<void> {
-    const response = await this.httpClient.post<ApiResponse>(
-      '/users/become-seller',
-      {
-        store_name: payload.storeName,
-        country_code: payload.countryCode,
+    const response = await this.httpClient.post<any>('/users/become-seller', {
+      store_name: payload.storeName,
+      country_code: payload.countryCode,
+    })
+    const hasSuccessFlag = response.data && typeof response.data === 'object' && 'success' in response.data
+  
+    if (hasSuccessFlag) {
+      if (!response.data.success) {
+        throw new Error(response.data.message || 'Become seller failed')
       }
-    )
-
-    if (!response.data.success) {
-      throw new Error(response.data.message)
+      return
+    }
+    if (!response.data?.data) {
+      throw new Error(response.data?.message || 'Become seller failed')
     }
   }
 

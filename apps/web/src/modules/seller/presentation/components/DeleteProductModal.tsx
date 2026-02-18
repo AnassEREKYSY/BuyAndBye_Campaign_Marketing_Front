@@ -8,13 +8,7 @@ type Props = {
   onConfirm: () => void
 }
 
-export function DeleteProductModal({
-  open,
-  product,
-  loading,
-  onClose,
-  onConfirm
-}: Props) {
+export function DeleteProductModal({ open, product, loading, onClose, onConfirm }: Props) {
   if (!open || !product) return null
 
   return (
@@ -25,9 +19,7 @@ export function DeleteProductModal({
         <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[#0e0f12] text-white shadow-2xl p-6 space-y-6">
           <div>
             <h2 className="text-lg font-semibold">Delete product</h2>
-            <p className="text-sm text-white/50 mt-2">
-              Are you sure you want to delete "{product.title}" ?
-            </p>
+            <p className="text-sm text-white/50 mt-2">Are you sure you want to delete "{product.title}" ?</p>
           </div>
 
           <div className="flex justify-end gap-3">

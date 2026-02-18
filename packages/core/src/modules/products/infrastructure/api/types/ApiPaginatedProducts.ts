@@ -1,4 +1,4 @@
-import { Product } from '@/modules/products/domain/entities'
+import { Product } from '@core/modules/products/domain/entities/Product'
 
 export interface ApiPaginatedProducts {
   data: Product[]

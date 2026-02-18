@@ -1,5 +1,5 @@
-import { HttpClient } from "@core/shared/services/http/HttpClient" 
-import { ProductRepository } from "@core/modules/products/infrastructure/repositories/ProductRepository" 
+import { HttpClient } from "@core/shared/services/http/HttpClient"
+import { ProductRepository } from "@core/modules/products/infrastructure/repositories/ProductRepository"
 import { GetSellerProductsUseCase } from "@core/modules/products/application/use-cases/GetSellerProductsUseCase"
 import { CreateProductUseCase } from "@core/modules/products/application/use-cases/CreateProductUseCase"
 import { UpdateProductUseCase } from "@core/modules/products/application/use-cases/UpdateProductUseCase"
@@ -7,13 +7,14 @@ import { DeleteProductUseCase } from "@core/modules/products/application/use-cas
 import { UpdateProductStatusUseCase } from "@core/modules/products/application/use-cases/UpdateProductStatusUseCase"
 
 export class SellerContainer {
-  private static instance: SellerContainer
+  private static instance: SellerContainer | null = null
+  private static signature: string | null = null
 
-  public getSellerProductsUseCase: GetSellerProductsUseCase
-  public createProductUseCase: CreateProductUseCase
-  public updateProductUseCase: UpdateProductUseCase
-  public deleteProductUseCase: DeleteProductUseCase
-  public updateProductStatusUseCase: UpdateProductStatusUseCase
+  public readonly getSellerProductsUseCase: GetSellerProductsUseCase
+  public readonly createProductUseCase: CreateProductUseCase
+  public readonly updateProductUseCase: UpdateProductUseCase
+  public readonly deleteProductUseCase: DeleteProductUseCase
+  public readonly updateProductStatusUseCase: UpdateProductStatusUseCase
 
   private constructor(httpClient: HttpClient, backendBaseUrl: string) {
     const productRepository = new ProductRepository(httpClient, backendBaseUrl)
@@ -25,9 +26,21 @@ export class SellerContainer {
   }
 
   static getInstance(httpClient: HttpClient, backendBaseUrl: string) {
+    const nextSignature = `${backendBaseUrl}`
     if (!this.instance) {
+      this.signature = nextSignature
+      this.instance = new SellerContainer(httpClient, backendBaseUrl)
+      return this.instance
+    }
+    if (this.signature !== nextSignature) {
+      this.signature = nextSignature
       this.instance = new SellerContainer(httpClient, backendBaseUrl)
     }
     return this.instance
+  }
+
+  static resetForTests() {
+    this.instance = null
+    this.signature = null
   }
 }

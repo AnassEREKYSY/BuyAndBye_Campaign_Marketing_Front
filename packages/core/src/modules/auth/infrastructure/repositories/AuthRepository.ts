@@ -18,7 +18,6 @@ export class AuthRepository implements IAuthRepository {
     const apiData = {
       email: data.email,
       display_name: data.displayName,
-      role: data.role,
       password: data.password,
       photo: data.photo,
     };

@@ -16,6 +16,10 @@ const CONDITIONS: ProductCondition[] = ['New', 'LikeNew', 'VeryGood', 'Good', 'A
 
 type FieldErrors = Record<string, string[]>
 
+const MAX_IMAGES = 6
+const MAX_FILE_SIZE_MB = 5
+const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024
+
 export function AddUpdateProductModal({ open, product = null, onClose, onCreated }: Props) {
   const { createProductUseCase, updateProductUseCase } = useSeller()
   const { success, error: showError } = useNotification()
@@ -73,10 +77,18 @@ export function AddUpdateProductModal({ open, product = null, onClose, onCreated
     return mapped
   }
 
-  const normalizeImageFiles = (files: File[]) => {
-    const valid = files.filter((f) => f && typeof f.type === 'string' && f.type.startsWith('image/'))
-    const invalid = files.filter((f) => !f || !f.type || !f.type.startsWith('image/'))
-    return { valid, invalid }
+  const validateImages = (files: File[]) => {
+    if (files.length > MAX_IMAGES) {
+      return `You can upload up to ${MAX_IMAGES} images.`
+    }
+
+    const invalidType = files.find((f) => !f?.type?.startsWith('image/'))
+    if (invalidType) return 'Please select only image files (png, jpg, jpeg, webp).'
+
+    const tooLarge = files.find((f) => f.size > MAX_FILE_SIZE_BYTES)
+    if (tooLarge) return `Each image must be <= ${MAX_FILE_SIZE_MB}MB.`
+
+    return null
   }
 
   useEffect(() => {
@@ -140,15 +152,20 @@ export function AddUpdateProductModal({ open, product = null, onClose, onCreated
 
     clearErrors()
 
-    const { valid, invalid } = normalizeImageFiles(images)
-    if (invalid.length > 0) {
-      setErrorFor('images.0', 'Please select only image files (png, jpg, jpeg, webp).')
-      showError('Please select only image files (png, jpg, jpeg, webp).')
+    const imgError = validateImages(images)
+    if (imgError) {
+      setErrorFor('images.0', imgError)
+      showError(imgError)
       return
     }
 
     try {
       setLoading(true)
+
+      const tags = form.tags
+        .split(',')
+        .map((t) => t.trim())
+        .filter(Boolean)
 
       if (isEditMode && product) {
         await updateProductUseCase.execute({
@@ -158,11 +175,8 @@ export function AddUpdateProductModal({ open, product = null, onClose, onCreated
           condition: form.condition,
           price: Number(form.price),
           stockQuantity: Number(form.stockQuantity),
-          images: valid.length ? valid : undefined,
-          tags: form.tags
-            .split(',')
-            .map((t) => t.trim())
-            .filter(Boolean),
+          images: images.length ? images : undefined,
+          tags,
           weightKg: form.weightKg.trim() ? Number(form.weightKg) : null,
           sku: form.sku.trim() ? form.sku.trim() : null,
           isDigital: form.isDigital,
@@ -177,11 +191,8 @@ export function AddUpdateProductModal({ open, product = null, onClose, onCreated
           condition: form.condition,
           price: Number(form.price),
           stockQuantity: Number(form.stockQuantity),
-          images: valid.length ? valid : undefined,
-          tags: form.tags
-            .split(',')
-            .map((t) => t.trim())
-            .filter(Boolean),
+          images: images.length ? images : undefined,
+          tags,
           weightKg: form.weightKg.trim() ? Number(form.weightKg) : null,
           sku: form.sku.trim() ? form.sku.trim() : null,
           isDigital: form.isDigital,
@@ -206,9 +217,7 @@ export function AddUpdateProductModal({ open, product = null, onClose, onCreated
       }
 
       const anyErr = err as any
-      const msg =
-        anyErr?.response?.data?.message ||
-        (err instanceof Error ? err.message : 'Something went wrong')
+      const msg = anyErr?.response?.data?.message || (err instanceof Error ? err.message : 'Something went wrong')
       showError(msg)
     } finally {
       setLoading(false)
@@ -224,16 +233,10 @@ export function AddUpdateProductModal({ open, product = null, onClose, onCreated
           <div className="flex items-center justify-between px-6 py-5 border-b border-white/10">
             <div>
               <p className="text-sm text-white/50">Store</p>
-              <h2 className="text-lg font-semibold">
-                {isEditMode ? 'Edit product' : 'Add new product'}
-              </h2>
+              <h2 className="text-lg font-semibold">{isEditMode ? 'Edit product' : 'Add new product'}</h2>
             </div>
 
-            <button
-              onClick={onClose}
-              className="p-2 rounded-full hover:bg-white/5 transition"
-              aria-label="Close"
-            >
+            <button onClick={onClose} className="p-2 rounded-full hover:bg-white/5 transition" aria-label="Close">
               <XMarkIcon className="w-5 h-5 text-white/70" />
             </button>
           </div>
@@ -344,53 +347,49 @@ export function AddUpdateProductModal({ open, product = null, onClose, onCreated
               />
             </Field>
 
-            <Field
-              label="Images"
-              error={
-                fieldErrors['images']?.[0] ||
-                fieldErrors['images.0']?.[0] ||
-                fieldErrors['images.1']?.[0]
-              }
-            >
+            <Field label="Images" error={fieldErrors['images']?.[0] || fieldErrors['images.0']?.[0] || fieldErrors['images.1']?.[0]}>
               <div className={inputClass('images.0', 'rounded-xl bg-[#1a1b1f] border border-white/10 p-4')}>
+                <div className="flex items-center justify-between gap-3 mb-3">
+                  <p className="text-xs text-white/50">
+                    Up to {MAX_IMAGES} images • max {MAX_FILE_SIZE_MB}MB each
+                  </p>
+                  {images.length ? <p className="text-xs text-white/50">{images.length}/{MAX_IMAGES}</p> : null}
+                </div>
+
                 <input
                   type="file"
                   multiple
                   accept="image/png,image/jpeg,image/jpg,image/webp"
                   onChange={(e) => {
                     clearErrors()
-                    setImages(Array.from(e.target.files ?? []))
+                    const selected = Array.from(e.target.files ?? [])
+                    const err = validateImages(selected)
+                    if (err) {
+                      setImages([])
+                      setErrorFor('images.0', err)
+                      showError(err)
+                      return
+                    }
+                    setImages(selected)
                   }}
                   className="block w-full text-sm text-white/70 file:mr-4 file:rounded-xl file:border-0 file:bg-white/10 file:px-4 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-white/15"
                 />
 
-                {images.length > 0 && (
+                {images.length > 0 ? (
                   <div className="mt-3 flex flex-wrap gap-2">
                     {images.map((f) => (
-                      <span
-                        key={f.name}
-                        className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-xs text-white/70"
-                      >
+                      <span key={f.name} className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-xs text-white/70">
                         {f.name}
                       </span>
                     ))}
                   </div>
-                )}
+                ) : null}
               </div>
             </Field>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Toggle
-                label="Digital product"
-                value={form.isDigital}
-                onChange={(v) => setForm((p) => ({ ...p, isDigital: v }))}
-              />
-
-              <Toggle
-                label="Allow returns"
-                value={form.allowReturns}
-                onChange={(v) => setForm((p) => ({ ...p, allowReturns: v }))}
-              />
+              <Toggle label="Digital product" value={form.isDigital} onChange={(v) => setForm((p) => ({ ...p, isDigital: v }))} />
+              <Toggle label="Allow returns" value={form.allowReturns} onChange={(v) => setForm((p) => ({ ...p, allowReturns: v }))} />
 
               <Field label="Return days" error={fieldErrors['return_days']?.[0] || fieldErrors['returnDays']?.[0]}>
                 <input
@@ -407,10 +406,7 @@ export function AddUpdateProductModal({ open, product = null, onClose, onCreated
           </div>
 
           <div className="flex items-center justify-end gap-3 px-6 py-5 border-t border-white/10">
-            <button
-              onClick={onClose}
-              className="px-4 py-2 rounded-xl border border-white/10 text-white/80 hover:bg-white/5 transition"
-            >
+            <button onClick={onClose} className="px-4 py-2 rounded-xl border border-white/10 text-white/80 hover:bg-white/5 transition">
               Cancel
             </button>
 
@@ -428,15 +424,7 @@ export function AddUpdateProductModal({ open, product = null, onClose, onCreated
   )
 }
 
-function Field({
-  label,
-  children,
-  error,
-}: {
-  label: string
-  children: React.ReactNode
-  error?: string
-}) {
+function Field({ label, children, error }: { label: string; children: React.ReactNode; error?: string }) {
   return (
     <div className="space-y-2">
       <p className="text-xs uppercase tracking-wider text-white/50">{label}</p>
@@ -446,15 +434,7 @@ function Field({
   )
 }
 
-function Toggle({
-  label,
-  value,
-  onChange,
-}: {
-  label: string
-  value: boolean
-  onChange: (v: boolean) => void
-}) {
+function Toggle({ label, value, onChange }: { label: string; value: boolean; onChange: (v: boolean) => void }) {
   return (
     <div className="space-y-2">
       <p className="text-xs uppercase tracking-wider text-white/50">{label}</p>
@@ -464,16 +444,8 @@ function Toggle({
         className="w-full rounded-xl bg-[#1a1b1f] border border-white/10 px-4 py-3 flex items-center justify-between hover:border-white/20 transition"
       >
         <span className="text-sm text-white/80">{value ? 'Yes' : 'No'}</span>
-        <span
-          className={`w-10 h-6 rounded-full border border-white/10 p-1 transition ${
-            value ? 'bg-emerald-500/20' : 'bg-white/5'
-          }`}
-        >
-          <span
-            className={`block w-4 h-4 rounded-full transition ${
-              value ? 'translate-x-4 bg-emerald-400' : 'translate-x-0 bg-white/50'
-            }`}
-          />
+        <span className={`w-10 h-6 rounded-full border border-white/10 p-1 transition ${value ? 'bg-emerald-500/20' : 'bg-white/5'}`}>
+          <span className={`block w-4 h-4 rounded-full transition ${value ? 'translate-x-4 bg-emerald-400' : 'translate-x-0 bg-white/50'}`} />
         </span>
       </button>
     </div>

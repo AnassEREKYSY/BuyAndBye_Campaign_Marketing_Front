@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../application/context';
+import { useAuth } from '@/modules/auth/application/context';
 import { useNotification } from '@/shared/context/notification';
 import { LoginDTO } from '@buyandbye/core';
 import styles from './LoginPage.module.css';
