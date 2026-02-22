@@ -16,128 +16,89 @@ function Reveal({ children, delayMs = 0 }: { children: React.ReactNode; delayMs?
 
 function Card({ title, desc }: { title: string; desc: string }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/5 p-5 transition hover:-translate-y-0.5 hover:bg-white/7">
+    <div className="bb-card">
       <p className="text-base font-extrabold tracking-tight text-white/90">{title}</p>
       <p className="mt-2 text-sm leading-6 text-white/65">{desc}</p>
     </div>
   )
 }
 
-function MiniStat({ k, v }: { k: string; v: string }) {
-  return (
-    <div className="min-w-[160px] rounded-2xl border border-white/10 bg-white/5 p-4">
-      <p className="text-sm font-extrabold text-white/90">{v}</p>
-      <p className="mt-1 text-sm text-white/60">{k}</p>
-    </div>
-  )
-}
-
 export function BrandPage() {
   return (
-    <div className="mx-auto flex w-full max-w-7xl flex-col gap-10">
-      <section className="relative overflow-hidden rounded-3xl border border-white/10 bg-white/5 px-6 py-12 sm:px-10 sm:py-16">
+    <div className="bb-page flex flex-col gap-10">
+      <section className="bb-surface bb-surface-pad">
         <div className="pointer-events-none absolute inset-0 bb-spotlight" />
         <div className="pointer-events-none absolute inset-0 bb-grid" />
         <div className="pointer-events-none absolute inset-0 bb-noise" />
-        <div className="pointer-events-none absolute -inset-24 bb-float opacity-60 [background:conic-gradient(from_180deg_at_50%_50%,rgba(99,102,241,0.16),rgba(34,211,238,0.12),rgba(255,255,255,0.05),rgba(99,102,241,0.16))] blur-3xl" />
+        <div className="pointer-events-none absolute -inset-24 bb-float opacity-60 [background:conic-gradient(from_180deg_at_50%_50%,rgba(99,102,241,0.16),rgba(56,189,248,0.12),rgba(255,255,255,0.05),rgba(99,102,241,0.16))] blur-3xl" />
 
-        <div className="relative z-10 grid gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
+        <div className="relative grid gap-10 lg:grid-cols-2 lg:items-center">
           <div>
-            <p className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold text-white/80">
-              For Brands
+            <span className="bb-chip">For Brands</span>
+            <h1 className="bb-title mt-4">Run creator campaigns with clean tracking and premium execution.</h1>
+            <p className="bb-p mt-4 max-w-2xl">
+              Control ROI with clearer attribution, reduce manual operations, and keep the collaboration experience
+              professional for your brand.
             </p>
 
-            <h1 className="mt-4 text-4xl font-black tracking-tight text-white sm:text-5xl">
-              Launch creator campaigns with clear attribution and clean operations.
-            </h1>
-
-            <p className="mt-4 max-w-2xl text-base leading-7 text-white/70">
-              Buy & Bye helps your team run campaigns with better tracking, consistent rules, and a premium workflow that
-              scales.
-            </p>
-
-            <div className="mt-7 flex flex-wrap gap-3">
-              <Link
-                to="/register"
-                className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-indigo-500/90 to-cyan-400/80 px-5 py-3 text-sm font-extrabold text-white shadow-[0_18px_55px_rgba(99,102,241,0.20)] transition hover:-translate-y-0.5"
-              >
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Link to="/register" className="bb-btn-primary">
                 Create an account
               </Link>
-              <Link
-                to="/contact"
-                className="inline-flex items-center justify-center rounded-full border border-white/12 bg-white/5 px-5 py-3 text-sm font-extrabold text-white/90 transition hover:-translate-y-0.5 hover:bg-white/7"
-              >
-                Contact us
+              <Link to="/contact" className="bb-btn-ghost">
+                Contact
               </Link>
             </div>
 
-            <div className="mt-8 flex flex-wrap gap-3">
-              <MiniStat k="Reporting" v="Realtime" />
-              <MiniStat k="Attribution" v="Links plus codes" />
-              <MiniStat k="Operations" v="Less manual work" />
+            <div className="mt-8 grid gap-3 sm:grid-cols-3">
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                <p className="text-xs font-semibold text-white/60">Reporting</p>
+                <p className="mt-2 text-sm font-extrabold text-white/90">Realtime</p>
+              </div>
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                <p className="text-xs font-semibold text-white/60">Attribution</p>
+                <p className="mt-2 text-sm font-extrabold text-white/90">Links + codes</p>
+              </div>
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                <p className="text-xs font-semibold text-white/60">Operations</p>
+                <p className="mt-2 text-sm font-extrabold text-white/90">Less manual</p>
+              </div>
             </div>
           </div>
 
-          <div className="bb-pop rounded-3xl border border-white/10 bg-black/10 p-5">
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
-              <p className="text-sm font-extrabold text-white/90">Brand outcomes</p>
-              <p className="mt-2 text-sm leading-6 text-white/65">
-                Clear conversion reporting, creator performance, and payout readiness in one view.
-              </p>
-              <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                <Card title="Control ROI" desc="See what converts and allocate budget with confidence." />
-                <Card title="Scale collaborations" desc="Manage multiple creators without losing clarity." />
-                <Card title="Reduce friction" desc="Less back and forth. More structured workflows." />
-                <Card title="Build trust" desc="Creators perform better when terms are consistent." />
-              </div>
-            </div>
+          <div className="bb-pop grid gap-3 sm:grid-cols-2">
+            <Card title="Campaign setup" desc="Define products, rules, assets, and collaboration flow." />
+            <Card title="Creator matching" desc="Invite and select creators aligned with your goals." />
+            <Card title="Attribution" desc="Track conversions with consistent signals across channels." />
+            <Card title="Commissions" desc="Transparent earnings and payout-ready reporting." />
           </div>
         </div>
       </section>
 
       <Reveal>
-        <section className="rounded-3xl border border-white/10 bg-white/5 p-7 sm:p-10">
-          <h2 className="text-2xl font-black tracking-tight text-white/95">What brands do inside Buy & Bye</h2>
-          <p className="mt-3 max-w-3xl text-sm leading-6 text-white/70">
-            A professional campaign flow that stays simple for the team. Everything is structured to avoid manual
-            tracking.
-          </p>
-
-          <div className="mt-7 grid gap-3 md:grid-cols-3">
-            <Card title="Create campaigns" desc="Define products, commission rules, and collaboration guidelines." />
-            <Card title="Approve creators" desc="Validate profiles and keep campaign quality consistent." />
-            <Card title="Track performance" desc="Monitor conversions and identify what drives sales." />
-          </div>
-        </section>
-      </Reveal>
-
-      <Reveal delayMs={60}>
-        <section className="grid gap-6 lg:grid-cols-2">
-          <div className="rounded-3xl border border-white/10 bg-white/5 p-7 sm:p-10">
-            <h2 className="text-2xl font-black tracking-tight text-white/95">What you control</h2>
-            <p className="mt-3 text-sm leading-6 text-white/70">
-              Keep the campaign consistent, while giving creators what they need to perform.
+        <section className="grid gap-6 lg:grid-cols-12 lg:items-start">
+          <div className="bb-card lg:col-span-5">
+            <h2 className="bb-h2">What you control</h2>
+            <p className="bb-p mt-3">
+              Keep campaigns consistent while giving creators a clean workflow that improves performance.
             </p>
-
-            <div className="mt-6 grid gap-3 sm:grid-cols-2">
-              <Card title="Commission rules" desc="Rates, conditions, and payout timing remain clear." />
-              <Card title="Approvals" desc="Decide who joins and which content gets validated." />
-              <Card title="Assets" desc="Provide offers, media, and brand messaging." />
-              <Card title="Reporting" desc="One view for performance, conversions, and commissions." />
+            <div className="mt-6 grid gap-3">
+              <Card title="Commission rules" desc="Rates and conditions stay clear and consistent." />
+              <Card title="Approvals" desc="Choose who joins and keep quality high." />
+              <Card title="Assets" desc="Provide brand messaging and content guidelines." />
             </div>
           </div>
 
-          <div className="rounded-3xl border border-white/10 bg-white/5 p-7 sm:p-10">
-            <h2 className="text-2xl font-black tracking-tight text-white/95">What you gain</h2>
-            <p className="mt-3 text-sm leading-6 text-white/70">
-              Stronger performance starts with clarity. Your team spends less time chasing numbers.
+          <div className="bb-card lg:col-span-7">
+            <h2 className="bb-h2">What you gain</h2>
+            <p className="bb-p mt-3 max-w-3xl">
+              Stronger outcomes start with clarity. Reduce time spent chasing numbers and focus on growth.
             </p>
-
             <div className="mt-6 grid gap-3 sm:grid-cols-2">
-              <Card title="Less manual ops" desc="Reduce spreadsheets and message based tracking." />
-              <Card title="Better decisions" desc="Optimize offers and creators based on conversion data." />
-              <Card title="Faster execution" desc="Structured flows speed up approvals and launches." />
-              <Card title="Premium experience" desc="A clean product that supports your brand image." />
+              <Card title="Better decisions" desc="Optimize creators and offers based on conversion data." />
+              <Card title="Faster execution" desc="Structured workflows speed up launch cycles." />
+              <Card title="Less friction" desc="Reduce confusion and manual coordination." />
+              <Card title="Premium brand image" desc="A clean product experience that matches your brand." />
             </div>
           </div>
         </section>

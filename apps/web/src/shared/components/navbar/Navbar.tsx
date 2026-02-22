@@ -37,11 +37,13 @@ export function Navbar() {
   }
 
   return (
-    <header className="sticky top-0 z-50 border-b border-white/10 bg-[#07080b]/70 backdrop-blur">
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
+    <header className="sticky top-0 z-50 border-b border-white/10 bg-[#05060a]/70 backdrop-blur">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-16 bg-gradient-to-r from-indigo-500/10 via-sky-400/8 to-cyan-400/10" />
+
+      <div className="relative mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
         <div className="flex items-center gap-4">
           <NavLink to="/" className="flex items-center gap-2 text-white" aria-label="Buy & Bye home">
-            <span className="h-9 w-9 rounded-2xl border border-white/10 bg-gradient-to-br from-indigo-500/70 to-cyan-400/60 shadow-[0_12px_35px_rgba(99,102,241,0.22)]" />
+            <span className="h-9 w-9 rounded-2xl border border-white/10 bg-gradient-to-br from-indigo-500/80 to-sky-400/70 shadow-[0_14px_40px_rgba(56,189,248,0.12)] bb-gradient-shift" />
             <span className="text-sm font-extrabold tracking-tight text-white/95">Buy & Bye</span>
           </NavLink>
 
@@ -72,7 +74,7 @@ export function Navbar() {
                 <img
                   src={avatarUrl}
                   alt="Profile"
-                  className="h-9 w-9 rounded-full border border-white/12 object-cover"
+                  className="h-9 w-9 rounded-full border border-white/12 object-cover shadow-[0_10px_30px_rgba(0,0,0,0.45)]"
                   referrerPolicy="no-referrer"
                 />
               ) : (
@@ -98,7 +100,7 @@ export function Navbar() {
                 'inline-flex items-center justify-center rounded-full px-4 py-2 text-sm font-extrabold transition hover:-translate-y-0.5',
                 isAuthRoute
                   ? 'border border-white/12 bg-white/5 text-white/90 hover:bg-white/7'
-                  : 'bg-gradient-to-r from-indigo-500/90 to-cyan-400/80 text-white shadow-[0_16px_45px_rgba(34,211,238,0.14)]',
+                  : 'bb-gradient-shift bg-gradient-to-r from-indigo-500/95 via-sky-400/85 to-cyan-400/85 text-white shadow-[0_16px_45px_rgba(56,189,248,0.14)]',
               )}
             >
               {isAuthRoute ? 'Back to Home' : 'Login'}
