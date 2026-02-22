@@ -1,36 +1,33 @@
-import { HttpClient } from '../../../../shared/services/http/HttpClient';
-import { ITokenStorage } from '../repositories/ITokenStorage';
-import { AuthApiClient } from '../api/AuthApiClient';
-import { AuthRepository } from '../repositories/AuthRepository';
-import {
-  RegisterUseCase,
-  LoginUseCase,
-  LogoutUseCase,
-  GetCurrentUserUseCase,
-} from '@core/modules/auth/application/use-cases';
+import { GetCurrentUserUseCase, LoginUseCase, LogoutUseCase, RegisterUseCase } from '@core/modules/auth/application/use-cases'
+import { AuthApiClient } from '@core/modules/auth/infrastructure/api/AuthApiClient'
+import { AuthRepository } from '@core/modules/auth/infrastructure/repositories/AuthRepository'
+import { HttpClient } from '@core/shared/services/http/HttpClient'
+import { env } from '@/shared/config/env'
+import { CoreTokenStorage } from '@/shared/services/storage/CoreTokenStorage'
 
-export class AuthContainer {
-  private static instance: AuthContainer;
+export class WebAuthContainer {
+  private static instance: WebAuthContainer
 
-  public readonly registerUseCase: RegisterUseCase;
-  public readonly loginUseCase: LoginUseCase;
-  public readonly logoutUseCase: LogoutUseCase;
-  public readonly getCurrentUserUseCase: GetCurrentUserUseCase;
+  readonly loginUseCase: LoginUseCase
+  readonly registerUseCase: RegisterUseCase
+  readonly logoutUseCase: LogoutUseCase
+  readonly meUseCase: GetCurrentUserUseCase
+  readonly tokenStorage: CoreTokenStorage
 
-  private constructor(httpClient: HttpClient, tokenStorage: ITokenStorage, backendBaseUrl: string) {
-    const authApiClient = new AuthApiClient(httpClient);
-    const authRepository = new AuthRepository(authApiClient, tokenStorage, backendBaseUrl);
+  private constructor() {
+    this.tokenStorage = new CoreTokenStorage()
+    const http = new HttpClient(env.API_V1_BASE_URL, this.tokenStorage)
+    const api = new AuthApiClient(http)
+    const repo = new AuthRepository(api, this.tokenStorage, env.BACKEND_BASE_URL)
 
-    this.registerUseCase = new RegisterUseCase(authRepository);
-    this.loginUseCase = new LoginUseCase(authRepository);
-    this.logoutUseCase = new LogoutUseCase(authRepository);
-    this.getCurrentUserUseCase = new GetCurrentUserUseCase(authRepository);
+    this.loginUseCase = new LoginUseCase(repo)
+    this.registerUseCase = new RegisterUseCase(repo)
+    this.logoutUseCase = new LogoutUseCase(repo)
+    this.meUseCase = new GetCurrentUserUseCase(repo)
   }
 
-  public static getInstance(httpClient: HttpClient, tokenStorage: ITokenStorage, backendBaseUrl: string): AuthContainer {
-    if (!AuthContainer.instance) {
-      AuthContainer.instance = new AuthContainer(httpClient, tokenStorage, backendBaseUrl);
-    }
-    return AuthContainer.instance;
+  static get(): WebAuthContainer {
+    if (!WebAuthContainer.instance) WebAuthContainer.instance = new WebAuthContainer()
+    return WebAuthContainer.instance
   }
 }

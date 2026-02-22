@@ -1,138 +1,79 @@
-import React, { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '@/modules/auth/application/context';
-import { useNotification } from '@/shared/context/notification';
-import { LoginDTO } from '@buyandbye/core';
-import styles from './LoginPage.module.css';
+import { Link, useNavigate } from 'react-router-dom'
+import { useState } from 'react'
+import { useAuth } from '@/modules/auth/application/context'
 
-export const LoginPage: React.FC = () => {
-  const navigate = useNavigate();
-  const { login, user, isLoading } = useAuth();
-  const { success, error: showError } = useNotification();
+export function LoginPage() {
+  const auth = useAuth()
+  const navigate = useNavigate()
 
-  const [formData, setFormData] = useState<LoginDTO>({ email: '', password: '' });
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
 
-  useEffect(() => {
-    if (user) navigate('/home');
-  }, [user, navigate]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!formData.email || !formData.password) {
-      showError('Please enter your email and password');
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      await login(formData);
-      success('Welcome back!');
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Login failed';
-      showError(message);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  if (isLoading) return null;
+  async function onSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    await auth.login({ email, password })
+    navigate('/', { replace: true })
+  }
 
   return (
-    <div className={`${styles.page} flex min-h-screen items-center`}>
-      <div className="ml-auto w-full max-w-md px-6 md:mr-20">
-        <div className="rounded-3xl bg-white/10 p-10 shadow-2xl backdrop-blur-lg border border-white/20">
-  
-          <h1 className="text-3xl font-semibold text-white">
+    <div className="mx-auto w-full max-w-7xl">
+      <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-white/5 px-6 py-12 sm:px-10 sm:py-16">
+        <div className="pointer-events-none absolute inset-0 bb-spotlight" />
+        <div className="pointer-events-none absolute inset-0 bb-grid" />
+        <div className="pointer-events-none absolute inset-0 bb-noise" />
+
+        <div className="relative z-10 mx-auto max-w-xl">
+          <p className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold text-white/80">
             Welcome back
-          </h1>
-          <p className="mt-2 text-sm text-white/80">
-            Sign in to continue your live shopping experience.
           </p>
-  
-          <form onSubmit={handleSubmit} className="mt-8 space-y-6">
-  
-            <div className="space-y-2">
-              <label className="text-sm text-white/90">Email</label>
+
+          <h1 className="mt-4 text-4xl font-black tracking-tight text-white sm:text-5xl">Login</h1>
+          <p className="mt-3 text-base leading-7 text-white/70">Access your workspace.</p>
+
+          <form onSubmit={onSubmit} className="mt-8 grid gap-4">
+            <label className="grid gap-2 text-sm font-semibold text-white/80">
+              Email
               <input
+                className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-white outline-none transition focus:border-cyan-400/50 focus:bg-black/25"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@company.com"
                 type="email"
-                value={formData.email}
-                onChange={(e) =>
-                  setFormData({ ...formData, email: e.target.value })
-                }
-                className="w-full rounded-xl bg-white/15 px-4 py-3 text-white placeholder-white/60 outline-none focus:ring-2 focus:ring-orange-400"
-                placeholder="user@buyandbye.com"
+                autoComplete="email"
+                required
               />
-            </div>
-  
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm text-white/90">
-                <label>Password</label>
-                <Link
-                  to="/forgot-password"
-                  className="text-orange-300 hover:text-orange-200"
-                >
-                  Forgot?
-                </Link>
-              </div>
-  
-              <div className="relative">
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  value={formData.password}
-                  onChange={(e) =>
-                    setFormData({ ...formData, password: e.target.value })
-                  }
-                  className="w-full rounded-xl bg-white/15 px-4 py-3 text-white placeholder-white/60 outline-none focus:ring-2 focus:ring-orange-400"
-                  placeholder="••••••••"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-white/70 hover:text-white"
-                >
-                  {showPassword ? 'Hide' : 'Show'}
-                </button>
-              </div>
-            </div>
-  
+            </label>
+
+            <label className="grid gap-2 text-sm font-semibold text-white/80">
+              Password
+              <input
+                className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-white outline-none transition focus:border-cyan-400/50 focus:bg-black/25"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Your password"
+                type="password"
+                autoComplete="current-password"
+                required
+              />
+            </label>
+
             <button
+              disabled={auth.isLoading}
+              className="mt-2 inline-flex items-center justify-center rounded-full bg-gradient-to-r from-indigo-500/90 to-cyan-400/80 px-5 py-3 text-sm font-extrabold text-white shadow-[0_18px_55px_rgba(99,102,241,0.20)] transition hover:-translate-y-0.5 disabled:opacity-60"
               type="submit"
-              disabled={isSubmitting}
-              className="w-full rounded-xl bg-gradient-to-r from-orange-500 to-pink-500 py-3 font-semibold text-white transition hover:brightness-110 disabled:opacity-60"
             >
-              {isSubmitting ? 'Signing in...' : 'Sign in'}
+              {auth.isLoading ? 'Logging in...' : 'Login'}
             </button>
-  
-            <div className="flex items-center gap-4">
-              <div className="h-px flex-1 bg-white/30" />
-              <span className="text-xs text-white/80">OR</span>
-              <div className="h-px flex-1 bg-white/30" />
-            </div>
-  
-            <button
-              type="button"
-              className="w-full rounded-xl bg-white py-3 text-sm font-semibold text-gray-800 hover:bg-gray-100"
-            >
-              Sign in with Google
-            </button>
-  
-            <p className="text-center text-sm text-white/90">
-              Don’t have an account?{' '}
-              <Link
-                to="/register"
-                className="font-semibold text-orange-300 hover:text-orange-200"
-              >
+
+            <p className="mt-2 text-sm text-white/65">
+              No account?{' '}
+              <Link to="/register" className="font-extrabold text-cyan-300/90 hover:underline">
                 Create one
               </Link>
             </p>
-  
           </form>
         </div>
       </div>
     </div>
-  );
-  
-};
+  )
+}

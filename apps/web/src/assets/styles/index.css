@@ -1,17 +1,123 @@
+/* apps/web/src/assets/styles/index.css */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  color-scheme: dark;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: #07080b;
+  color: #fff;
+}
+
 * {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
+  box-sizing: border-box;
+}
+
+::selection {
+  background: rgba(34, 211, 238, 0.18);
+}
+
+@layer utilities {
+  .bb-spotlight {
+    background:
+      radial-gradient(900px 520px at 18% 12%, rgba(99, 102, 241, 0.22), rgba(0, 0, 0, 0) 55%),
+      radial-gradient(900px 520px at 82% 18%, rgba(34, 211, 238, 0.16), rgba(0, 0, 0, 0) 55%),
+      radial-gradient(700px 420px at 50% 92%, rgba(255, 255, 255, 0.05), rgba(0, 0, 0, 0) 60%);
   }
-  
-  html,
-  body,
-  #root {
-    width: 100%;
-    height: 100%;
+
+  .bb-grid {
+    background-image:
+      linear-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+    background-size: 44px 44px;
+    mask-image: radial-gradient(circle at 40% 35%, rgba(0, 0, 0, 1), rgba(0, 0, 0, 0));
+    opacity: 0.18;
   }
-  
+
+  .bb-noise {
+    background-image: radial-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+    background-size: 3px 3px;
+    opacity: 0.05;
+  }
+
+  .bb-fade-up {
+    opacity: 0;
+    transform: translateY(14px);
+    transition: opacity 700ms ease, transform 700ms ease;
+  }
+
+  .bb-fade-up-in {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .bb-pop {
+    animation: bb-pop 700ms ease-out both;
+  }
+
+  .bb-float {
+    animation: bb-float 10s ease-in-out infinite;
+  }
+
+  .bb-shimmer::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    transform: translateX(-70%);
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.18), transparent);
+    animation: bb-shimmer 2s ease-in-out infinite;
+  }
+
+  @keyframes bb-pop {
+    from {
+      opacity: 0;
+      transform: translateY(10px) scale(0.985);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  @keyframes bb-float {
+    0% {
+      transform: translate3d(-2%, -1%, 0) rotate(-2deg);
+    }
+    50% {
+      transform: translate3d(2%, 1%, 0) rotate(2deg);
+    }
+    100% {
+      transform: translate3d(-2%, -1%, 0) rotate(-2deg);
+    }
+  }
+
+  @keyframes bb-shimmer {
+    0% {
+      transform: translateX(-70%);
+    }
+    55% {
+      transform: translateX(70%);
+    }
+    100% {
+      transform: translateX(70%);
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
+  }
+}

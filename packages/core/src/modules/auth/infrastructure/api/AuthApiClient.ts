@@ -1,56 +1,40 @@
-import { ApiResponse } from './types/ApiResponse'
+import { HttpClient } from '@core/shared/services/http/HttpClient';
 import { ApiAuthResponse } from './types/ApiAuthResponse'
-import { ApiUserResponse } from './types/ApiUserResponse'
-import { ApiRegisterRequest } from './types/ApiRegisterRequest'
 import { ApiLoginRequest } from './types/ApiLoginRequest'
-import { HttpClient } from '../../../../shared/services/http/HttpClient'
-
-type Wrapped<T> = ApiResponse<T> 
-type Plain<T> = { data: T; message?: string }
-type AnyApi<T> = Wrapped<T> | Plain<T> | T
-
-function unwrapApi<T>(payload: AnyApi<T>, fallbackMessage: string): T {
-  if (payload && typeof payload === 'object' && 'success' in payload) {
-    const p = payload as Wrapped<T>
-    if (!p.success || !p.data) throw new Error(p.message || fallbackMessage)
-    return p.data
-  }
-  if (payload && typeof payload === 'object' && 'data' in payload) {
-    const p = payload as Plain<T>
-    if (p.data == null) throw new Error(p.message || fallbackMessage)
-    return p.data
-  }
-  if (payload == null) throw new Error(fallbackMessage)
-  return payload as T
-}
+import { ApiRegisterRequest } from './types/ApiRegisterRequest'
+import { ApiUserResponse } from './types/ApiUserResponse'
 
 export class AuthApiClient {
-  constructor(private httpClient: HttpClient) {}
+  constructor(private readonly http: HttpClient) {}
 
-  async register(data: ApiRegisterRequest): Promise<ApiAuthResponse> {
-    const formData = new FormData()
-    formData.append('email', data.email)
-    formData.append('display_name', data.display_name)
-    formData.append('password', data.password)
-
-    if (data.photo) {
-      formData.append('photo', data.photo)
+  async login(data: ApiLoginRequest): Promise<{ token: string; expiresIn?: number | null }> {
+    const res = await this.http.post<ApiAuthResponse>('/auth/login', data)
+    return {
+      token: res.data.data.token,
+      expiresIn: res.data.data.expires_in ?? null,
     }
+  }
 
-    const response = await this.httpClient.post<AnyApi<ApiAuthResponse>>('/auth/register', formData, {
+  async register(data: ApiRegisterRequest): Promise<{ token: string; expiresIn?: number | null }> {
+    const form = new FormData()
+    form.append('email', data.email)
+    form.append('password', data.password)
+    form.append('display_name', data.display_name)
+    form.append('role', data.role)
+    if (data.photo) form.append('photo', data.photo)
+
+    const res = await this.http.post<ApiAuthResponse>('/auth/register', form, {
       headers: { 'Content-Type': 'multipart/form-data' },
     })
 
-    return unwrapApi<ApiAuthResponse>(response.data, 'Registration failed')
-  }
-
-  async login(data: ApiLoginRequest): Promise<ApiAuthResponse> {
-    const response = await this.httpClient.post<AnyApi<ApiAuthResponse>>('/auth/login', data)
-    return unwrapApi<ApiAuthResponse>(response.data, 'Login failed')
+    return {
+      token: res.data.data.token,
+      expiresIn: res.data.data.expires_in ?? null,
+    }
   }
 
   async me(): Promise<ApiUserResponse> {
-    const response = await this.httpClient.get<AnyApi<ApiUserResponse>>('/auth/me')
-    return unwrapApi<ApiUserResponse>(response.data, 'Failed to fetch user')
+    const res = await this.http.get<ApiUserResponse>('/auth/me')
+    return res.data
   }
 }

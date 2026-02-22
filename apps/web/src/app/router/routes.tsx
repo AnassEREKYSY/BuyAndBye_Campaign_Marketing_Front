@@ -1,42 +1,21 @@
-import { RouteObject } from 'react-router-dom'
-import { LoginPage, RegisterPage } from '@/modules/auth/presentation/pages'
-import { HomePage } from '@/modules/home/presentation/pages/HomePage'
+import { Navigate } from 'react-router-dom'
 import { MainLayout } from './MainLayout'
-import { AuthGuard } from './guards/AuthGuard'
-import { ProfilePage } from '@/modules/users/presentation/pages/ProfilePage'
-import { BecomeSellerPage } from '@/modules/users/presentation/pages/BecomeSellerPage'
-import { SellerDashboardPage } from '@/modules/seller/presentation/pages/SellerDashboardPage'
-import { SellerRouteProviders } from '@/modules/seller/application/context/SellerRouteProviders'
+import { HomePage } from '@/modules/home/presentation/pages/HomePage'
+import { LoginPage } from '@/modules/auth/presentation/pages/LoginPage'
+import { RegisterPage } from '@/modules/auth/presentation/pages/RegisterPage'
+import { BrandPage, ContactPage, InfluencerPage } from '@/modules/home/presentation/pages'
 
-export const routes: RouteObject[] = [
-  { path: '/', element: <LoginPage /> },
-  { path: '/login', element: <LoginPage /> },
-  { path: '/register', element: <RegisterPage /> },
-  { path: '/forgot-password', element: <div>Forgot Password - Coming Soon</div> },
+export const routes = [
   {
-    element: <AuthGuard />,
+    element: <MainLayout />,
     children: [
-      {
-        element: <MainLayout />,
-        children: [
-          { path: '/home', element: <HomePage /> },
-          { path: '/profile', element: <ProfilePage /> },
-          { path: '/become-seller', element: <BecomeSellerPage /> },
-        ],
-      },
-      {
-        element: <AuthGuard requireSeller />,
-        children: [
-          {
-            element: (
-              <SellerRouteProviders>
-                <MainLayout />
-              </SellerRouteProviders>
-            ),
-            children: [{ path: '/seller/dashboard', element: <SellerDashboardPage /> }],
-          },
-        ],
-      },
+      { path: '/', element: <HomePage /> },
+      { path: '/brand', element: <BrandPage /> },
+      { path: '/influencer', element: <InfluencerPage /> },
+      { path: '/contact', element: <ContactPage /> },
+      { path: '/login', element: <LoginPage /> },
+      { path: '/register', element: <RegisterPage /> },
+      { path: '*', element: <Navigate to="/" replace /> },
     ],
   },
 ]

@@ -1,7 +1,9 @@
+import { UserRole } from "@core/modules/auth/domain/entities"
 
-export interface ApiRegisterRequest {
-  email: string;
-  display_name: string;
-  password: string;
-  photo?: File;
+export type ApiRegisterRequest = {
+  email: string
+  password: string
+  display_name: string
+  role: UserRole
+  photo?: File
 }

@@ -14,7 +14,12 @@
     "esModuleInterop": true,
     "baseUrl": ".",
     "paths": {
-      "@core/*": ["packages/core/src/*"]
+      "@core/*": ["packages/core/src/*"],
+
+      "@/*": ["apps/web/src/*"],
+      "@/app/*": ["apps/web/src/app/*"],
+      "@/modules/*": ["apps/web/src/modules/*"],
+      "@/shared/*": ["apps/web/src/shared/*"]
     }
   }
 }

@@ -1,399 +1,130 @@
-import React, { useState, useEffect } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
-import { useAuth } from '../../application/context'
-import { useNotification } from '@/shared/context/notification'
-import { PasswordField } from '../components/PasswordField'
-import styles from './RegisterPage.module.css'
+import { Link, useNavigate } from 'react-router-dom'
+import { useMemo, useState } from 'react'
+import { useAuth } from '@/modules/auth/application/context'
+import { UserRole } from '@core/modules/auth/domain/entities'
 
-type RegisterStep = 1 | 2 | 3 | 4
+type Role = 'brand' | 'influencer'
 
-interface FormData {
-  email: string
-  displayName: string
-  password: string
-  passwordConfirmation: string
-}
+const toUserRole = (role: Role): UserRole =>
+  role === 'brand' ? UserRole.BRAND : UserRole.INFLUENCER
 
-interface FormErrors {
-  email: string
-  displayName: string
-  password: string
-  passwordConfirmation: string
-  general: string
-}
-
-interface LegalAcceptance {
-  cgu: boolean
-  rgpd: boolean
-  cgv: boolean
-}
-
-export const RegisterPage: React.FC = () => {
+export function RegisterPage() {
+  const auth = useAuth()
   const navigate = useNavigate()
-  const { register, user, isLoading } = useAuth()
-  const { success, error: showError, warning } = useNotification()
 
-  const [currentStep, setCurrentStep] = useState<RegisterStep>(1)
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [role, setRole] = useState<Role>('brand')
+  const [fullName, setFullName] = useState('')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
 
-  const [formData, setFormData] = useState<FormData>({
-    email: '',
-    displayName: '',
-    password: '',
-    passwordConfirmation: '',
-  })
+  const roleLabel = useMemo(() => (role === 'brand' ? 'Brand' : 'Influencer'), [role])
 
-  const [errors, setErrors] = useState<FormErrors>({
-    email: '',
-    displayName: '',
-    password: '',
-    passwordConfirmation: '',
-    general: '',
-  })
-
-  const [legalAcceptance, setLegalAcceptance] = useState<LegalAcceptance>({
-    cgu: false,
-    rgpd: false,
-    cgv: false,
-  })
-
-  const [profileImage, setProfileImage] = useState<File | null>(null)
-  const [profileImagePreview, setProfileImagePreview] = useState<string>('')
-
-  // Redirect if already authenticated
-  useEffect(() => {
-    if (user) {
-      navigate('/home')
-    }
-  }, [user, navigate])
-
-  const validateEmail = (email: string): boolean => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    return emailRegex.test(email)
-  }
-
-  const validateStep1 = (): boolean => {
-    const newErrors: FormErrors = {
-      email: '',
-      displayName: '',
-      password: '',
-      passwordConfirmation: '',
-      general: '',
-    }
-
-    if (!formData.email) {
-      newErrors.email = 'Email is required'
-    } else if (!validateEmail(formData.email)) {
-      newErrors.email = 'Please enter a valid email address'
-    }
-
-    if (!formData.displayName) {
-      newErrors.displayName = 'Display name is required'
-    } else if (formData.displayName.length < 3) {
-      newErrors.displayName = 'Display name must be at least 3 characters'
-    }
-
-    if (!formData.password) {
-      newErrors.password = 'Password is required'
-    } else if (formData.password.length < 8) {
-      newErrors.password = 'Password must be at least 8 characters'
-    }
-
-    if (!formData.passwordConfirmation) {
-      newErrors.passwordConfirmation = 'Please confirm your password'
-    } else if (formData.password !== formData.passwordConfirmation) {
-      newErrors.passwordConfirmation = 'Passwords do not match'
-    }
-
-    setErrors(newErrors)
-    return (
-      !newErrors.email &&
-      !newErrors.displayName &&
-      !newErrors.password &&
-      !newErrors.passwordConfirmation
-    )
-  }
-
-  const handleStep1Next = () => {
-    if (validateStep1()) {
-      setCurrentStep(2)
-    } else {
-      showError('Please fix the errors in the form before continuing')
-    }
-  }
-
-  const handleStep2Next = () => {
-    setCurrentStep(3)
-  }
-
-  const handleStep2Back = () => {
-    setCurrentStep(1)
-    setErrors({ email: '', displayName: '', password: '', passwordConfirmation: '', general: '' })
-  }
-
-  const handleStep3Back = () => {
-    setCurrentStep(2)
-    setErrors({ email: '', displayName: '', password: '', passwordConfirmation: '', general: '' })
-  }
-
-  const handleCreateAccount = async () => {
-    if (!legalAcceptance.cgu || !legalAcceptance.rgpd || !legalAcceptance.cgv) {
-      warning('Please accept all legal documents to continue')
-      return
-    }
-
-    setIsSubmitting(true)
-    setErrors({ email: '', displayName: '', password: '', passwordConfirmation: '', general: '' })
-
-    try {
-      await register({
-        email: formData.email,
-        displayName: formData.displayName,
-        password: formData.password,
-        photo: profileImage || undefined,
-      })
-
-      success('Account created successfully! Welcome to Buy & Bye!')
-      setCurrentStep(4)
-    } catch (error: unknown) {
-      const message =
-        error instanceof Error ? error.message : 'Registration failed. Please try again.'
-      showError(message)
-      setErrors({
-        email: '',
-        displayName: '',
-        password: '',
-        passwordConfirmation: '',
-        general: message,
-      })
-      setCurrentStep(1)
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
-
-  const handleContinue = () => {
-    navigate('/home')
-  }
-
-  const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        showError('File size must be less than 5MB')
-        return
-      }
-      if (!file.type.startsWith('image/')) {
-        showError('Please select an image file')
-        return
-      }
-      setProfileImage(file)
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        setProfileImagePreview(reader.result as string)
-        success('Profile picture uploaded successfully!')
-      }
-      reader.readAsDataURL(file)
-    }
-  }
-
-  const allLegalAccepted = legalAcceptance.cgu && legalAcceptance.rgpd && legalAcceptance.cgv
-
-  if (isLoading) {
-    return (
-      <div className={styles.container}>
-        <div className={styles.loadingSpinner}>Loading...</div>
-      </div>
-    )
+  async function onSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    await auth.register({
+      role: toUserRole(role),
+      email,
+      displayName: fullName,
+      password,
+    })
+    navigate('/', { replace: true })
   }
 
   return (
-    <div className={`${styles.page} flex min-h-screen items-center`}>
-      <div className="ml-auto w-full max-w-md px-6 md:mr-20">
-        <div className="rounded-3xl bg-white/10 p-10 shadow-2xl backdrop-blur-lg border border-white/20">
-          <h1 className="text-2xl md:text-3xl font-semibold text-white">
-            {currentStep === 1 && 'Create your account'}
-            {currentStep === 2 && 'Complete your profile'}
-            {currentStep === 3 && 'Accept Terms'}
-            {currentStep === 4 && 'Welcome!'}
-          </h1>
+    <div className="mx-auto w-full max-w-7xl">
+      <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-white/5 px-6 py-12 sm:px-10 sm:py-16">
+        <div className="pointer-events-none absolute inset-0 bb-spotlight" />
+        <div className="pointer-events-none absolute inset-0 bb-grid" />
+        <div className="pointer-events-none absolute inset-0 bb-noise" />
 
-          <div className="mt-6 space-y-6">
-            {currentStep === 1 && (
-              <>
-                <p className="text-sm text-white/70">
-                  Already have an account?{' '}
-                  <Link to="/login" className="text-orange-300 hover:text-orange-200 font-medium">
-                    Sign in
-                  </Link>
-                </p>
+        <div className="relative z-10 mx-auto max-w-xl">
+          <p className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold text-white/80">
+            Get started
+          </p>
 
-                <div className="space-y-4">
-                  <div>
-                    <input
-                      type="email"
-                      placeholder="Email"
-                      value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      className="w-full rounded-xl bg-white/10 px-4 py-3 text-white placeholder-white/60 outline-none focus:ring-2 focus:ring-orange-400"
-                    />
-                    {errors.email && <p className="mt-1 text-xs text-red-400">{errors.email}</p>}
-                  </div>
+          <h1 className="mt-4 text-4xl font-black tracking-tight text-white sm:text-5xl">Create account</h1>
+          <p className="mt-3 text-base leading-7 text-white/70">Choose your profile: {roleLabel}.</p>
 
-                  <div>
-                    <input
-                      type="text"
-                      placeholder="Username"
-                      value={formData.displayName}
-                      onChange={(e) => setFormData({ ...formData, displayName: e.target.value })}
-                      className="w-full rounded-xl bg-white/10 px-4 py-3 text-white placeholder-white/60 outline-none focus:ring-2 focus:ring-orange-400"
-                    />
-                    {errors.displayName && (
-                      <p className="mt-1 text-xs text-red-400">{errors.displayName}</p>
-                    )}
-                  </div>
-
-                  <PasswordField
-                    value={formData.password}
-                    onChange={(password) => setFormData({ ...formData, password })}
-                    placeholder="Password"
-                    error={errors.password}
-                  />
-
-                  <div>
-                    <input
-                      type="password"
-                      placeholder="Confirm password"
-                      value={formData.passwordConfirmation}
-                      onChange={(e) =>
-                        setFormData({ ...formData, passwordConfirmation: e.target.value })
-                      }
-                      className="w-full rounded-xl bg-white/10 px-4 py-3 text-white placeholder-white/60 outline-none focus:ring-2 focus:ring-orange-400"
-                    />
-                    {errors.passwordConfirmation && (
-                      <p className="mt-1 text-xs text-red-400">{errors.passwordConfirmation}</p>
-                    )}
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={handleStep1Next}
-                    className="w-full rounded-xl bg-gradient-to-r from-orange-500 to-pink-500 py-3 font-semibold text-white hover:brightness-110 transition"
-                  >
-                    Next
-                  </button>
-                </div>
-              </>
-            )}
-
-            {currentStep === 2 && (
-              <>
-                <div className="flex justify-between text-sm text-white/70">
-                  <button onClick={handleStep2Back} className="hover:text-white">
-                    ← Back
-                  </button>
-                  <button onClick={handleStep2Next} className="hover:text-white">
-                    Skip
-                  </button>
-                </div>
-
-                <div className="flex flex-col items-center space-y-4">
-                  <input
-                    id="profileImageInput"
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageSelect}
-                    hidden
-                  />
-
-                  <div
-                    onClick={() => document.getElementById('profileImageInput')?.click()}
-                    className="w-32 h-32 rounded-full bg-white/10 border border-white/20 flex items-center justify-center cursor-pointer hover:bg-white/20 transition overflow-hidden"
-                  >
-                    {profileImagePreview ? (
-                      <img src={profileImagePreview} className="w-full h-full object-cover" />
-                    ) : (
-                      <span className="text-4xl text-white/50">+</span>
-                    )}
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={handleStep2Next}
-                    className="w-full rounded-xl bg-gradient-to-r from-orange-500 to-pink-500 py-3 font-semibold text-white hover:brightness-110 transition"
-                  >
-                    Next
-                  </button>
-                </div>
-              </>
-            )}
-
-            {currentStep === 3 && (
-              <>
-                <button onClick={handleStep3Back} className="text-sm text-white/70 hover:text-white">
-                  ← Back
-                </button>
-
-                <div className="space-y-4 text-white/80 text-sm">
-                  <label className="flex items-center gap-3">
-                    <input
-                      type="checkbox"
-                      checked={legalAcceptance.cgu}
-                      onChange={(e) =>
-                        setLegalAcceptance({ ...legalAcceptance, cgu: e.target.checked })
-                      }
-                    />
-                    Accept CGU
-                  </label>
-
-                  <label className="flex items-center gap-3">
-                    <input
-                      type="checkbox"
-                      checked={legalAcceptance.rgpd}
-                      onChange={(e) =>
-                        setLegalAcceptance({ ...legalAcceptance, rgpd: e.target.checked })
-                      }
-                    />
-                    Accept RGPD
-                  </label>
-
-                  <label className="flex items-center gap-3">
-                    <input
-                      type="checkbox"
-                      checked={legalAcceptance.cgv}
-                      onChange={(e) =>
-                        setLegalAcceptance({ ...legalAcceptance, cgv: e.target.checked })
-                      }
-                    />
-                    Accept CGV
-                  </label>
-
-                  {errors.general && <p className="text-sm text-red-400">{errors.general}</p>}
-
-                  <button
-                    onClick={handleCreateAccount}
-                    disabled={!allLegalAccepted || isSubmitting}
-                    className="w-full rounded-xl bg-gradient-to-r from-orange-500 to-pink-500 py-3 font-semibold text-white hover:brightness-110 transition disabled:opacity-50"
-                  >
-                    {isSubmitting ? 'Creating...' : 'Create Account'}
-                  </button>
-                </div>
-              </>
-            )}
-
-            {currentStep === 4 && (
-              <>
-                <p className="text-white/80 text-sm">Account created successfully!</p>
-
-                <button
-                  onClick={handleContinue}
-                  className="w-full rounded-xl bg-gradient-to-r from-orange-500 to-pink-500 py-3 font-semibold text-white hover:brightness-110 transition"
-                >
-                  Continue
-                </button>
-              </>
-            )}
+          <div className="mt-6 grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              onClick={() => setRole('brand')}
+              className={`rounded-2xl border px-4 py-3 text-sm font-extrabold transition ${
+                role === 'brand'
+                  ? 'border-cyan-400/40 bg-white/8 text-white'
+                  : 'border-white/10 bg-black/10 text-white/75 hover:bg-white/6'
+              }`}
+            >
+              Brand
+            </button>
+            <button
+              type="button"
+              onClick={() => setRole('influencer')}
+              className={`rounded-2xl border px-4 py-3 text-sm font-extrabold transition ${
+                role === 'influencer'
+                  ? 'border-cyan-400/40 bg-white/8 text-white'
+                  : 'border-white/10 bg-black/10 text-white/75 hover:bg-white/6'
+              }`}
+            >
+              Influencer
+            </button>
           </div>
+
+          <form onSubmit={onSubmit} className="mt-6 grid gap-4">
+            <label className="grid gap-2 text-sm font-semibold text-white/80">
+              Full name
+              <input
+                className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-white outline-none transition focus:border-cyan-400/50 focus:bg-black/25"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                placeholder="Your name"
+                type="text"
+                autoComplete="name"
+                required
+              />
+            </label>
+
+            <label className="grid gap-2 text-sm font-semibold text-white/80">
+              Email
+              <input
+                className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-white outline-none transition focus:border-cyan-400/50 focus:bg-black/25"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@company.com"
+                type="email"
+                autoComplete="email"
+                required
+              />
+            </label>
+
+            <label className="grid gap-2 text-sm font-semibold text-white/80">
+              Password
+              <input
+                className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-white outline-none transition focus:border-cyan-400/50 focus:bg-black/25"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Create a strong password"
+                type="password"
+                autoComplete="new-password"
+                required
+              />
+            </label>
+
+            <button
+              disabled={auth.isLoading}
+              className="mt-2 inline-flex items-center justify-center rounded-full bg-gradient-to-r from-indigo-500/90 to-cyan-400/80 px-5 py-3 text-sm font-extrabold text-white shadow-[0_18px_55px_rgba(34,211,238,0.14)] transition hover:-translate-y-0.5 disabled:opacity-60"
+              type="submit"
+            >
+              {auth.isLoading ? 'Creating...' : 'Create account'}
+            </button>
+
+            <p className="mt-2 text-sm text-white/65">
+              Already have an account?{' '}
+              <Link to="/login" className="font-extrabold text-cyan-300/90 hover:underline">
+                Login
+              </Link>
+            </p>
+          </form>
         </div>
       </div>
     </div>

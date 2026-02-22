@@ -1,9 +1,7 @@
-import { ProfileStatus } from '../../../domain/entities/ProfileStatus';
-
-export interface ApiAuthResponse {
-  token: string;
-  expiresIn: number | null;
-  userId: string;
-  profileStatus: ProfileStatus;
-  isProfileComplete: boolean;
+export type ApiAuthResponse = {
+  data: {
+    token: string
+    expires_in?: number | null
+    user?: unknown
+  }
 }

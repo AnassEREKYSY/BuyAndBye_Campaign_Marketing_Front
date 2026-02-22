@@ -1,1 +1,0 @@
-export type ProductStatus = 'active' | 'archived' | 'draft' | 'out_of_stock'

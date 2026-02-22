@@ -1,133 +1,108 @@
-import { Link, useNavigate } from 'react-router-dom'
+import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/modules/auth/application/context'
-import { UserRole } from '@buyandbye/core'
-import { useState } from 'react'
-import {
-  MagnifyingGlassIcon,
-  ShoppingCartIcon,
-  UserIcon,
-  ArrowRightOnRectangleIcon,
-  BuildingStorefrontIcon,
-  RocketLaunchIcon,
-} from '@heroicons/react/24/outline'
+
+type NavItem = { to: string; label: string }
+
+const navItems: NavItem[] = [
+  { to: '/', label: 'Home' },
+  { to: '/brand', label: 'Brand' },
+  { to: '/influencer', label: 'Influencer' },
+  { to: '/contact', label: 'Contact Us' },
+]
+
+function cx(...classes: Array<string | false | undefined | null>) {
+  return classes.filter(Boolean).join(' ')
+}
 
 export function Navbar() {
+  const location = useLocation()
   const navigate = useNavigate()
-  const { isAuthenticated, user, logout } = useAuth()
-  const [avatarError, setAvatarError] = useState(false)
+  const isAuthRoute = location.pathname === '/login' || location.pathname === '/register'
 
-  const avatarSrc =
-    !avatarError &&
-    (user?.avatarUrl?.startsWith('data:')
-      ? user.avatarUrl
-      : user?.avatarUrl)
+  const auth = useAuth()
+  const isLoggedIn = auth.isAuthenticated
+
+  const avatarUrl = auth.user?.avatarUrl?.trim()
+  const initials =
+    (auth.user?.displayName ?? auth.user?.email ?? 'U')
+      .trim()
+      .split(/\s+/)
+      .slice(0, 2)
+      .map((p) => p[0]?.toUpperCase())
+      .join('') || 'U'
+
+  async function onLogout() {
+    await auth.logout()
+    navigate('/', { replace: true })
+  }
 
   return (
-    <header className="w-full bg-[#0e0f12] border-b border-white/10 text-white">
-      <div className="flex items-center justify-between px-4 md:px-10 py-4">
-
-        {/* LEFT */}
-        <div className="flex items-center gap-8">
-          <Link to="/" className="text-xl font-bold tracking-tight">
-            <span className="bg-gradient-to-r from-orange-500 to-pink-500 bg-clip-text text-transparent">
-              Buy&Bye
-            </span>
-          </Link>
-
-          <div className="hidden md:flex items-center gap-6 text-sm">
-            <Link
-              to="/home"
-              className="px-4 py-1.5 rounded-full bg-gradient-to-r from-orange-500 to-pink-500 text-white font-medium"
-            >
-              Home
-            </Link>
-
-            <Link
-              to="/browse"
-              className="hover:text-orange-400 transition"
-            >
-              Browse
-            </Link>
-          </div>
-        </div>
-
-        {/* CENTER SEARCH */}
-        <div className="hidden md:flex flex-1 justify-center px-8">
-          <div className="flex items-center w-full max-w-md bg-[#1a1b1f] border border-white/10 rounded-full px-4 py-2">
-            <MagnifyingGlassIcon className="w-5 h-5 text-gray-400" />
-            <input
-              placeholder="Search products..."
-              className="ml-3 w-full bg-transparent outline-none text-sm text-white placeholder-gray-500"
-            />
-          </div>
-        </div>
-
-        {/* RIGHT */}
+    <header className="sticky top-0 z-50 border-b border-white/10 bg-[#07080b]/70 backdrop-blur">
+      <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
         <div className="flex items-center gap-4">
+          <NavLink to="/" className="flex items-center gap-2 text-white" aria-label="Buy & Bye home">
+            <span className="h-9 w-9 rounded-2xl border border-white/10 bg-gradient-to-br from-indigo-500/70 to-cyan-400/60 shadow-[0_12px_35px_rgba(99,102,241,0.22)]" />
+            <span className="text-sm font-extrabold tracking-tight text-white/95">Buy & Bye</span>
+          </NavLink>
 
-          <button className="p-2 rounded-full hover:bg-white/5 transition">
-            <ShoppingCartIcon className="w-6 h-6 text-gray-300" />
-          </button>
+          <nav className="hidden items-center gap-1 md:flex" aria-label="Primary">
+            {navItems.map((item) => (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.to === '/'}
+                className={({ isActive }) =>
+                  cx(
+                    'rounded-full px-3 py-2 text-sm font-semibold transition',
+                    'text-white/70 hover:bg-white/5 hover:text-white',
+                    isActive && 'bg-white/8 text-white',
+                  )
+                }
+              >
+                {item.label}
+              </NavLink>
+            ))}
+          </nav>
+        </div>
 
-          {isAuthenticated && (
-            user?.role === UserRole.SELLER ? (
-              <button
-                onClick={() => navigate('/seller/dashboard')}
-                className="p-2 rounded-full hover:bg-white/5 transition"
-              >
-                <BuildingStorefrontIcon className="w-6 h-6 text-orange-500" />
-              </button>
-            ) : (
-              <button
-                onClick={() => navigate('/become-seller')}
-                className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-gradient-to-r from-orange-500 to-pink-500 text-sm font-semibold hover:opacity-90 transition"
-              >
-                <RocketLaunchIcon className="w-4 h-4" />
-                Become Seller
-              </button>
-            )
+        <div className="flex items-center gap-2">
+          {isLoggedIn && (
+            <div className="mr-1 inline-flex items-center">
+              {avatarUrl ? (
+                <img
+                  src={avatarUrl}
+                  alt="Profile"
+                  className="h-9 w-9 rounded-full border border-white/12 object-cover"
+                  referrerPolicy="no-referrer"
+                />
+              ) : (
+                <div className="grid h-9 w-9 place-items-center rounded-full border border-white/12 bg-white/5 text-xs font-extrabold text-white/85">
+                  {initials}
+                </div>
+              )}
+            </div>
           )}
 
-          {isAuthenticated ? (
-            <>
-              <button
-                onClick={() => navigate('/profile')}
-                className="w-9 h-9 rounded-full overflow-hidden bg-[#1a1b1f] flex items-center justify-center"
-              >
-                {avatarSrc ? (
-                  <img
-                    src={avatarSrc}
-                    onError={() => setAvatarError(true)}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <UserIcon className="w-5 h-5 text-gray-400" />
-                )}
-              </button>
-
-              <button
-                onClick={() => {
-                  logout()
-                  navigate('/login')
-                }}
-                className="p-2 rounded-full hover:bg-white/5 transition"
-              >
-                <ArrowRightOnRectangleIcon className="w-5 h-5 text-gray-400" />
-              </button>
-            </>
+          {isLoggedIn ? (
+            <button
+              type="button"
+              onClick={onLogout}
+              className="inline-flex items-center justify-center rounded-full border border-white/12 bg-white/5 px-4 py-2 text-sm font-extrabold text-white/90 transition hover:-translate-y-0.5 hover:bg-white/7"
+            >
+              Logout
+            </button>
           ) : (
-            <div className="flex items-center gap-3">
-              <Link to="/login" className="text-sm text-gray-300 hover:text-white">
-                Log In
-              </Link>
-
-              <Link
-                to="/register"
-                className="px-4 py-1.5 rounded-full bg-gradient-to-r from-orange-500 to-pink-500 text-sm font-semibold"
-              >
-                Sign Up
-              </Link>
-            </div>
+            <NavLink
+              to={isAuthRoute ? '/' : '/login'}
+              className={cx(
+                'inline-flex items-center justify-center rounded-full px-4 py-2 text-sm font-extrabold transition hover:-translate-y-0.5',
+                isAuthRoute
+                  ? 'border border-white/12 bg-white/5 text-white/90 hover:bg-white/7'
+                  : 'bg-gradient-to-r from-indigo-500/90 to-cyan-400/80 text-white shadow-[0_16px_45px_rgba(34,211,238,0.14)]',
+              )}
+            >
+              {isAuthRoute ? 'Back to Home' : 'Login'}
+            </NavLink>
           )}
         </div>
       </div>

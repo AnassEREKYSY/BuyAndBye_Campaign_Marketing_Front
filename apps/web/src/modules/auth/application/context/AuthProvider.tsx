@@ -1,183 +1,98 @@
-import { ReactNode, useState, useEffect, useCallback } from 'react'
-import { AuthContext, AuthContextValue } from './AuthContext'
-import {
-  User,
-  RegisterDTO,
-  LoginDTO,
-  RegisterUseCase,
-  LoginUseCase,
-  LogoutUseCase,
-  GetCurrentUserUseCase,
-  UpdateUserProfileUseCase,
-  UpdateSellerProfileUseCase,
-  UpdateSellerProfileDTO,
-  UpdateUserProfileDTO,
-  BecomeSellerUseCase,
-  BecomeSellerDTO,
-} from '@buyandbye/core'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { AuthContext } from './AuthContext'
+import { useNotification } from '@/shared/context/notification'
+import { WebAuthContainer } from '@core/modules/auth/infrastructure/container/AuthContainer'
+import { User } from '@core/modules/auth/domain/entities/User'
+import { LoginDTO } from '@core/modules/auth/domain/dtos/LoginDTO'
+import { RegisterDTO } from '@core/modules/auth/domain/dtos/RegisterDTO'
 
-interface AuthProviderProps {
-  children: ReactNode
-  registerUseCase: RegisterUseCase
-  loginUseCase: LoginUseCase
-  logoutUseCase: LogoutUseCase
-  getCurrentUserUseCase: GetCurrentUserUseCase
-  updateUserProfileUseCase: UpdateUserProfileUseCase
-  updateSellerProfileUseCase: UpdateSellerProfileUseCase
-  becomeSellerUseCase: BecomeSellerUseCase
-}
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const n = useNotification()
+  const container = useMemo(() => WebAuthContainer.get(), [])
 
-export const AuthProvider = ({
-  children,
-  registerUseCase,
-  loginUseCase,
-  logoutUseCase,
-  getCurrentUserUseCase,
-  updateUserProfileUseCase,
-  updateSellerProfileUseCase,
-  becomeSellerUseCase,
-}: AuthProviderProps) => {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
 
-  const refreshUser = useCallback(async () => {
-    try {
-      setIsLoading(true)
-      setError(null)
-
-      const currentUser = await getCurrentUserUseCase.execute()
-      setUser(currentUser)
-
-    } catch (err) {
+  const refreshMe = useCallback(async () => {
+    const token = await container.tokenStorage.getToken()
+    if (!token) {
       setUser(null)
-      setError(err instanceof Error ? err.message : 'Failed to fetch user')
-    } finally {
-      setIsLoading(false)
+      return
     }
-  }, [getCurrentUserUseCase])
+    const me = await container.meUseCase.execute()
+    setUser(me)
+  }, [container])
 
   useEffect(() => {
-    refreshUser()
-  }, [refreshUser])
+    ;(async () => {
+      try {
+        await refreshMe()
+      } catch {
+        await container.tokenStorage.removeToken()
+        setUser(null)
+      } finally {
+        setIsLoading(false)
+      }
+    })()
+  }, [refreshMe, container])
 
-  const register = async (data: RegisterDTO): Promise<void> => {
-    try {
+  const login = useCallback(
+    async (dto: LoginDTO) => {
       setIsLoading(true)
-      setError(null)
-
-      const { user: newUser } = await registerUseCase.execute(data)
-      setUser(newUser)
-
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Registration failed')
-      throw err
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const login = async (data: LoginDTO): Promise<void> => {
-    try {
-      setIsLoading(true)
-      setError(null)
-
-      const { user: loggedInUser } = await loginUseCase.execute(data)
-      setUser(loggedInUser)
-
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed')
-      throw err
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const logout = async (): Promise<void> => {
-    try {
-      setIsLoading(true)
-      setError(null)
-
-      await logoutUseCase.execute()
-      setUser(null)
-
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Logout failed')
-      throw err
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const updateUserProfile = async (
-    data: UpdateUserProfileDTO
-  ): Promise<void> => {
-    try {
-      setIsLoading(true)
-      setError(null)
-
-      await updateUserProfileUseCase.execute(data)
-      await refreshUser()
-
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Profile update failed')
-      throw err
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const updateSellerProfile = async (
-    data: UpdateSellerProfileDTO
-  ): Promise<void> => {
-    try {
-      setIsLoading(true)
-      setError(null)
-
-      await updateSellerProfileUseCase.execute(data)
-      await refreshUser()
-
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Seller update failed')
-      throw err
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const becomeSeller = async (data: BecomeSellerDTO): Promise<void> => {
-    try {
-      setIsLoading(true)
-      setError(null)
-
-      await becomeSellerUseCase.execute(data)
-      await refreshUser()
-
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Become seller failed')
-      throw err
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const value: AuthContextValue = {
-    user,
-    isAuthenticated: !!user,
-    isLoading,
-    error,
-    register,
-    login,
-    logout,
-    refreshUser,
-    updateUserProfile,
-    updateSellerProfile,
-    becomeSeller,
-  }
-
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
+      try {
+        const res = await container.loginUseCase.execute(dto)
+        setUser(res.user)
+        n.success('Welcome back.')
+      } catch (e: any) {
+        n.error(e?.message ?? 'Login failed.')
+        throw e
+      } finally {
+        setIsLoading(false)
+      }
+    },
+    [container, n],
   )
+
+  const register = useCallback(
+    async (dto: RegisterDTO) => {
+      setIsLoading(true)
+      try {
+        const res = await container.registerUseCase.execute(dto)
+        setUser(res.user)
+        n.success('Account created.')
+      } catch (e: any) {
+        n.error(e?.message ?? 'Registration failed.')
+        throw e
+      } finally {
+        setIsLoading(false)
+      }
+    },
+    [container, n],
+  )
+
+  const logout = useCallback(async () => {
+    setIsLoading(true)
+    try {
+      await container.logoutUseCase.execute()
+      setUser(null)
+      n.info('You are logged out.')
+    } finally {
+      setIsLoading(false)
+    }
+  }, [container, n])
+
+  const value = useMemo(
+    () => ({
+      user,
+      isAuthenticated: !!user,
+      isLoading,
+      login,
+      register,
+      logout,
+      refreshMe,
+    }),
+    [user, isLoading, login, register, logout, refreshMe],
+  )
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

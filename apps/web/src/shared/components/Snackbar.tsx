@@ -1,126 +1,64 @@
-import { useEffect, useState } from 'react';
-import { Notification } from '@buyandbye/core';
-import styles from './Snackbar.module.css';
+import { useEffect, useState } from 'react'
+import { NotificationType } from '@buyandbye/core'
+import { useNotification } from '@/shared/context/notification'
 
-interface SnackbarProps {
-  notification: Notification;
-  onClose: () => void;
+function typeClasses(type: NotificationType) {
+  switch (type) {
+    case 'success':
+      return 'border-emerald-400/25 bg-emerald-500/10 text-emerald-50'
+    case 'error':
+      return 'border-red-400/25 bg-red-500/10 text-red-50'
+    case 'warning':
+      return 'border-amber-400/25 bg-amber-500/10 text-amber-50'
+    case 'info':
+    default:
+      return 'border-cyan-400/25 bg-cyan-500/10 text-cyan-50'
+  }
 }
 
-export const Snackbar = ({ notification, onClose }: SnackbarProps) => {
-  const [isVisible, setIsVisible] = useState(false);
+function typeDot(type: NotificationType) {
+  switch (type) {
+    case 'success':
+      return 'bg-emerald-400'
+    case 'error':
+      return 'bg-red-400'
+    case 'warning':
+      return 'bg-amber-400'
+    case 'info':
+    default:
+      return 'bg-cyan-400'
+  }
+}
+
+export function Snackbar() {
+  const { current } = useNotification()
+  const [visible, setVisible] = useState(false)
 
   useEffect(() => {
-    // Trigger animation
-    setTimeout(() => setIsVisible(true), 10);
+    if (!current) return
+    setVisible(true)
+    const t = window.setTimeout(() => setVisible(false), (current.options?.duration ?? 2800) - 200)
+    return () => window.clearTimeout(t)
+  }, [current])
 
-    // Auto close
-    const timer = setTimeout(() => {
-      setIsVisible(false);
-      setTimeout(onClose, 300); // Wait for exit animation
-    }, notification.duration || 5000);
-
-    return () => clearTimeout(timer);
-  }, [notification.duration, onClose]);
-
-  const handleClose = () => {
-    setIsVisible(false);
-    setTimeout(onClose, 300);
-  };
-
-  const getIcon = () => {
-    switch (notification.type) {
-      case 'success':
-        return (
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 20 20"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              d="M10 0C4.48 0 0 4.48 0 10C0 15.52 4.48 20 10 20C15.52 20 20 15.52 20 10C20 4.48 15.52 0 10 0ZM8 15L3 10L4.41 8.59L8 12.17L15.59 4.58L17 6L8 15Z"
-              fill="currentColor"
-            />
-          </svg>
-        );
-      case 'error':
-        return (
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 20 20"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              d="M10 0C4.48 0 0 4.48 0 10C0 15.52 4.48 20 10 20C15.52 20 20 15.52 20 10C20 4.48 15.52 0 10 0ZM11 15H9V13H11V15ZM11 11H9V5H11V11Z"
-              fill="currentColor"
-            />
-          </svg>
-        );
-      case 'warning':
-        return (
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 20 20"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              d="M1 19H19L10 1L1 19ZM11 16H9V14H11V16ZM11 12H9V8H11V12Z"
-              fill="currentColor"
-            />
-          </svg>
-        );
-      case 'info':
-        return (
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 20 20"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              d="M10 0C4.48 0 0 4.48 0 10C0 15.52 4.48 20 10 20C15.52 20 20 15.52 20 10C20 4.48 15.52 0 10 0ZM11 15H9V9H11V15ZM11 7H9V5H11V7Z"
-              fill="currentColor"
-            />
-          </svg>
-        );
-    }
-  };
+  if (!current) return null
 
   return (
-    <div
-      className={`${styles.snackbar} ${styles[notification.type]} ${
-        isVisible ? styles.visible : ''
-      }`}
-      role="alert"
-    >
-      <div className={styles.icon}>{getIcon()}</div>
-      <span className={styles.message}>{notification.message}</span>
-      <button
-        type="button"
-        onClick={handleClose}
-        className={styles.closeButton}
-        aria-label="Close notification"
+    <div className="pointer-events-none fixed inset-x-0 top-4 z-[60] flex justify-center px-4">
+      <div
+        className={[
+          'pointer-events-auto w-full max-w-lg rounded-2xl border px-4 py-3',
+          'shadow-[0_20px_60px_rgba(0,0,0,0.55)] backdrop-blur',
+          'transition duration-200',
+          visible ? 'translate-y-0 opacity-100' : '-translate-y-2 opacity-0',
+          typeClasses(current.type),
+        ].join(' ')}
       >
-        <svg
-          width="14"
-          height="14"
-          viewBox="0 0 14 14"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            d="M14 1.41L12.59 0L7 5.59L1.41 0L0 1.41L5.59 7L0 12.59L1.41 14L7 8.41L12.59 14L14 12.59L8.41 7L14 1.41Z"
-            fill="currentColor"
-          />
-        </svg>
-      </button>
+        <div className="flex items-start gap-3">
+          <span className={`mt-1.5 h-2.5 w-2.5 rounded-full ${typeDot(current.type)}`} />
+          <p className="text-sm font-extrabold leading-6">{current.message}</p>
+        </div>
+      </div>
     </div>
-  );
-};
+  )
+}

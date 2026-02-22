@@ -1,33 +1,22 @@
-import { createContext, useContext } from 'react';
-import {
-  User,
-  RegisterDTO,
-  LoginDTO,
-  UpdateUserProfileDTO,
-  UpdateSellerProfileDTO,
-  BecomeSellerDTO,
-} from '@buyandbye/core';
+import { createContext, useContext } from 'react'
+import { User } from '@core/modules/auth/domain/entities/User'
+import { LoginDTO } from '@core/modules/auth/domain/dtos/LoginDTO'
+import { RegisterDTO } from '@core/modules/auth/domain/dtos/RegisterDTO'
 
-export interface AuthContextValue {
-  user: User | null;
-  isAuthenticated: boolean;
-  isLoading: boolean;
-  error: string | null;
-  register: (data: RegisterDTO) => Promise<void>;
-  login: (data: LoginDTO) => Promise<void>;
-  logout: () => Promise<void>;
-  refreshUser: () => Promise<void>;
-  updateUserProfile: (data: UpdateUserProfileDTO) => Promise<void>;
-  updateSellerProfile: (data: UpdateSellerProfileDTO) => Promise<void>;
-  becomeSeller: (payload: BecomeSellerDTO) => Promise<void>;
+export type AuthContextValue = {
+  user: User | null
+  isAuthenticated: boolean
+  isLoading: boolean
+  login: (dto: LoginDTO) => Promise<void>
+  register: (dto: RegisterDTO) => Promise<void>
+  logout: () => Promise<void>
+  refreshMe: () => Promise<void>
 }
 
-export const AuthContext = createContext<AuthContextValue | undefined>(undefined);
+export const AuthContext = createContext<AuthContextValue | undefined>(undefined)
 
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within AuthProvider');
-  }
-  return context;
-};
+export function useAuth() {
+  const ctx = useContext(AuthContext)
+  if (!ctx) throw new Error('useAuth must be used within AuthProvider')
+  return ctx
+}
