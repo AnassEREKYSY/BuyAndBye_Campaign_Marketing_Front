@@ -1,0 +1,5 @@
+export * from './domain/entities/CurrentUserProfile'
+export * from './domain/dtos/UpdateBrandProfileDTO'
+export * from './domain/dtos/UpdateInfluencerProfileDTO'
+export * from './application/use-cases'
+export { WebProfileContainer } from './infrastructure/container/ProfileContainer'

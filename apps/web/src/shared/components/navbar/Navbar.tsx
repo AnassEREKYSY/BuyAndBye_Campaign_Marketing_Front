@@ -1,5 +1,12 @@
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/modules/auth/application/context'
+import { UserIcon } from '@heroicons/react/24/outline'
+import { useEffect, useMemo, useState } from 'react'
+import { env } from '@/shared/config/env'
+import { CoreTokenStorage } from '@/shared/services/storage/CoreTokenStorage'
+import { HttpClient } from '@core/shared/services/http/HttpClient'
+import { ProfileApiClient } from '@core/modules/profile/infrastructure/api/ProfileApiClient'
+import type { ApiUserProfileResponse } from '@core/modules/profile/infrastructure/api/types/ApiUserProfileResponse'
 
 type NavItem = { to: string; label: string }
 
@@ -14,6 +21,30 @@ function cx(...classes: Array<string | false | undefined | null>) {
   return classes.filter(Boolean).join(' ')
 }
 
+type BrandProfile = { logo_url?: string | null }
+type InfluencerProfile = { avatar_url?: string | null }
+type Payload = {
+  id: string
+  role: 'brand' | 'influencer'
+  photo_url?: string | null
+  brandProfile?: BrandProfile | null
+  brand_profile?: BrandProfile | null
+  influencerProfile?: InfluencerProfile | null
+  influencer_profile?: InfluencerProfile | null
+}
+function unwrap(res: ApiUserProfileResponse): Payload {
+  return (res as any)?.data?.id ? ((res as any).data as Payload) : (res as any)
+}
+
+function toAbsolute(url: string) {
+  const u = (url ?? '').trim()
+  if (!u) return ''
+  if (u.startsWith('http://') || u.startsWith('https://')) return u
+  const base = env.BACKEND_BASE_URL.replace(/\/$/, '')
+  const path = u.startsWith('/') ? u : `/${u}`
+  return `${base}${path}`
+}
+
 export function Navbar() {
   const location = useLocation()
   const navigate = useNavigate()
@@ -22,18 +53,51 @@ export function Navbar() {
   const auth = useAuth()
   const isLoggedIn = auth.isAuthenticated
 
-  const avatarUrl = auth.user?.avatarUrl?.trim()
-  const initials =
-    (auth.user?.displayName ?? auth.user?.email ?? 'U')
-      .trim()
-      .split(/\s+/)
-      .slice(0, 2)
-      .map((p) => p[0]?.toUpperCase())
-      .join('') || 'U'
+  const [profileImageUrl, setProfileImageUrl] = useState<string>('')
+
+  useEffect(() => {
+    if (!isLoggedIn) {
+      setProfileImageUrl('')
+      return
+    }
+
+    let cancelled = false
+
+    ;(async () => {
+      try {
+        const tokenStorage = new CoreTokenStorage()
+        const http = new HttpClient(env.BACKEND_BASE_URL, tokenStorage)
+        const api = new ProfileApiClient(http)
+
+        const raw = await api.getMyProfile()
+        const u = unwrap(raw)
+
+        if (cancelled) return
+
+        const logo =
+          (u.brandProfile?.logo_url ?? u.brand_profile?.logo_url ?? '')?.trim() || ''
+        const photo = (u.photo_url ?? '')?.trim() || ''
+
+        const finalUrl = toAbsolute(logo || photo)
+        setProfileImageUrl(finalUrl)
+      } catch {
+        if (cancelled) return
+        setProfileImageUrl('')
+      }
+    })()
+
+    return () => {
+      cancelled = true
+    }
+  }, [isLoggedIn])
 
   async function onLogout() {
     await auth.logout()
     navigate('/', { replace: true })
+  }
+
+  function goToProfile() {
+    navigate('/profile')
   }
 
   return (
@@ -69,27 +133,31 @@ export function Navbar() {
 
         <div className="flex items-center gap-2">
           {isLoggedIn && (
-            <div className="mr-1 inline-flex items-center">
-              {avatarUrl ? (
+            <button
+              type="button"
+              onClick={goToProfile}
+              className="mr-1 grid h-10 w-10 place-items-center overflow-hidden rounded-full border border-white/10 bg-white/5 shadow-[0_10px_30px_rgba(0,0,0,0.45)] transition hover:-translate-y-0.5 hover:bg-white/10"
+              aria-label="Open profile"
+              title="Profile"
+            >
+              {profileImageUrl ? (
                 <img
-                  src={avatarUrl}
+                  src={profileImageUrl}
                   alt="Profile"
-                  className="h-9 w-9 rounded-full border border-white/12 object-cover shadow-[0_10px_30px_rgba(0,0,0,0.45)]"
+                  className="h-full w-full object-cover"
                   referrerPolicy="no-referrer"
                 />
               ) : (
-                <div className="grid h-9 w-9 place-items-center rounded-full border border-white/12 bg-white/5 text-xs font-extrabold text-white/85">
-                  {initials}
-                </div>
+                <UserIcon className="h-5 w-5 text-white/85" />
               )}
-            </div>
+            </button>
           )}
 
           {isLoggedIn ? (
             <button
               type="button"
               onClick={onLogout}
-              className="inline-flex items-center justify-center rounded-full border border-white/12 bg-white/5 px-4 py-2 text-sm font-extrabold text-white/90 transition hover:-translate-y-0.5 hover:bg-white/7"
+              className="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-extrabold text-white/90 transition hover:-translate-y-0.5 hover:bg-white/10"
             >
               Logout
             </button>
@@ -99,7 +167,7 @@ export function Navbar() {
               className={cx(
                 'inline-flex items-center justify-center rounded-full px-4 py-2 text-sm font-extrabold transition hover:-translate-y-0.5',
                 isAuthRoute
-                  ? 'border border-white/12 bg-white/5 text-white/90 hover:bg-white/7'
+                  ? 'border border-white/10 bg-white/5 text-white/90 hover:bg-white/10'
                   : 'bb-gradient-shift bg-gradient-to-r from-indigo-500/95 via-sky-400/85 to-cyan-400/85 text-white shadow-[0_16px_45px_rgba(56,189,248,0.14)]',
               )}
             >

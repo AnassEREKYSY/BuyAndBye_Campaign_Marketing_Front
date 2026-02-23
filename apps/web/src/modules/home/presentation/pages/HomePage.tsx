@@ -1,3 +1,4 @@
+// apps/web/src/modules/home/presentation/pages/HomePage.tsx
 import { Link } from 'react-router-dom'
 import { useInView } from '@/shared/hooks'
 
@@ -65,9 +66,6 @@ function VisualPanel({
             <p className="text-xs font-semibold text-white/60">Clicks</p>
             <div className="mt-2 flex items-end justify-between gap-3">
               <p className="text-2xl font-black tracking-tight text-white">12,480</p>
-              <div className="relative h-9 w-28 overflow-hidden rounded-full border border-white/10 bg-gradient-to-r from-indigo-500/25 to-sky-400/25">
-                <div className="bb-shimmer absolute inset-0" />
-              </div>
             </div>
           </div>
 
@@ -75,9 +73,6 @@ function VisualPanel({
             <p className="text-xs font-semibold text-white/60">Conversions</p>
             <div className="mt-2 flex items-end justify-between gap-3">
               <p className="text-2xl font-black tracking-tight text-white">1,042</p>
-              <div className="relative h-9 w-28 overflow-hidden rounded-full border border-white/10 bg-gradient-to-r from-sky-400/25 to-cyan-400/20">
-                <div className="bb-shimmer absolute inset-0" />
-              </div>
             </div>
           </div>
 

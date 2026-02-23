@@ -42,7 +42,7 @@ export function Snackbar() {
   const [progressKey, setProgressKey] = useState(0)
   const timer = useRef<number | null>(null)
 
-  const duration = current?.options?.duration ?? 2800
+  const duration = current?.options?.duration ?? 1800
   const t = useMemo(() => (current ? tone(current.type) : null), [current])
 
   useEffect(() => {
