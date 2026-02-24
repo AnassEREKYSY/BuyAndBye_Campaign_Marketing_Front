@@ -1,26 +1,28 @@
 import { Campaign } from '../../domain/entities/Campaign'
 import type { ApiCampaign } from '../api/types/ApiCampaign'
+import { ProductMapper } from './ProductMapper'
 
 export class CampaignMapper {
-  static toDomain(c: ApiCampaign): Campaign {
-    return {
-      id: c.id,
-      brandId: c.brand_id,
-      productId: c.product_id,
-      title: c.title,
-      objective: c.objective ?? null,
-      commissionType: c.commission_type,
-      commissionValue: c.commission_value,
-      budget: c.budget ?? null,
-      startAt: c.start_at ?? null,
-      endAt: c.end_at ?? null,
-      status: c.status,
-      createdAt: c.created_at,
-      updatedAt: c.updated_at,
-    }
+  static toDomain(api: ApiCampaign): Campaign {
+    return new Campaign(
+      api.id,
+      api.brand_id,
+      api.product_id,
+      api.title,
+      api.objective ?? null,
+      api.commission_type,
+      Number(api.commission_value ?? 0),
+      api.budget !== null && api.budget !== undefined ? Number(api.budget) : null,
+      api.start_at ?? null,
+      api.end_at ?? null,
+      api.status,
+      api.product ? ProductMapper.toDomain(api.product as any) : null,
+      api.created_at ?? null,
+      api.updated_at ?? null,
+    )
   }
 
   static toDomainList(items: ApiCampaign[]): Campaign[] {
-    return (items ?? []).map((x) => this.toDomain(x))
+    return (items ?? []).map((i) => CampaignMapper.toDomain(i))
   }
 }

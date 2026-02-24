@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useProfile } from '@/modules/profile/application/hooks/useProfile'
 import { UserRole } from '@core/modules/auth/domain/entities'
 import { useDashboard } from '../../application/hooks/useDashboard'
@@ -7,6 +8,7 @@ import { StatCard } from '../components/StatCard'
 import { LineChartCard } from '../components/LineChartCard'
 import { CollaborationsTable } from '../components/CollaborationsTable'
 import { PayoutsCard } from '../components/PayoutsCard'
+import { BrandManagementTopButtons } from '../components/BrandManagementTopButtons'
 
 function money(amount: number, currency: string) {
   const v = Number.isFinite(amount) ? amount : 0
@@ -54,6 +56,7 @@ function IconUsers() {
 
 export default function DashboardPage() {
   const { profile } = useProfile() as any
+  const nav = useNavigate()
 
   const role = useMemo(() => {
     const raw: unknown = profile?.role ?? profile?.user?.role ?? profile?.data?.role
@@ -128,6 +131,8 @@ export default function DashboardPage() {
         </button>
       </div>
 
+      {role === UserRole.BRAND ? <BrandManagementTopButtons /> : null}
+
       {error ? (
         <div className="bb-pop mt-5 rounded-3xl border border-rose-500/25 bg-rose-500/10 p-4 text-sm font-semibold text-rose-100">
           {error}
@@ -184,6 +189,12 @@ export default function DashboardPage() {
                       <p className="text-xs font-extrabold text-white/80">All</p>
                       <p className="mt-2 text-xl font-black text-white">{counts.all}</p>
                     </div>
+                  </div>
+
+                  <div className="mt-4 flex justify-end">
+                    <button onClick={() => nav('/dashboard/brand/campaigns')} className="bb-btn-ghost h-10 px-4">
+                      Open manager
+                    </button>
                   </div>
                 </div>
               </div>

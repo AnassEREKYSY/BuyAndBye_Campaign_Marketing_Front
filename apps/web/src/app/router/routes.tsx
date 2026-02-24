@@ -8,6 +8,8 @@ import { BrandPage, ContactPage, InfluencerPage } from '@/modules/home/presentat
 import { ProfilePage } from '@/modules/profile/presentation/pages/ProfilePage'
 import DashboardPage from '@/modules/dashboard/presentation/pages/DashboardPage'
 import { CampaignDetailsPage, CampaignsPage } from '@/modules'
+import BrandProductsPage from '@/modules/dashboard/presentation/pages/BrandProductsPage'
+import BrandCampaignsManagementPage from '@/modules/dashboard/presentation/pages/BrandCampaignsManagementPage'
 
 export const routes = [
   {
@@ -26,6 +28,8 @@ export const routes = [
           { path: '/dashboard', element: <DashboardPage /> },
           { path: '/campaigns', element: <CampaignsPage /> },
           { path: '/campaigns/:id', element: <CampaignDetailsPage /> },
+          { path: '/dashboard/brand/products', element: <BrandProductsPage /> },
+          { path: '/dashboard/brand/campaigns', element: <BrandCampaignsManagementPage /> },
           { path: '/profile', element: <ProfilePage /> },
           { path: '/app', element: <Navigate to="/dashboard" replace /> },
         ],
