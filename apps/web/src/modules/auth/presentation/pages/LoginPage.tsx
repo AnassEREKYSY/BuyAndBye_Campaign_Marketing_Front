@@ -12,7 +12,7 @@ export function LoginPage() {
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault()
     await auth.login({ email, password })
-    navigate('/', { replace: true })
+    navigate('/dashboard', { replace: true })
   }
 
   return (

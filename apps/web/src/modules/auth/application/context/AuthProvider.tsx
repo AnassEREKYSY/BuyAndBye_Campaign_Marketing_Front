@@ -13,7 +13,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
-  const refreshMe = useCallback(async () => {
+  const refreshMe = useCallback(async (): Promise<void> => {
     const token = await container.tokenStorage.getToken()
     if (!token) {
       setUser(null)
@@ -25,6 +25,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     ;(async () => {
+      setIsLoading(true)
       try {
         await refreshMe()
       } catch {

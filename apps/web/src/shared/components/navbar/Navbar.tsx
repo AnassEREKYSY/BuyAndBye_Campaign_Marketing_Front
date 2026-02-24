@@ -10,12 +10,14 @@ import type { ApiUserProfileResponse } from '@core/modules/profile/infrastructur
 
 type NavItem = { to: string; label: string }
 
-const navItems: NavItem[] = [
+const publicNavItems: NavItem[] = [
   { to: '/', label: 'Home' },
   { to: '/brand', label: 'Brand' },
   { to: '/influencer', label: 'Influencer' },
   { to: '/contact', label: 'Contact Us' },
 ]
+
+const authedNavItems: NavItem[] = [{ to: '/dashboard', label: 'Dashboard' }]
 
 function cx(...classes: Array<string | false | undefined | null>) {
   return classes.filter(Boolean).join(' ')
@@ -53,6 +55,8 @@ export function Navbar() {
   const auth = useAuth()
   const isLoggedIn = auth.isAuthenticated
 
+  const navItems = isLoggedIn ? authedNavItems : publicNavItems
+
   const [profileImageUrl, setProfileImageUrl] = useState<string>('')
 
   useEffect(() => {
@@ -74,8 +78,7 @@ export function Navbar() {
 
         if (cancelled) return
 
-        const logo =
-          (u.brandProfile?.logo_url ?? u.brand_profile?.logo_url ?? '')?.trim() || ''
+        const logo = (u.brandProfile?.logo_url ?? u.brand_profile?.logo_url ?? '')?.trim() || ''
         const photo = (u.photo_url ?? '')?.trim() || ''
 
         const finalUrl = toAbsolute(logo || photo)
@@ -106,7 +109,11 @@ export function Navbar() {
 
       <div className="relative mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
         <div className="flex items-center gap-4">
-          <NavLink to="/" className="flex items-center gap-2 text-white" aria-label="Buy & Bye home">
+          <NavLink
+            to={isLoggedIn ? '/dashboard' : '/'}
+            className="flex items-center gap-2 text-white"
+            aria-label="Buy & Bye home"
+          >
             <span className="h-9 w-9 rounded-2xl border border-white/10 bg-gradient-to-br from-indigo-500/80 to-sky-400/70 shadow-[0_14px_40px_rgba(56,189,248,0.12)] bb-gradient-shift" />
             <span className="text-sm font-extrabold tracking-tight text-white/95">Buy & Bye</span>
           </NavLink>
@@ -141,12 +148,7 @@ export function Navbar() {
               title="Profile"
             >
               {profileImageUrl ? (
-                <img
-                  src={profileImageUrl}
-                  alt="Profile"
-                  className="h-full w-full object-cover"
-                  referrerPolicy="no-referrer"
-                />
+                <img src={profileImageUrl} alt="Profile" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
               ) : (
                 <UserIcon className="h-5 w-5 text-white/85" />
               )}

@@ -20,7 +20,7 @@ export function RegisterPage() {
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault()
     await auth.register({ role: toUserRole(role), email, displayName: fullName, password })
-    navigate('/', { replace: true })
+    navigate('/dashboard', { replace: true })
   }
 
   return (
