@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Campaign, Product } from '@core/modules/dashboard/domain/entities'
-import { CreateCampaignDTO, UpdateCampaignDTO } from '@core/modules/dashboard/domain/dtos'
+import type { Campaign } from '@core/modules/dashboard'
+import type { CreateCampaignDTO, UpdateCampaignDTO } from '@core/modules/dashboard/domain/dtos'
+import { Product } from '@core/modules/dashboard/domain/entities'
 
 type Props = {
   open: boolean
@@ -14,6 +15,11 @@ type Props = {
 function toNumberOrNull(v: string) {
   const n = Number(v)
   return Number.isFinite(n) ? n : null
+}
+
+function isoToDateInput(v?: string | null) {
+  if (!v) return ''
+  return v.slice(0, 10)
 }
 
 export function BrandCampaignModal({ open, onClose, products, initial, onCreate, onUpdate }: Props) {
@@ -42,8 +48,8 @@ export function BrandCampaignModal({ open, onClose, products, initial, onCreate,
     setCommissionType((initial?.commissionType as any) ?? 'percent')
     setCommissionValue(initial?.commissionValue !== undefined && initial?.commissionValue !== null ? String(initial?.commissionValue) : '')
     setBudget(initial?.budget !== undefined && initial?.budget !== null ? String(initial?.budget) : '')
-    setStartAt(initial?.startAt ?? '')
-    setEndAt(initial?.endAt ?? '')
+    setStartAt(isoToDateInput(initial?.startAt ?? null))
+    setEndAt(isoToDateInput(initial?.endAt ?? null))
   }, [open, initial, products])
 
   if (!open) return null
@@ -67,26 +73,27 @@ export function BrandCampaignModal({ open, onClose, products, initial, onCreate,
         return
       }
 
+      const payload = {
+        title: title.trim(),
+        objective: objective.trim() ? objective.trim() : null,
+        commissionType,
+        commissionValue: cv,
+        budget: budget.trim() ? toNumberOrNull(budget.trim()) : null,
+        startAt: startAt ? startAt : null,
+        endAt: endAt ? endAt : null,
+      }
+
+      if (payload.startAt && payload.endAt && payload.endAt < payload.startAt) {
+        setError('End date must be after start date')
+        return
+      }
+
       if (isEdit && initial) {
-        await onUpdate(initial.id, {
-          title: title.trim(),
-          objective: objective.trim() ? objective.trim() : null,
-          commissionType,
-          commissionValue: cv,
-          budget: budget.trim() ? toNumberOrNull(budget.trim()) : null,
-          startAt: startAt.trim() ? startAt.trim() : null,
-          endAt: endAt.trim() ? endAt.trim() : null,
-        })
+        await onUpdate(initial.id, payload)
       } else {
         await onCreate({
           productId,
-          title: title.trim(),
-          objective: objective.trim() ? objective.trim() : null,
-          commissionType,
-          commissionValue: cv,
-          budget: budget.trim() ? toNumberOrNull(budget.trim()) : null,
-          startAt: startAt.trim() ? startAt.trim() : null,
-          endAt: endAt.trim() ? endAt.trim() : null,
+          ...payload,
         })
       }
 
@@ -190,22 +197,23 @@ export function BrandCampaignModal({ open, onClose, products, initial, onCreate,
             </div>
 
             <div>
-              <label className="text-xs font-extrabold text-white/70">Start at</label>
+              <label className="text-xs font-extrabold text-white/70">Start date</label>
               <input
+                type="date"
                 className="mt-2 h-11 w-full rounded-2xl border border-white/10 bg-white/5 px-4 text-sm font-semibold text-white outline-none"
                 value={startAt}
                 onChange={(e) => setStartAt(e.target.value)}
-                placeholder="2026-02-01"
               />
             </div>
 
             <div>
-              <label className="text-xs font-extrabold text-white/70">End at</label>
+              <label className="text-xs font-extrabold text-white/70">End date</label>
               <input
+                type="date"
                 className="mt-2 h-11 w-full rounded-2xl border border-white/10 bg-white/5 px-4 text-sm font-semibold text-white outline-none"
                 value={endAt}
                 onChange={(e) => setEndAt(e.target.value)}
-                placeholder="2026-02-21"
+                min={startAt || undefined}
               />
             </div>
           </div>

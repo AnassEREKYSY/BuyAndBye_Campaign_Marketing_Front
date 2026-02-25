@@ -31,6 +31,7 @@ type CampaignDetails = {
 }
 
 type ApiEnvelope<T> = { data: T }
+type ApplicationItem = { id: string; campaign_id: string; created_at?: string | null }
 
 function fmtDate(iso?: string | null) {
   if (!iso) return '—'
@@ -73,11 +74,14 @@ export default function CampaignDetailsPage() {
   const [item, setItem] = useState<CampaignDetails | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
   const [applyLoading, setApplyLoading] = useState(false)
   const [applyError, setApplyError] = useState<string | null>(null)
   const [applySuccess, setApplySuccess] = useState<string | null>(null)
 
-  const canApply = role === UserRole.INFLUENCER && item?.status === 'published'
+  const [appliedAt, setAppliedAt] = useState<string | null>(null)
+
+  const canApply = role === UserRole.INFLUENCER && item?.status === 'published' && !appliedAt
 
   useEffect(() => {
     let mounted = true
@@ -110,6 +114,34 @@ export default function CampaignDetailsPage() {
     }
   }, [httpClient, id])
 
+  useEffect(() => {
+    let mounted = true
+
+    async function loadApplied() {
+      if (role !== UserRole.INFLUENCER) {
+        setAppliedAt(null)
+        return
+      }
+
+      try {
+        const res = await httpClient.get<any>(`/api/v1/applications?page=1&size=200`)
+        const payload = (res as any).data ?? res
+        const list = (payload?.data ?? []) as ApplicationItem[]
+        const found = list.find((a) => a.campaign_id === id)
+        if (!mounted) return
+        setAppliedAt(found?.created_at ?? null)
+      } catch {
+        if (!mounted) return
+        setAppliedAt(null)
+      }
+    }
+
+    void loadApplied()
+    return () => {
+      mounted = false
+    }
+  }, [httpClient, id, role])
+
   async function onApply() {
     if (!id) return
     setApplyLoading(true)
@@ -118,6 +150,8 @@ export default function CampaignDetailsPage() {
 
     try {
       await httpClient.post(`/api/v1/campaigns/${id}/apply`, { message: '' })
+      const now = new Date().toISOString()
+      setAppliedAt(now)
       setApplySuccess('Application sent.')
     } catch (e: any) {
       setApplyError(e?.message ?? 'Failed to apply.')
@@ -146,6 +180,12 @@ export default function CampaignDetailsPage() {
           <Link to="/dashboard" className="bb-btn-ghost h-11 px-5">
             Dashboard
           </Link>
+
+          {role === UserRole.INFLUENCER && appliedAt ? (
+            <button disabled className="bb-btn-ghost h-11 px-5 opacity-70">
+              Applied {fmtDate(appliedAt)}
+            </button>
+          ) : null}
 
           {canApply ? (
             <button disabled={applyLoading} onClick={onApply} className="bb-btn-primary h-11 px-5">
@@ -216,12 +256,11 @@ export default function CampaignDetailsPage() {
                 </div>
               </div>
 
-              <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-4">
-                <p className="text-xs font-extrabold text-white/55">Timeline</p>
-                <p className="mt-2 text-sm font-semibold text-white/80">
-                  {fmtDate(item?.start_at)} → {fmtDate(item?.end_at)}
-                </p>
-              </div>
+              {role === UserRole.BRAND ? (
+                <div className="mt-5 rounded-2xl border border-amber-500/20 bg-amber-500/10 p-4 text-sm font-semibold text-amber-100">
+                  Brands can browse campaigns but can’t apply.
+                </div>
+              ) : null}
             </div>
           </div>
         </div>
@@ -268,9 +307,9 @@ export default function CampaignDetailsPage() {
                 </div>
               </div>
 
-              {role === UserRole.BRAND ? (
-                <div className="mt-5 rounded-2xl border border-amber-500/20 bg-amber-500/10 p-4 text-sm font-semibold text-amber-100">
-                  Brands can browse campaigns but can’t apply.
+              {role === UserRole.INFLUENCER && appliedAt ? (
+                <div className="mt-5 rounded-2xl border border-slate-400/20 bg-slate-500/10 p-4 text-sm font-semibold text-slate-100">
+                  You already applied on {fmtDate(appliedAt)}.
                 </div>
               ) : null}
             </div>

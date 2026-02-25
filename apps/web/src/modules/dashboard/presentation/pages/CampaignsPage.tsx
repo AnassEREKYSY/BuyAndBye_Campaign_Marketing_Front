@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom'
 import { HttpClient } from '@core/shared/services/http/HttpClient'
 import { CoreTokenStorage } from '@/shared/services/storage'
 import { env } from '@/shared'
+import { useProfile } from '@/modules/profile/application/hooks/useProfile'
+import { UserRole } from '@core/modules/auth/domain/entities'
 
 type CampaignStatus = 'draft' | 'published' | 'closed'
 type CampaignListItem = {
@@ -20,6 +22,12 @@ type CampaignListItem = {
 type ApiPaginated<T> = {
   data: T[]
   meta?: { current_page?: number; last_page?: number; per_page?: number; total?: number }
+}
+
+type ApplicationItem = {
+  id: string
+  campaign_id: string
+  created_at?: string | null
 }
 
 function fmtDate(iso?: string | null) {
@@ -47,10 +55,18 @@ function statusDot(status?: string) {
 }
 
 export default function CampaignsPage() {
+  const { profile } = useProfile() as any
+  const role = useMemo(() => {
+    const raw: unknown = profile?.role ?? profile?.user?.role ?? profile?.data?.role
+    if (raw === UserRole.INFLUENCER) return UserRole.INFLUENCER
+    if (raw === UserRole.BRAND) return UserRole.BRAND
+    if (raw === UserRole.ADMIN) return UserRole.ADMIN
+    return null
+  }, [profile]) as UserRole | null
+
   const tokenStorage = useMemo(() => new CoreTokenStorage(), [])
   const httpClient = useMemo(() => new HttpClient(env.BACKEND_BASE_URL, tokenStorage), [tokenStorage])
 
-  const [status, setStatus] = useState<'all' | CampaignStatus>('all')
   const [query, setQuery] = useState('')
   const [page, setPage] = useState(1)
   const [size, setSize] = useState(12)
@@ -59,6 +75,39 @@ export default function CampaignsPage() {
   const [meta, setMeta] = useState<{ current: number; last: number; total: number }>({ current: 1, last: 1, total: 0 })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  const [appliedMap, setAppliedMap] = useState<Record<string, string>>({})
+
+  useEffect(() => {
+    let mounted = true
+
+    async function loadApplications() {
+      if (role !== UserRole.INFLUENCER) {
+        setAppliedMap({})
+        return
+      }
+
+      try {
+        const res = await httpClient.get<any>(`/api/v1/applications?page=1&size=200`)
+        const payload = (res as any).data ?? res
+        const list = (payload?.data ?? []) as ApplicationItem[]
+        const map: Record<string, string> = {}
+        for (const a of list) {
+          if (a?.campaign_id) map[a.campaign_id] = (a.created_at ?? '') || ''
+        }
+        if (!mounted) return
+        setAppliedMap(map)
+      } catch {
+        if (!mounted) return
+        setAppliedMap({})
+      }
+    }
+
+    void loadApplications()
+    return () => {
+      mounted = false
+    }
+  }, [httpClient, role])
 
   useEffect(() => {
     let mounted = true
@@ -70,9 +119,9 @@ export default function CampaignsPage() {
       try {
         const params = new URLSearchParams()
         params.set('scope', 'all')
+        params.set('status', 'published')
         params.set('page', String(page))
         params.set('size', String(size))
-        if (status !== 'all') params.set('status', status)
 
         const res = await httpClient.get<ApiPaginated<CampaignListItem>>(`/api/v1/campaigns?${params.toString()}`)
         const payload = (res as any).data ?? res
@@ -99,14 +148,12 @@ export default function CampaignsPage() {
     return () => {
       mounted = false
     }
-  }, [httpClient, page, size, status])
+  }, [httpClient, page, size])
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
     if (!q) return items
-    return items.filter(
-      (c) => (c.title ?? '').toLowerCase().includes(q) || (c.product?.name ?? '').toLowerCase().includes(q),
-    )
+    return items.filter((c) => (c.title ?? '').toLowerCase().includes(q) || (c.product?.name ?? '').toLowerCase().includes(q))
   }, [items, query])
 
   const canPrev = meta.current > 1
@@ -122,11 +169,11 @@ export default function CampaignsPage() {
         <div className="relative flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
             <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-extrabold text-white/75">
-              <span className="inline-block h-2 w-2 rounded-full bg-sky-300/80 shadow-[0_0_18px_rgba(56,189,248,0.35)]" />
-              Campaigns
+              <span className="inline-block h-2 w-2 rounded-full bg-emerald-300/80 shadow-[0_0_18px_rgba(16,185,129,0.35)]" />
+              Published campaigns
             </div>
             <h1 className="mt-3 text-2xl font-black tracking-tight text-white">Browse campaigns</h1>
-            <p className="mt-1 text-sm font-semibold text-white/60">All campaigns, paginated, with quick filters.</p>
+            <p className="mt-1 text-sm font-semibold text-white/60">Only published campaigns are shown.</p>
           </div>
 
           <Link to="/dashboard" className="bb-btn-ghost h-11 px-5">
@@ -135,7 +182,7 @@ export default function CampaignsPage() {
         </div>
 
         <div className="relative mt-5 grid grid-cols-1 gap-3 md:grid-cols-12 md:items-center">
-          <div className="md:col-span-5">
+          <div className="md:col-span-7">
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
@@ -145,22 +192,6 @@ export default function CampaignsPage() {
           </div>
 
           <div className="md:col-span-3">
-            <select
-              value={status}
-              onChange={(e) => {
-                setStatus(e.target.value as any)
-                setPage(1)
-              }}
-              className="h-12 w-full rounded-2xl border border-white/10 bg-white/5 px-3 text-sm font-extrabold text-white outline-none transition hover:bg-white/10 focus:border-white/20 focus:shadow-[0_0_0_6px_rgba(56,189,248,0.12)]"
-            >
-              <option value="all">All</option>
-              <option value="published">Published</option>
-              <option value="draft">Draft</option>
-              <option value="closed">Closed</option>
-            </select>
-          </div>
-
-          <div className="md:col-span-2">
             <select
               value={size}
               onChange={(e) => {
@@ -176,18 +207,10 @@ export default function CampaignsPage() {
           </div>
 
           <div className="md:col-span-2 flex items-center justify-end gap-2">
-            <button
-              disabled={!canPrev}
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              className="bb-btn-ghost h-12 px-4 disabled:opacity-50"
-            >
+            <button disabled={!canPrev} onClick={() => setPage((p) => Math.max(1, p - 1))} className="bb-btn-ghost h-12 px-4 disabled:opacity-50">
               Prev
             </button>
-            <button
-              disabled={!canNext}
-              onClick={() => setPage((p) => p + 1)}
-              className="bb-btn-primary h-12 px-4 disabled:opacity-50"
-            >
+            <button disabled={!canNext} onClick={() => setPage((p) => p + 1)} className="bb-btn-primary h-12 px-4 disabled:opacity-50">
               Next
             </button>
           </div>
@@ -219,7 +242,9 @@ export default function CampaignsPage() {
             <Link
               key={c.id}
               to={`/campaigns/${c.id}`}
-              className="bb-gradient-border bb-glass bb-ring bb-pop group relative overflow-hidden rounded-[26px] border border-white/10 p-5 text-white transition will-change-transform hover:-translate-y-0.5"
+              className={`bb-gradient-border bb-glass bb-ring bb-pop group relative overflow-hidden rounded-[26px] border border-white/10 p-5 text-white transition will-change-transform hover:-translate-y-0.5 ${
+                appliedMap[c.id] ? 'opacity-70 grayscale-[0.25]' : ''
+              }`}
             >
               <div className="bb-shimmer pointer-events-none absolute inset-0 opacity-70" />
 
@@ -235,9 +260,17 @@ export default function CampaignsPage() {
                     </p>
                   </div>
 
-                  <span className={`shrink-0 rounded-full border px-3 py-1 text-[11px] font-extrabold ${statusBadge(c.status)}`}>
-                    {c.status}
-                  </span>
+                  <div className="flex flex-col items-end gap-2">
+                    <span className={`shrink-0 rounded-full border px-3 py-1 text-[11px] font-extrabold ${statusBadge(c.status)}`}>
+                      {c.status}
+                    </span>
+
+                    {role === UserRole.INFLUENCER && appliedMap[c.id] ? (
+                      <span className="rounded-full border border-slate-400/25 bg-slate-500/10 px-3 py-1 text-[11px] font-extrabold text-slate-200">
+                        Applied {fmtDate(appliedMap[c.id])}
+                      </span>
+                    ) : null}
+                  </div>
                 </div>
 
                 <div className="mt-4 grid grid-cols-2 gap-3">
@@ -252,9 +285,7 @@ export default function CampaignsPage() {
                 </div>
 
                 <div className="mt-4 flex items-center justify-between text-xs font-semibold text-white/55">
-                  <span className="truncate">
-                    {c.commission_type ? `${c.commission_type} • ${Number(c.commission_value ?? 0)}` : '—'}
-                  </span>
+                  <span className="truncate">{c.commission_type ? `${c.commission_type} • ${Number(c.commission_value ?? 0)}` : '—'}</span>
                   <span className="shrink-0">{money(c.budget, 'MAD')}</span>
                 </div>
 

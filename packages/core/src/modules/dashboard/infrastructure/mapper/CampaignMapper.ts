@@ -17,6 +17,7 @@ export class CampaignMapper {
       api.end_at ?? null,
       api.status,
       api.product ? ProductMapper.toDomain(api.product as any) : null,
+      api.applications_count ?? null,
       api.created_at ?? null,
       api.updated_at ?? null,
     )

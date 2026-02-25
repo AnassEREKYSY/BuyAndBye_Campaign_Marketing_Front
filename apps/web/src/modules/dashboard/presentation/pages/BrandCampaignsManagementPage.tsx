@@ -152,12 +152,13 @@ export default function BrandCampaignsManagementPage() {
 
       <div className="bb-pop mt-6 overflow-hidden rounded-3xl border border-white/10 bg-white/5">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[1050px] text-left text-sm text-white">
+          <table className="w-full min-w-[1150px] text-left text-sm text-white">
             <thead className="border-b border-white/10 text-xs font-extrabold uppercase tracking-wider text-white/55">
               <tr>
                 <th className="px-4 py-3">Title</th>
                 <th className="px-4 py-3">Product</th>
                 <th className="px-4 py-3">Commission</th>
+                <th className="px-4 py-3">Applications</th>
                 <th className="px-4 py-3">Status</th>
                 <th className="px-4 py-3">Updated</th>
                 <th className="px-4 py-3 text-right">Actions</th>
@@ -166,7 +167,7 @@ export default function BrandCampaignsManagementPage() {
             <tbody className="divide-y divide-white/10">
               {campaignsLoading && campaigns.length === 0 ? (
                 <tr>
-                  <td className="px-4 py-6 text-white/60" colSpan={6}>
+                  <td className="px-4 py-6 text-white/60" colSpan={7}>
                     Loading…
                   </td>
                 </tr>
@@ -174,7 +175,7 @@ export default function BrandCampaignsManagementPage() {
 
               {!campaignsLoading && campaigns.length === 0 ? (
                 <tr>
-                  <td className="px-4 py-6 text-white/60" colSpan={6}>
+                  <td className="px-4 py-6 text-white/60" colSpan={7}>
                     No campaigns yet.
                   </td>
                 </tr>
@@ -187,6 +188,7 @@ export default function BrandCampaignsManagementPage() {
                   <td className="px-4 py-4 text-white/75">
                     {c.commissionType} • {Number(c.commissionValue).toFixed(2)}
                   </td>
+                  <td className="px-4 py-4 text-white/75">{c.applicationsCount ?? 0}</td>
                   <td className="px-4 py-4">
                     <StatusPill status={c.status} />
                   </td>

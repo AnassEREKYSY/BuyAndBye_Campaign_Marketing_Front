@@ -1,13 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { DashboardContainer } from '@core/modules/dashboard'
-import type {
-  BrandCampaignSummary,
-  Campaign,
-  Collaboration,
-  DashboardTimelinePoint,
-  InfluencerDashboard,
-  Payout,
-} from '@core/modules/dashboard'
+import type { BrandCampaignSummary, Campaign, Collaboration, DashboardTimelinePoint, InfluencerDashboard, Payout } from '@core/modules/dashboard'
 import { HttpClient } from '@core/shared/services/http/HttpClient'
 import { CoreTokenStorage } from '@/shared/services/storage'
 import { UserRole } from '@core/modules/auth/domain/entities'
@@ -45,6 +38,8 @@ export function useDashboard(role: UserRole | null) {
   const [influencerDashboard, setInfluencerDashboard] = useState<InfluencerDashboard | null>(null)
   const [payouts, setPayouts] = useState<Payout[]>([])
 
+  const [appliesCount, setAppliesCount] = useState<number>(0)
+
   const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(null)
   const [brandSummary, setBrandSummary] = useState<BrandCampaignSummary | null>(null)
 
@@ -69,13 +64,18 @@ export function useDashboard(role: UserRole | null) {
       setCollaborations(collabs)
 
       if (r === UserRole.INFLUENCER) {
-        const [dash, pays] = await Promise.all([
+        const [dash, pays, apps] = await Promise.all([
           container.getInfluencerDashboardUseCase.execute(),
           container.listInfluencerPayoutsUseCase.execute(),
+          httpClient.get<any>(`/api/v1/applications?page=1&size=200`),
         ])
 
         setInfluencerDashboard(dash)
         setPayouts(pays)
+
+        const payload = (apps as any).data ?? apps
+        const list = (payload?.data ?? []) as any[]
+        setAppliesCount(list.length)
 
         const top = dash.collaborations?.[0]?.collaborationId
         if (top) {
@@ -88,15 +88,11 @@ export function useDashboard(role: UserRole | null) {
       } else {
         setInfluencerDashboard(null)
         setPayouts([])
+        setAppliesCount(0)
       }
 
       if (r === UserRole.BRAND) {
-        const pick =
-          selectedCampaignId ??
-          camps.find((c) => c.status === 'published')?.id ??
-          camps[0]?.id ??
-          null
-
+        const pick = selectedCampaignId ?? camps.find((c) => c.status === 'published')?.id ?? camps[0]?.id ?? null
         setSelectedCampaignId(pick)
 
         if (pick) {
@@ -119,6 +115,7 @@ export function useDashboard(role: UserRole | null) {
         setInfluencerDashboard(null)
         setBrandSummary(null)
         setPayouts([])
+        setAppliesCount(0)
         setTimeline([])
       }
     } catch (e: any) {
@@ -126,7 +123,7 @@ export function useDashboard(role: UserRole | null) {
     } finally {
       setLoading(false)
     }
-  }, [role, campaignStatus, selectedCampaignId, container])
+  }, [role, campaignStatus, selectedCampaignId, container, httpClient])
 
   useEffect(() => {
     void refresh()
@@ -160,6 +157,7 @@ export function useDashboard(role: UserRole | null) {
     collaborations,
     influencerDashboard,
     payouts,
+    appliesCount,
     selectedCampaignId,
     setSelectedCampaignId,
     brandSummary,

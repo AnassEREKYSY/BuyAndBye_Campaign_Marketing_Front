@@ -17,6 +17,7 @@ export class Campaign {
     public readonly endAt: string | null,
     public readonly status: CampaignStatus,
     public readonly product?: Product | null,
+    public readonly applicationsCount?: number | null,
     public readonly createdAt?: string | null,
     public readonly updatedAt?: string | null,
   ) {}
