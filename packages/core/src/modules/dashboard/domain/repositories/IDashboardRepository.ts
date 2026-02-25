@@ -5,7 +5,15 @@ import type { DashboardTimelinePoint } from '../entities/DashboardTimelinePoint'
 import type { InfluencerDashboard } from '../entities/InfluencerDashboard'
 import type { Payout } from '../entities/Payout'
 import type { Product } from '../entities/Product'
-import type { CreateCampaignDTO, CreateProductDTO, UpdateCampaignDTO, UpdateProductDTO } from '../dtos'
+import type { CampaignPayoutTier } from '../entities/CampaignPayoutTier'
+import type {
+  CreateCampaignDTO,
+  CreateProductDTO,
+  UpdateCampaignDTO,
+  UpdateProductDTO,
+  CreateCampaignPayoutTierDTO,
+  UpdateCampaignPayoutTierDTO,
+} from '../dtos'
 
 export type TimelineGroup = 'day'
 
@@ -53,4 +61,9 @@ export interface IDashboardRepository {
   createProduct(dto: CreateProductDTO): Promise<Product>
   updateProduct(id: string, dto: UpdateProductDTO): Promise<Product>
   deleteProduct(id: string): Promise<void>
+
+  listCampaignTiers(campaignId: string): Promise<CampaignPayoutTier[]>
+  createCampaignTier(campaignId: string, dto: CreateCampaignPayoutTierDTO): Promise<CampaignPayoutTier>
+  updateCampaignTier(tierId: string, dto: UpdateCampaignPayoutTierDTO): Promise<CampaignPayoutTier>
+  deleteCampaignTier(tierId: string): Promise<void>
 }

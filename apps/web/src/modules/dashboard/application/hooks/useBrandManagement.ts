@@ -1,16 +1,59 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { DashboardContainer } from '@core/modules/dashboard/infrastructure/container/DashboardContainer'
 import { HttpClient } from '@core/shared/services/http/HttpClient'
-import { CoreTokenStorage } from '@/shared/services/storage'
 import { env } from '@/shared/config/env'
 import { useNotification } from '@/shared/context/notification'
-import type { Campaign } from '@core/modules/dashboard'
-import type { CreateCampaignDTO, CreateProductDTO, UpdateCampaignDTO, UpdateProductDTO } from '@core/modules/dashboard/domain/dtos'
-import { Product } from '@core/modules/dashboard/domain/entities'
+import type {
+  CreateCampaignDTO,
+  CreateProductDTO,
+  UpdateCampaignDTO,
+  UpdateProductDTO,
+  CreateCampaignPayoutTierDTO,
+  UpdateCampaignPayoutTierDTO,
+} from '@core/modules/dashboard/domain/dtos'
+import { CoreTokenStorage } from '@/shared/services/storage'
+import { Campaign, CampaignPayoutTier, Paginated, Product } from '@core/modules/dashboard/domain/entities'
+
+type TierDraft = {
+  id?: string
+  metric: 'clicks'
+  fromValue: number
+  toValue: number | null
+  payoutAmount: number
+  currency: string | null
+}
 
 function buildHttpClient() {
   const tokenStorage = new CoreTokenStorage()
   return new HttpClient(env.BACKEND_BASE_URL, tokenStorage)
+}
+
+function toDraft(t: CampaignPayoutTier): TierDraft {
+  return {
+    id: t.id,
+    metric: 'clicks',
+    fromValue: Number(t.fromValue ?? 0),
+    toValue: t.toValue !== undefined && t.toValue !== null ? Number(t.toValue) : null,
+    payoutAmount: Number(t.payoutAmount ?? 0),
+    currency: t.currency ?? null,
+  }
+}
+
+function asPaginated<T>(raw: any): Paginated<T> {
+  if (raw && Array.isArray(raw.items) && raw.meta) return raw as Paginated<T>
+
+  const items = (raw?.items ?? raw?.data ?? raw) as T[]
+  const metaRaw = raw?.meta ?? null
+
+  const page = Number(metaRaw?.page ?? metaRaw?.current_page ?? 1) || 1
+  const size = Number(metaRaw?.size ?? metaRaw?.per_page ?? items?.length ?? 0) || (items?.length ?? 0)
+  const total = Number(metaRaw?.total ?? items?.length ?? 0) || (items?.length ?? 0)
+  const lastPage = Number(metaRaw?.lastPage ?? metaRaw?.last_page ?? 1) || 1
+
+  return {
+    items: Array.isArray(items) ? items : [],
+    meta: { page, size, total, lastPage },
+  }
 }
 
 export function useBrandManagement() {
@@ -21,118 +64,201 @@ export function useBrandManagement() {
 
   const [productsLoading, setProductsLoading] = useState(false)
   const [productsError, setProductsError] = useState<string | null>(null)
-  const [products, setProducts] = useState<Product[]>([])
+  const [productsPage, setProductsPage] = useState(1)
+  const [productsSize, setProductsSize] = useState(50)
+  const [productsRes, setProductsRes] = useState<Paginated<Product> | null>(null)
 
   const [campaignsLoading, setCampaignsLoading] = useState(false)
   const [campaignsError, setCampaignsError] = useState<string | null>(null)
-  const [campaigns, setCampaigns] = useState<Campaign[]>([])
+  const [campaignsPage, setCampaignsPage] = useState(1)
+  const [campaignsSize, setCampaignsSize] = useState(50)
+  const [campaignsRes, setCampaignsRes] = useState<Paginated<Campaign> | null>(null)
+
+  const listProducts = useMemo(() => container.listBrandProductsUseCase, [container])
+  const createProduct = useMemo(() => container.createProductUseCase, [container])
+  const updateProduct = useMemo(() => container.updateProductUseCase, [container])
+  const deleteProduct = useMemo(() => container.deleteProductUseCase, [container])
+
+  const listCampaigns = useMemo(() => container.listCampaignsUseCase, [container])
+  const createCampaign = useMemo(() => container.createCampaignUseCase, [container])
+  const updateCampaign = useMemo(() => container.updateCampaignUseCase, [container])
+  const publishCampaign = useMemo(() => container.publishCampaignUseCase, [container])
+  const deleteCampaign = useMemo(() => container.deleteCampaignUseCase, [container])
+
+  const listCampaignTiers = useMemo(() => container.listCampaignTiersUseCase, [container])
+  const createCampaignTier = useMemo(() => container.createCampaignTierUseCase, [container])
+  const updateCampaignTier = useMemo(() => container.updateCampaignTierUseCase, [container])
+  const deleteCampaignTier = useMemo(() => container.deleteCampaignTierUseCase, [container])
 
   const refreshProducts = useCallback(async () => {
     try {
       setProductsError(null)
       setProductsLoading(true)
-      const res = await container.listBrandProductsUseCase.execute({ page: 1, size: 50 })
-      setProducts(res)
+      const raw = await listProducts.execute({ page: productsPage, size: productsSize })
+      setProductsRes(asPaginated<Product>(raw))
     } catch (e: any) {
       setProductsError(e?.message ?? 'Failed to load products')
     } finally {
       setProductsLoading(false)
     }
-  }, [container])
+  }, [listProducts, productsPage, productsSize])
 
   const refreshCampaigns = useCallback(
-    async (status?: 'draft' | 'published' | 'closed' | null) => {
+    async (status?: string | null) => {
       try {
         setCampaignsError(null)
         setCampaignsLoading(true)
-        const res = await container.listCampaignsUseCase.execute({ page: 1, size: 50, status: status ?? undefined, scope: 'mine' })
-        setCampaigns(res)
+        const raw = await listCampaigns.execute({
+          page: campaignsPage,
+          size: campaignsSize,
+          status: (status as any) ?? undefined,
+          scope: 'mine',
+        })
+        setCampaignsRes(asPaginated<Campaign>(raw))
       } catch (e: any) {
         setCampaignsError(e?.message ?? 'Failed to load campaigns')
       } finally {
         setCampaignsLoading(false)
       }
     },
-    [container],
+    [listCampaigns, campaignsPage, campaignsSize],
   )
 
   const onCreateProduct = useCallback(
     async (dto: CreateProductDTO) => {
-      const p = await container.createProductUseCase.execute(dto)
+      const p = await createProduct.execute(dto)
       notify.success('Product created')
       await refreshProducts()
       return p
     },
-    [container, notify, refreshProducts],
+    [createProduct, notify, refreshProducts],
   )
 
   const onUpdateProduct = useCallback(
     async (id: string, dto: UpdateProductDTO) => {
-      const p = await container.updateProductUseCase.execute(id, dto)
+      const p = await updateProduct.execute(id, dto)
       notify.success('Product updated')
       await refreshProducts()
       return p
     },
-    [container, notify, refreshProducts],
+    [updateProduct, notify, refreshProducts],
   )
 
   const onDeleteProduct = useCallback(
     async (id: string) => {
-      await container.deleteProductUseCase.execute(id)
+      await deleteProduct.execute(id)
       notify.success('Product deleted')
       await refreshProducts()
     },
-    [container, notify, refreshProducts],
+    [deleteProduct, notify, refreshProducts],
   )
 
-  const onCreateCampaign = useCallback(
-    async (dto: CreateCampaignDTO) => {
-      const c = await container.createCampaignUseCase.execute(dto)
+  const getCampaignTiersDraft = useCallback(
+    async (campaignId: string): Promise<TierDraft[]> => {
+      const tiers = await listCampaignTiers.execute(campaignId)
+      return (tiers ?? []).map(toDraft).sort((a, b) => a.fromValue - b.fromValue)
+    },
+    [listCampaignTiers],
+  )
+
+  const syncCampaignTiers = useCallback(
+    async (campaignId: string, desired: TierDraft[]) => {
+      const existing = await listCampaignTiers.execute(campaignId)
+      const existingById = new Map((existing ?? []).map((t) => [t.id, t]))
+
+      const desiredIds = new Set<string>()
+      for (const d of desired) {
+        if (d.id) desiredIds.add(d.id)
+      }
+
+      for (const t of existing ?? []) {
+        if (!desiredIds.has(t.id)) {
+          await deleteCampaignTier.execute(t.id)
+        }
+      }
+
+      for (const d of desired) {
+        if (d.id && existingById.has(d.id)) {
+          const payload: UpdateCampaignPayoutTierDTO = {
+            metric: 'clicks',
+            fromValue: d.fromValue,
+            toValue: d.toValue,
+            payoutAmount: d.payoutAmount,
+            currency: d.currency,
+          }
+          await updateCampaignTier.execute(d.id, payload)
+        } else {
+          const payload: CreateCampaignPayoutTierDTO = {
+            metric: 'clicks',
+            fromValue: d.fromValue,
+            toValue: d.toValue,
+            payoutAmount: d.payoutAmount,
+            currency: d.currency,
+          }
+          await createCampaignTier.execute(campaignId, payload)
+        }
+      }
+    },
+    [listCampaignTiers, deleteCampaignTier, updateCampaignTier, createCampaignTier],
+  )
+
+  const onCreateCampaignWithTiers = useCallback(
+    async (dto: CreateCampaignDTO, tiers: TierDraft[]) => {
+      const c = await createCampaign.execute(dto)
+      await syncCampaignTiers(c.id, tiers)
       notify.success('Campaign created')
       await refreshCampaigns()
       return c
     },
-    [container, notify, refreshCampaigns],
+    [createCampaign, notify, refreshCampaigns, syncCampaignTiers],
   )
 
-  const onUpdateCampaign = useCallback(
-    async (id: string, dto: UpdateCampaignDTO) => {
-      const c = await container.updateCampaignUseCase.execute(id, dto)
+  const onUpdateCampaignWithTiers = useCallback(
+    async (id: string, dto: UpdateCampaignDTO, tiers: TierDraft[]) => {
+      const c = await updateCampaign.execute(id, dto)
+      await syncCampaignTiers(id, tiers)
       notify.success('Campaign updated')
       await refreshCampaigns()
       return c
     },
-    [container, notify, refreshCampaigns],
+    [updateCampaign, notify, refreshCampaigns, syncCampaignTiers],
   )
 
   const onPublishCampaign = useCallback(
     async (id: string) => {
-      const c = await container.publishCampaignUseCase.execute(id)
+      const c = await publishCampaign.execute(id)
       notify.success('Campaign published')
       await refreshCampaigns()
       return c
     },
-    [container, notify, refreshCampaigns],
+    [publishCampaign, notify, refreshCampaigns],
   )
 
   const onDeleteCampaign = useCallback(
     async (id: string) => {
-      await container.deleteCampaignUseCase.execute(id)
+      await deleteCampaign.execute(id)
       notify.success('Campaign deleted')
       await refreshCampaigns()
     },
-    [container, notify, refreshCampaigns],
+    [deleteCampaign, notify, refreshCampaigns],
   )
 
   useEffect(() => {
     void refreshProducts()
+  }, [refreshProducts])
+
+  useEffect(() => {
     void refreshCampaigns()
-  }, [refreshProducts, refreshCampaigns])
+  }, [refreshCampaigns])
 
   return {
     productsLoading,
     productsError,
-    products,
+    productsRes,
+    productsPage,
+    setProductsPage,
+    productsSize,
+    setProductsSize,
     refreshProducts,
     onCreateProduct,
     onUpdateProduct,
@@ -140,11 +266,17 @@ export function useBrandManagement() {
 
     campaignsLoading,
     campaignsError,
-    campaigns,
+    campaignsRes,
+    campaignsPage,
+    setCampaignsPage,
+    campaignsSize,
+    setCampaignsSize,
     refreshCampaigns,
-    onCreateCampaign,
-    onUpdateCampaign,
+    onCreateCampaignWithTiers,
+    onUpdateCampaignWithTiers,
     onPublishCampaign,
     onDeleteCampaign,
+
+    getCampaignTiersDraft,
   }
 }

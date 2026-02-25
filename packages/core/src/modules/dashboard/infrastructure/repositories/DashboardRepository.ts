@@ -5,6 +5,7 @@ import type { DashboardTimelinePoint } from '../../domain/entities/DashboardTime
 import type { InfluencerDashboard } from '../../domain/entities/InfluencerDashboard'
 import type { Payout } from '../../domain/entities/Payout'
 import type { Product } from '../../domain/entities/Product'
+import type { CampaignPayoutTier } from '../../domain/entities/CampaignPayoutTier'
 import type {
   IDashboardRepository,
   ListCampaignsParams,
@@ -12,7 +13,14 @@ import type {
   ListProductsParams,
   TimelineParams,
 } from '../../domain/repositories/IDashboardRepository'
-import type { CreateCampaignDTO, CreateProductDTO, UpdateCampaignDTO, UpdateProductDTO } from '../../domain/dtos'
+import type {
+  CreateCampaignDTO,
+  CreateProductDTO,
+  UpdateCampaignDTO,
+  UpdateProductDTO,
+  CreateCampaignPayoutTierDTO,
+  UpdateCampaignPayoutTierDTO,
+} from '../../domain/dtos'
 import { DashboardApiClient } from '../api/DashboardApiClient'
 import { BrandCampaignSummaryMapper } from '../mapper/BrandCampaignSummaryMapper'
 import { CampaignMapper } from '../mapper/CampaignMapper'
@@ -21,6 +29,7 @@ import { InfluencerDashboardMapper } from '../mapper/InfluencerDashboardMapper'
 import { PayoutMapper } from '../mapper/PayoutMapper'
 import { TimelineMapper } from '../mapper/TimelineMapper'
 import { ProductMapper } from '../mapper/ProductMapper'
+import { CampaignPayoutTierMapper } from '../mapper/CampaignPayoutTierMapper'
 
 export class DashboardRepository implements IDashboardRepository {
   constructor(private readonly api: DashboardApiClient) {}
@@ -61,7 +70,7 @@ export class DashboardRepository implements IDashboardRepository {
 
   async updateCampaign(id: string, dto: UpdateCampaignDTO): Promise<Campaign> {
     const res = await this.api.updateCampaign(id, {
-      title: dto.title,
+      title: dto.title ?? undefined,
       objective: dto.objective ?? undefined,
       commission_type: dto.commissionType ?? undefined,
       commission_value: dto.commissionValue ?? undefined,
@@ -135,7 +144,7 @@ export class DashboardRepository implements IDashboardRepository {
 
   async updateProduct(id: string, dto: UpdateProductDTO): Promise<Product> {
     const res = await this.api.updateProduct(id, {
-      name: dto.name,
+      name: dto.name ?? undefined,
       description: dto.description ?? undefined,
       price: dto.price ?? undefined,
       currency: dto.currency ?? undefined,
@@ -148,5 +157,36 @@ export class DashboardRepository implements IDashboardRepository {
 
   async deleteProduct(id: string): Promise<void> {
     await this.api.deleteProduct(id)
+  }
+
+  async listCampaignTiers(campaignId: string): Promise<CampaignPayoutTier[]> {
+    const res = await this.api.listCampaignTiers(campaignId)
+    return CampaignPayoutTierMapper.toDomainList((res.data as any)?.data ?? [])
+  }
+
+  async createCampaignTier(campaignId: string, dto: CreateCampaignPayoutTierDTO): Promise<CampaignPayoutTier> {
+    const res = await this.api.createCampaignTier(campaignId, {
+      metric: dto.metric,
+      from_value: dto.fromValue,
+      to_value: dto.toValue ?? null,
+      payout_amount: dto.payoutAmount,
+      currency: dto.currency ?? null,
+    })
+    return CampaignPayoutTierMapper.toDomain(res.data.data as any)
+  }
+
+  async updateCampaignTier(tierId: string, dto: UpdateCampaignPayoutTierDTO): Promise<CampaignPayoutTier> {
+    const res = await this.api.updateCampaignTier(tierId, {
+      metric: dto.metric ?? undefined,
+      from_value: dto.fromValue ?? undefined,
+      to_value: dto.toValue ?? undefined,
+      payout_amount: dto.payoutAmount ?? undefined,
+      currency: dto.currency ?? undefined,
+    })
+    return CampaignPayoutTierMapper.toDomain(res.data.data as any)
+  }
+
+  async deleteCampaignTier(tierId: string): Promise<void> {
+    await this.api.deleteCampaignTier(tierId)
   }
 }

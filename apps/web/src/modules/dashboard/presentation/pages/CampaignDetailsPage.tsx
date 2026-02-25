@@ -5,6 +5,8 @@ import { CoreTokenStorage } from '@/shared/services/storage'
 import { env } from '@/shared'
 import { useProfile } from '@/modules/profile/application/hooks/useProfile'
 import { UserRole } from '@core/modules/auth/domain/entities'
+import { DashboardContainer } from '@core/modules/dashboard/infrastructure/container/DashboardContainer'
+import { CampaignPayoutTier } from '@core/modules/dashboard/domain/entities'
 
 type CampaignStatus = 'draft' | 'published' | 'closed'
 
@@ -57,6 +59,10 @@ function statusDot(status?: string) {
   return 'bg-white/35'
 }
 
+function TierPill() {
+  return 'border-slate-400/25 bg-slate-500/10 text-slate-200'
+}
+
 export default function CampaignDetailsPage() {
   const { id } = useParams()
   const { profile } = useProfile() as any
@@ -70,6 +76,7 @@ export default function CampaignDetailsPage() {
 
   const tokenStorage = useMemo(() => new CoreTokenStorage(), [])
   const httpClient = useMemo(() => new HttpClient(env.BACKEND_BASE_URL, tokenStorage), [tokenStorage])
+  const container = useMemo(() => DashboardContainer.getInstance(httpClient), [httpClient])
 
   const [item, setItem] = useState<CampaignDetails | null>(null)
   const [loading, setLoading] = useState(true)
@@ -78,8 +85,11 @@ export default function CampaignDetailsPage() {
   const [applyLoading, setApplyLoading] = useState(false)
   const [applyError, setApplyError] = useState<string | null>(null)
   const [applySuccess, setApplySuccess] = useState<string | null>(null)
-
   const [appliedAt, setAppliedAt] = useState<string | null>(null)
+
+  const [tiers, setTiers] = useState<CampaignPayoutTier[]>([])
+  const [tiersLoading, setTiersLoading] = useState(false)
+  const [tiersError, setTiersError] = useState<string | null>(null)
 
   const canApply = role === UserRole.INFLUENCER && item?.status === 'published' && !appliedAt
 
@@ -113,6 +123,32 @@ export default function CampaignDetailsPage() {
       mounted = false
     }
   }, [httpClient, id])
+
+  useEffect(() => {
+    let mounted = true
+
+    async function loadTiers() {
+      if (!id) return
+      setTiersError(null)
+      setTiersLoading(true)
+      try {
+        const list = await container.listCampaignTiersUseCase.execute(id)
+        if (!mounted) return
+        setTiers(list ?? [])
+      } catch (e: any) {
+        if (!mounted) return
+        setTiersError(e?.message ?? 'Failed to load tiers')
+      } finally {
+        if (!mounted) return
+        setTiersLoading(false)
+      }
+    }
+
+    void loadTiers()
+    return () => {
+      mounted = false
+    }
+  }, [container, id])
 
   useEffect(() => {
     let mounted = true
@@ -159,6 +195,10 @@ export default function CampaignDetailsPage() {
       setApplyLoading(false)
     }
   }
+
+  const tiersSorted = useMemo(() => {
+    return [...tiers].sort((a, b) => Number(a.fromValue) - Number(b.fromValue))
+  }, [tiers])
 
   return (
     <div className="bb-page px-4 py-6 md:px-6">
@@ -265,7 +305,7 @@ export default function CampaignDetailsPage() {
           </div>
         </div>
 
-        <div className="lg:col-span-5">
+        <div className="lg:col-span-5 space-y-4">
           <div className="bb-gradient-border bb-glass bb-ring bb-pop relative overflow-hidden rounded-[26px] border border-white/10 p-5 text-white">
             <div className="pointer-events-none absolute inset-0 bb-spotlight" />
             <div className="pointer-events-none absolute inset-0 bb-noise" />
@@ -310,6 +350,73 @@ export default function CampaignDetailsPage() {
               {role === UserRole.INFLUENCER && appliedAt ? (
                 <div className="mt-5 rounded-2xl border border-slate-400/20 bg-slate-500/10 p-4 text-sm font-semibold text-slate-100">
                   You already applied on {fmtDate(appliedAt)}.
+                </div>
+              ) : null}
+            </div>
+          </div>
+
+          <div className="bb-gradient-border bb-glass bb-ring bb-pop relative overflow-hidden rounded-[26px] border border-white/10 p-5 text-white">
+            <div className="pointer-events-none absolute inset-0 bb-spotlight" />
+            <div className="pointer-events-none absolute inset-0 bb-noise" />
+            <div className="relative">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-extrabold">Payout tiers</p>
+                  <p className="mt-1 text-xs font-semibold text-white/55">Read-only here. Manage in Brand Campaign Manager.</p>
+                </div>
+                <span className={`rounded-full border px-3 py-1 text-[11px] font-extrabold ${TierPill()}`}>{tiersSorted.length} tiers</span>
+              </div>
+
+              {tiersError ? (
+                <div className="mt-4 rounded-2xl border border-rose-500/25 bg-rose-500/10 p-3 text-sm font-semibold text-rose-100">
+                  {tiersError}
+                </div>
+              ) : null}
+
+              <div className="mt-4 overflow-hidden rounded-2xl border border-white/10 bg-white/5">
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[520px] text-left text-sm text-white">
+                    <thead className="border-b border-white/10 text-xs font-extrabold uppercase tracking-wider text-white/55">
+                      <tr>
+                        <th className="px-4 py-3">From</th>
+                        <th className="px-4 py-3">To</th>
+                        <th className="px-4 py-3">Payout</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/10">
+                      {tiersLoading && tiersSorted.length === 0 ? (
+                        <tr>
+                          <td className="px-4 py-6 text-white/60" colSpan={3}>
+                            Loading…
+                          </td>
+                        </tr>
+                      ) : null}
+
+                      {!tiersLoading && tiersSorted.length === 0 ? (
+                        <tr>
+                          <td className="px-4 py-6 text-white/60" colSpan={3}>
+                            No tiers defined yet.
+                          </td>
+                        </tr>
+                      ) : null}
+
+                      {tiersSorted.map((t) => (
+                        <tr key={t.id}>
+                          <td className="px-4 py-3 font-semibold">{t.fromValue}</td>
+                          <td className="px-4 py-3 text-white/75">{t.toValue ?? '∞'}</td>
+                          <td className="px-4 py-3 text-white/75">
+                            {Number(t.payoutAmount).toFixed(2)} {t.currency ?? 'MAD'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {role === UserRole.BRAND ? (
+                <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-3 text-xs font-semibold text-white/60">
+                  To edit tiers: Dashboard → Open manager → edit campaign.
                 </div>
               ) : null}
             </div>

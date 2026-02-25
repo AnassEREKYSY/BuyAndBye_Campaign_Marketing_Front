@@ -14,6 +14,10 @@ import {
   UpdateCampaignUseCase,
   PublishCampaignUseCase,
   DeleteCampaignUseCase,
+  ListCampaignTiersUseCase,
+  CreateCampaignTierUseCase,
+  UpdateCampaignTierUseCase,
+  DeleteCampaignTierUseCase,
 } from '../../application/use-cases'
 import { DashboardApiClient } from '../api/DashboardApiClient'
 import { DashboardRepository } from '../repositories/DashboardRepository'
@@ -40,6 +44,11 @@ export class DashboardContainer {
   public publishCampaignUseCase: PublishCampaignUseCase
   public deleteCampaignUseCase: DeleteCampaignUseCase
 
+  public listCampaignTiersUseCase: ListCampaignTiersUseCase
+  public createCampaignTierUseCase: CreateCampaignTierUseCase
+  public updateCampaignTierUseCase: UpdateCampaignTierUseCase
+  public deleteCampaignTierUseCase: DeleteCampaignTierUseCase
+
   private constructor(httpClient: HttpClient) {
     const api = new DashboardApiClient(httpClient)
     const repo = new DashboardRepository(api)
@@ -61,6 +70,11 @@ export class DashboardContainer {
     this.updateCampaignUseCase = new UpdateCampaignUseCase(repo)
     this.publishCampaignUseCase = new PublishCampaignUseCase(repo)
     this.deleteCampaignUseCase = new DeleteCampaignUseCase(repo)
+
+    this.listCampaignTiersUseCase = new ListCampaignTiersUseCase(repo)
+    this.createCampaignTierUseCase = new CreateCampaignTierUseCase(repo)
+    this.updateCampaignTierUseCase = new UpdateCampaignTierUseCase(repo)
+    this.deleteCampaignTierUseCase = new DeleteCampaignTierUseCase(repo)
   }
 
   static getInstance(httpClient: HttpClient) {

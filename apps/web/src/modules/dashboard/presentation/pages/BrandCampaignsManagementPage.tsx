@@ -6,6 +6,15 @@ import { useBrandManagement } from '../../application/hooks/useBrandManagement'
 import { BrandCampaignModal } from '../components/BrandCampaignModal'
 import type { Campaign } from '@core/modules/dashboard'
 
+type TierDraft = {
+  id?: string
+  metric: 'clicks'
+  fromValue: number
+  toValue: number | null
+  payoutAmount: number
+  currency: string | null
+}
+
 function StatusPill({ status }: { status: Campaign['status'] }) {
   const cfg = useMemo(() => {
     if (status === 'published') return { label: 'published', cls: 'border-emerald-400/25 bg-emerald-500/10 text-emerald-200' }
@@ -88,18 +97,20 @@ export default function BrandCampaignsManagementPage() {
   const {
     campaignsLoading,
     campaignsError,
-    campaigns,
+    campaignsRes,
     refreshCampaigns,
-    onCreateCampaign,
-    onUpdateCampaign,
+    onCreateCampaignWithTiers,
+    onUpdateCampaignWithTiers,
     onPublishCampaign,
     onDeleteCampaign,
-    products,
+    productsRes,
     refreshProducts,
+    getCampaignTiersDraft,
   } = useBrandManagement()
 
   const [open, setOpen] = useState(false)
   const [editing, setEditing] = useState<Campaign | null>(null)
+  const [editingTiers, setEditingTiers] = useState<TierDraft[]>([])
 
   if (role !== UserRole.BRAND) {
     return (
@@ -111,6 +122,22 @@ export default function BrandCampaignsManagementPage() {
     )
   }
 
+  const items = (campaignsRes as any)?.items ?? (campaignsRes as any)?.data ?? []
+  const products = (productsRes as any)?.items ?? (productsRes as any)?.data ?? []
+
+  async function openCreate() {
+    setEditing(null)
+    setEditingTiers([{ metric: 'clicks', fromValue: 0, toValue: null, payoutAmount: 0, currency: 'MAD' }])
+    setOpen(true)
+  }
+
+  async function openEdit(c: Campaign) {
+    const tiers = await getCampaignTiersDraft(c.id)
+    setEditing(c)
+    setEditingTiers(tiers.length ? tiers : [{ metric: 'clicks', fromValue: 0, toValue: null, payoutAmount: 0, currency: 'MAD' }])
+    setOpen(true)
+  }
+
   return (
     <div className="bb-page px-4 py-6 md:px-6">
       <div className="bb-pop">
@@ -118,7 +145,7 @@ export default function BrandCampaignsManagementPage() {
           <div>
             <p className="text-xs font-extrabold uppercase tracking-wider text-white/45">Brand</p>
             <h1 className="mt-2 text-2xl font-black tracking-tight text-white">Campaigns</h1>
-            <p className="mt-1 text-sm font-semibold text-white/60">Create, publish, and manage campaigns.</p>
+            <p className="mt-1 text-sm font-semibold text-white/60">Create, publish, manage campaigns + tiers.</p>
           </div>
 
           <div className="flex gap-3">
@@ -131,13 +158,7 @@ export default function BrandCampaignsManagementPage() {
             >
               Refresh
             </button>
-            <button
-              onClick={() => {
-                setEditing(null)
-                setOpen(true)
-              }}
-              className="bb-btn-ghost h-11 px-5"
-            >
+            <button onClick={() => void openCreate()} className="bb-btn-ghost h-11 px-5">
               New campaign
             </button>
           </div>
@@ -152,7 +173,7 @@ export default function BrandCampaignsManagementPage() {
 
       <div className="bb-pop mt-6 overflow-hidden rounded-3xl border border-white/10 bg-white/5">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[1150px] text-left text-sm text-white">
+          <table className="w-full min-w-[1100px] text-left text-sm text-white">
             <thead className="border-b border-white/10 text-xs font-extrabold uppercase tracking-wider text-white/55">
               <tr>
                 <th className="px-4 py-3">Title</th>
@@ -165,7 +186,7 @@ export default function BrandCampaignsManagementPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-white/10">
-              {campaignsLoading && campaigns.length === 0 ? (
+              {campaignsLoading && items.length === 0 ? (
                 <tr>
                   <td className="px-4 py-6 text-white/60" colSpan={7}>
                     Loading…
@@ -173,7 +194,7 @@ export default function BrandCampaignsManagementPage() {
                 </tr>
               ) : null}
 
-              {!campaignsLoading && campaigns.length === 0 ? (
+              {!campaignsLoading && items.length === 0 ? (
                 <tr>
                   <td className="px-4 py-6 text-white/60" colSpan={7}>
                     No campaigns yet.
@@ -181,14 +202,14 @@ export default function BrandCampaignsManagementPage() {
                 </tr>
               ) : null}
 
-              {campaigns.map((c) => (
+              {items.map((c: Campaign) => (
                 <tr key={c.id}>
                   <td className="px-4 py-4 font-semibold">{c.title}</td>
-                  <td className="px-4 py-4 text-white/75">{c.product?.name ?? c.productId}</td>
+                  <td className="px-4 py-4 text-white/75">{(c as any).product?.name ?? c.productId}</td>
                   <td className="px-4 py-4 text-white/75">
                     {c.commissionType} • {Number(c.commissionValue).toFixed(2)}
                   </td>
-                  <td className="px-4 py-4 text-white/75">{c.applicationsCount ?? 0}</td>
+                  <td className="px-4 py-4 text-white/75">{(c as any).applicationsCount ?? 0}</td>
                   <td className="px-4 py-4">
                     <StatusPill status={c.status} />
                   </td>
@@ -204,11 +225,8 @@ export default function BrandCampaignsManagementPage() {
                       </button>
 
                       <button
-                        title="Edit"
-                        onClick={() => {
-                          setEditing(c)
-                          setOpen(true)
-                        }}
+                        title="Edit (includes tiers)"
+                        onClick={() => void openEdit(c)}
                         className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white/90 transition hover:-translate-y-0.5 hover:bg-white/10"
                       >
                         <IconEdit />
@@ -245,8 +263,9 @@ export default function BrandCampaignsManagementPage() {
         onClose={() => setOpen(false)}
         products={products}
         initial={editing}
-        onCreate={onCreateCampaign}
-        onUpdate={onUpdateCampaign}
+        initialTiers={editingTiers}
+        onCreate={onCreateCampaignWithTiers}
+        onUpdate={onUpdateCampaignWithTiers}
       />
     </div>
   )

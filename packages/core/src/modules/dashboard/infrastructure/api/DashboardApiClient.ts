@@ -6,6 +6,7 @@ import type { ApiCollaboration } from './types/ApiCollaboration'
 import type { ApiBrandCampaignSummary } from './types/ApiBrandCampaignSummary'
 import type { ApiTimelinePoint } from './types/ApiTimelinePoint'
 import type { ApiProduct } from './types/ApiProduct'
+import type { ApiCampaignPayoutTier } from './types/ApiCampaignPayoutTier'
 import { HttpClient } from '@core/shared/services/http/HttpClient'
 
 export class DashboardApiClient {
@@ -127,5 +128,39 @@ export class DashboardApiClient {
 
   async deleteProduct(id: string) {
     return this.http.delete<ApiEnvelope<{ success: boolean }>>(`/api/v1/products/${id}`)
+  }
+
+  async listCampaignTiers(campaignId: string) {
+    return this.http.get<{ data: ApiCampaignPayoutTier[] }>(`/api/v1/campaigns/${campaignId}/tiers`)
+  }
+
+  async createCampaignTier(
+    campaignId: string,
+    payload: {
+      metric: 'clicks'
+      from_value: number
+      to_value?: number | null
+      payout_amount: number
+      currency?: string | null
+    },
+  ) {
+    return this.http.post<ApiEnvelope<ApiCampaignPayoutTier>>(`/api/v1/campaigns/${campaignId}/tiers`, payload)
+  }
+
+  async updateCampaignTier(
+    tierId: string,
+    payload: {
+      metric?: 'clicks'
+      from_value?: number
+      to_value?: number | null
+      payout_amount?: number
+      currency?: string | null
+    },
+  ) {
+    return this.http.put<ApiEnvelope<ApiCampaignPayoutTier>>(`/api/v1/tiers/${tierId}`, payload)
+  }
+
+  async deleteCampaignTier(tierId: string) {
+    return this.http.delete<ApiEnvelope<{ success: boolean }>>(`/api/v1/tiers/${tierId}`)
   }
 }
