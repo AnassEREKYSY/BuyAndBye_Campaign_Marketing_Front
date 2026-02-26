@@ -8,8 +8,8 @@ import type { ApiTimelinePoint } from './types/ApiTimelinePoint'
 import type { ApiProduct } from './types/ApiProduct'
 import type { ApiCampaignPayoutTier } from './types/ApiCampaignPayoutTier'
 import type { ApiCampaignApplication } from './types/ApiCampaignApplication'
-import { HttpClient } from '@core/shared/services/http/HttpClient'
 import type { ApiInfluencerPublicProfile } from './types/ApiInfluencerPublicProfile'
+import { HttpClient } from '@core/shared/services/http/HttpClient'
 
 export class DashboardApiClient {
   constructor(private readonly http: HttpClient) {}
@@ -73,6 +73,10 @@ export class DashboardApiClient {
     q.set('page', String(params.page))
     q.set('size', String(params.size))
     return this.http.get<{ data: ApiCollaboration[] }>(`/api/v1/collaborations?${q.toString()}`)
+  }
+
+  async getCollaboration(id: string) {
+    return this.http.get<ApiEnvelope<ApiCollaboration>>(`/api/v1/collaborations/${id}`)
   }
 
   async getBrandCampaignSummary(campaignId: string) {

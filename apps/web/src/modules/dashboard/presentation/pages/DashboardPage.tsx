@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useProfile } from '@/modules/profile/application/hooks/useProfile'
 import { UserRole } from '@core/modules/auth/domain/entities'
@@ -75,8 +75,8 @@ export default function DashboardPage() {
     return null
   }, [profile]) as UserRole | null
 
-  const [search, setSearch] = useState('')
-  const { loading, error, counts, collaborations, influencerDashboard, payouts, appliesCount, brandSummary, timeline, refresh } = useDashboard(role)
+  const { loading, error, counts, collaborations, influencerDashboard, payouts, appliesCount, brandSummary, timeline, refresh } =
+    useDashboard(role)
 
   const headerTitle =
     role === UserRole.BRAND ? 'Brand Dashboard' : role === UserRole.INFLUENCER ? 'Influencer Dashboard' : 'Dashboard'
@@ -90,15 +90,33 @@ export default function DashboardPage() {
   const stats = useMemo(() => {
     if (role === UserRole.INFLUENCER && influencerDashboard) {
       return [
-        { label: 'Total clicks', value: String(influencerDashboard.totals.clicks), hint: 'All collaborations', icon: <IconBolt /> },
+        {
+          label: 'Applications',
+          value: String(appliesCount),
+          hint: 'See all applications',
+          icon: <IconSend />,
+          to: '/applications',
+        },
+        {
+          label: 'Open campaigns',
+          value: String(counts.published),
+          hint: 'Browse & apply',
+          icon: <IconChart />,
+          to: '/campaigns',
+        },
+        {
+          label: 'Collaborations',
+          value: String(collaborations.length),
+          hint: 'Track progress',
+          icon: <IconUsers />,
+          to: '/collaborations',
+        },
         {
           label: 'Estimated earnings',
           value: money(influencerDashboard.totals.estimatedPayout, influencerDashboard.totals.currency),
           hint: 'Based on tiers',
           icon: <IconCoins />,
         },
-        { label: 'Applications', value: String(appliesCount), hint: 'Sent', icon: <IconSend /> },
-        { label: 'Open campaigns', value: String(counts.published), hint: 'Available', icon: <IconChart /> },
       ]
     }
 
@@ -107,17 +125,40 @@ export default function DashboardPage() {
       const collabs = brandSummary?.totals?.collaborations ?? collaborations.length
 
       return [
-        { label: 'My campaigns', value: String(counts.all), hint: `Draft ${counts.draft} • Live ${counts.published}`, icon: <IconChart /> },
-        { label: 'Live campaigns', value: String(counts.published), hint: 'Published', icon: <IconBolt /> },
-        { label: 'Collaborations', value: String(collabs), hint: 'Selected campaign', icon: <IconUsers /> },
-        { label: 'Clicks', value: String(clicks), hint: 'Selected campaign', icon: <IconBolt /> },
+        {
+          label: 'Live campaigns',
+          value: String(counts.published),
+          hint: 'Published campaigns',
+          icon: <IconBolt />,
+          to: '/campaigns',
+        },
+        {
+          label: 'My campaigns',
+          value: String(counts.all),
+          hint: `Draft ${counts.draft} • Live ${counts.published}`,
+          icon: <IconChart />,
+          to: '/dashboard/brand/campaigns',
+        },
+        {
+          label: 'Collaborations',
+          value: String(collabs),
+          hint: 'Open list',
+          icon: <IconUsers />,
+          to: '/collaborations',
+        },
+        {
+          label: 'Clicks',
+          value: String(clicks),
+          hint: 'Selected campaign',
+          icon: <IconBolt />,
+        },
       ]
     }
 
     return [
-      { label: 'Campaigns', value: String(counts.all), hint: 'All', icon: <IconChart /> },
-      { label: 'Collaborations', value: String(collaborations.length), hint: 'All', icon: <IconUsers /> },
-      { label: 'Live campaigns', value: String(counts.published), hint: 'Published', icon: <IconBolt /> },
+      { label: 'Campaigns', value: String(counts.all), hint: 'All', icon: <IconChart />, to: '/campaigns' },
+      { label: 'Collaborations', value: String(collaborations.length), hint: 'All', icon: <IconUsers />, to: '/collaborations' },
+      { label: 'Live campaigns', value: String(counts.published), hint: 'Published', icon: <IconBolt />, to: '/campaigns' },
       { label: 'Closed campaigns', value: String(counts.closed), hint: 'Closed', icon: <IconChart /> },
     ]
   }, [role, influencerDashboard, counts, brandSummary, collaborations.length, appliesCount])
@@ -130,7 +171,7 @@ export default function DashboardPage() {
           <h1 className="mt-2 text-2xl font-black tracking-tight text-white">{headerTitle}</h1>
           <p className="mt-1 text-sm font-semibold text-white/60">{headerSubtitle}</p>
         </div>
-        <DashboardTopBar search={search} onSearch={setSearch} />
+        <DashboardTopBar />
       </div>
 
       <div className="mt-4 flex justify-center">
@@ -150,7 +191,7 @@ export default function DashboardPage() {
       <div className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-4">
         {stats.map((s) => (
           <div key={s.label} className="bb-pop">
-            <StatCard label={s.label} value={s.value} hint={s.hint} icon={s.icon} />
+            <StatCard label={s.label} value={s.value} hint={s.hint} icon={s.icon} to={(s as any).to} />
           </div>
         ))}
       </div>
@@ -177,9 +218,8 @@ export default function DashboardPage() {
                 <div className="pointer-events-none absolute inset-0 bb-noise" />
                 <div className="relative">
                   <p className="text-sm font-extrabold tracking-tight">My campaigns</p>
-                  <p className="mt-1 text-xs font-semibold text-white/55">
-                    Stats here are based on your own campaigns. Use “Browse campaigns” to explore the marketplace.
-                  </p>
+                  <p className="mt-1 text-xs font-semibold text-white/55">Manage campaigns & payout tiers.</p>
+
                   <div className="mt-4 grid grid-cols-2 gap-3">
                     <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
                       <p className="text-xs font-extrabold text-white/80">Draft</p>

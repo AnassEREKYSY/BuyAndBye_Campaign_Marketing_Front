@@ -22,7 +22,8 @@ import {
   ShortlistApplicationUseCase,
   AcceptApplicationUseCase,
   RejectApplicationUseCase,
-  GetInfluencerPublicProfileUseCase
+  GetInfluencerPublicProfileUseCase,
+  GetCollaborationUseCase,
 } from '../../application/use-cases'
 import { DashboardApiClient } from '../api/DashboardApiClient'
 import { DashboardRepository } from '../repositories/DashboardRepository'
@@ -35,6 +36,7 @@ export class DashboardContainer {
   public listInfluencerPayoutsUseCase: ListInfluencerPayoutsUseCase
   public listCampaignsUseCase: ListCampaignsUseCase
   public listCollaborationsUseCase: ListCollaborationsUseCase
+  public getCollaborationUseCase: GetCollaborationUseCase
   public getBrandCampaignSummaryUseCase: GetBrandCampaignSummaryUseCase
   public getBrandCampaignTimelineUseCase: GetBrandCampaignTimelineUseCase
   public getCollaborationTimelineUseCase: GetCollaborationTimelineUseCase
@@ -68,6 +70,7 @@ export class DashboardContainer {
     this.listInfluencerPayoutsUseCase = new ListInfluencerPayoutsUseCase(repo)
     this.listCampaignsUseCase = new ListCampaignsUseCase(repo)
     this.listCollaborationsUseCase = new ListCollaborationsUseCase(repo)
+    this.getCollaborationUseCase = new GetCollaborationUseCase(repo)
     this.getBrandCampaignSummaryUseCase = new GetBrandCampaignSummaryUseCase(repo)
     this.getBrandCampaignTimelineUseCase = new GetBrandCampaignTimelineUseCase(repo)
     this.getCollaborationTimelineUseCase = new GetCollaborationTimelineUseCase(repo)

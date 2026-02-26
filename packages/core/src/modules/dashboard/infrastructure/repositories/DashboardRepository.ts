@@ -104,6 +104,11 @@ export class DashboardRepository implements IDashboardRepository {
     return CollaborationMapper.toDomainList(res.data.data ?? [])
   }
 
+  async getCollaboration(id: string): Promise<Collaboration> {
+    const res = await this.api.getCollaboration(id)
+    return CollaborationMapper.toDomain(res.data.data as any)
+  }
+
   async getBrandCampaignSummary(campaignId: string): Promise<BrandCampaignSummary> {
     const res = await this.api.getBrandCampaignSummary(campaignId)
     return BrandCampaignSummaryMapper.toDomain(res.data.data)

@@ -58,6 +58,7 @@ export interface IDashboardRepository {
   deleteCampaign(id: string): Promise<void>
 
   listCollaborations(params: ListCollaborationsParams): Promise<Collaboration[]>
+  getCollaboration(id: string): Promise<Collaboration>
 
   getBrandCampaignSummary(campaignId: string): Promise<BrandCampaignSummary>
   getBrandCampaignTimeline(campaignId: string, params: TimelineParams): Promise<DashboardTimelinePoint[]>
@@ -78,5 +79,6 @@ export interface IDashboardRepository {
   shortlistApplication(applicationId: string): Promise<CampaignApplication>
   acceptApplication(applicationId: string): Promise<CampaignApplication>
   rejectApplication(applicationId: string): Promise<CampaignApplication>
+
   getInfluencerPublicProfile(influencerId: string): Promise<InfluencerPublicProfile>
 }
