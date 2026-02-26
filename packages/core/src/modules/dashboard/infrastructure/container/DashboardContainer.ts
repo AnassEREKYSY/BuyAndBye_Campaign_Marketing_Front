@@ -18,6 +18,11 @@ import {
   CreateCampaignTierUseCase,
   UpdateCampaignTierUseCase,
   DeleteCampaignTierUseCase,
+  ListBrandCampaignApplicationsUseCase,
+  ShortlistApplicationUseCase,
+  AcceptApplicationUseCase,
+  RejectApplicationUseCase,
+  GetInfluencerPublicProfileUseCase
 } from '../../application/use-cases'
 import { DashboardApiClient } from '../api/DashboardApiClient'
 import { DashboardRepository } from '../repositories/DashboardRepository'
@@ -49,6 +54,12 @@ export class DashboardContainer {
   public updateCampaignTierUseCase: UpdateCampaignTierUseCase
   public deleteCampaignTierUseCase: DeleteCampaignTierUseCase
 
+  public listBrandCampaignApplicationsUseCase: ListBrandCampaignApplicationsUseCase
+  public shortlistApplicationUseCase: ShortlistApplicationUseCase
+  public acceptApplicationUseCase: AcceptApplicationUseCase
+  public rejectApplicationUseCase: RejectApplicationUseCase
+  public getInfluencerPublicProfileUseCase: GetInfluencerPublicProfileUseCase
+
   private constructor(httpClient: HttpClient) {
     const api = new DashboardApiClient(httpClient)
     const repo = new DashboardRepository(api)
@@ -75,6 +86,12 @@ export class DashboardContainer {
     this.createCampaignTierUseCase = new CreateCampaignTierUseCase(repo)
     this.updateCampaignTierUseCase = new UpdateCampaignTierUseCase(repo)
     this.deleteCampaignTierUseCase = new DeleteCampaignTierUseCase(repo)
+
+    this.listBrandCampaignApplicationsUseCase = new ListBrandCampaignApplicationsUseCase(repo)
+    this.shortlistApplicationUseCase = new ShortlistApplicationUseCase(repo)
+    this.acceptApplicationUseCase = new AcceptApplicationUseCase(repo)
+    this.rejectApplicationUseCase = new RejectApplicationUseCase(repo)
+    this.getInfluencerPublicProfileUseCase = new GetInfluencerPublicProfileUseCase(repo)
   }
 
   static getInstance(httpClient: HttpClient) {

@@ -6,12 +6,14 @@ import type { InfluencerDashboard } from '../../domain/entities/InfluencerDashbo
 import type { Payout } from '../../domain/entities/Payout'
 import type { Product } from '../../domain/entities/Product'
 import type { CampaignPayoutTier } from '../../domain/entities/CampaignPayoutTier'
+import type { CampaignApplication } from '../../domain/entities/CampaignApplication'
 import type {
   IDashboardRepository,
   ListCampaignsParams,
   ListCollaborationsParams,
   ListProductsParams,
   TimelineParams,
+  ListCampaignApplicationsParams,
 } from '../../domain/repositories/IDashboardRepository'
 import type {
   CreateCampaignDTO,
@@ -30,6 +32,9 @@ import { PayoutMapper } from '../mapper/PayoutMapper'
 import { TimelineMapper } from '../mapper/TimelineMapper'
 import { ProductMapper } from '../mapper/ProductMapper'
 import { CampaignPayoutTierMapper } from '../mapper/CampaignPayoutTierMapper'
+import { CampaignApplicationMapper } from '../mapper/CampaignApplicationMapper'
+import type { InfluencerPublicProfile } from '../../domain/entities/InfluencerPublicProfile'
+import { InfluencerPublicProfileMapper } from '../mapper/InfluencerPublicProfileMapper'
 
 export class DashboardRepository implements IDashboardRepository {
   constructor(private readonly api: DashboardApiClient) {}
@@ -188,5 +193,33 @@ export class DashboardRepository implements IDashboardRepository {
 
   async deleteCampaignTier(tierId: string): Promise<void> {
     await this.api.deleteCampaignTier(tierId)
+  }
+
+  async listBrandCampaignApplications(campaignId: string, params: ListCampaignApplicationsParams): Promise<CampaignApplication[]> {
+    const res = await this.api.listBrandCampaignApplications(campaignId, {
+      page: params.page ?? 1,
+      size: params.size ?? 20,
+    })
+    return CampaignApplicationMapper.toDomainList(res.data.data ?? [])
+  }
+
+  async shortlistApplication(applicationId: string): Promise<CampaignApplication> {
+    const res = await this.api.shortlistApplication(applicationId)
+    return CampaignApplicationMapper.toDomain(res.data.data as any)
+  }
+
+  async acceptApplication(applicationId: string): Promise<CampaignApplication> {
+    const res = await this.api.acceptApplication(applicationId)
+    return CampaignApplicationMapper.toDomain(res.data.data as any)
+  }
+
+  async rejectApplication(applicationId: string): Promise<CampaignApplication> {
+    const res = await this.api.rejectApplication(applicationId)
+    return CampaignApplicationMapper.toDomain(res.data.data as any)
+  }
+
+  async getInfluencerPublicProfile(influencerId: string): Promise<InfluencerPublicProfile> {
+    const res = await this.api.getInfluencerPublicProfile(influencerId)
+    return InfluencerPublicProfileMapper.toDomain(res.data.data as any)
   }
 }

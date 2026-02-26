@@ -6,6 +6,7 @@ import type { InfluencerDashboard } from '../entities/InfluencerDashboard'
 import type { Payout } from '../entities/Payout'
 import type { Product } from '../entities/Product'
 import type { CampaignPayoutTier } from '../entities/CampaignPayoutTier'
+import type { CampaignApplication } from '../entities/CampaignApplication'
 import type {
   CreateCampaignDTO,
   CreateProductDTO,
@@ -14,6 +15,7 @@ import type {
   CreateCampaignPayoutTierDTO,
   UpdateCampaignPayoutTierDTO,
 } from '../dtos'
+import type { InfluencerPublicProfile } from '../entities/InfluencerPublicProfile'
 
 export type TimelineGroup = 'day'
 
@@ -38,6 +40,11 @@ export type TimelineParams = {
   from: string
   to: string
   group?: TimelineGroup
+}
+
+export type ListCampaignApplicationsParams = {
+  page?: number
+  size?: number
 }
 
 export interface IDashboardRepository {
@@ -66,4 +73,10 @@ export interface IDashboardRepository {
   createCampaignTier(campaignId: string, dto: CreateCampaignPayoutTierDTO): Promise<CampaignPayoutTier>
   updateCampaignTier(tierId: string, dto: UpdateCampaignPayoutTierDTO): Promise<CampaignPayoutTier>
   deleteCampaignTier(tierId: string): Promise<void>
+
+  listBrandCampaignApplications(campaignId: string, params: ListCampaignApplicationsParams): Promise<CampaignApplication[]>
+  shortlistApplication(applicationId: string): Promise<CampaignApplication>
+  acceptApplication(applicationId: string): Promise<CampaignApplication>
+  rejectApplication(applicationId: string): Promise<CampaignApplication>
+  getInfluencerPublicProfile(influencerId: string): Promise<InfluencerPublicProfile>
 }

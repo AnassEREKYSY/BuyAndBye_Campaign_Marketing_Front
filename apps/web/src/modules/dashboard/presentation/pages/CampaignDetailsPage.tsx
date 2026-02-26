@@ -5,8 +5,10 @@ import { CoreTokenStorage } from '@/shared/services/storage'
 import { env } from '@/shared'
 import { useProfile } from '@/modules/profile/application/hooks/useProfile'
 import { UserRole } from '@core/modules/auth/domain/entities'
-import { DashboardContainer } from '@core/modules/dashboard/infrastructure/container/DashboardContainer'
+import { DashboardContainer } from '@core/modules/dashboard'
 import { CampaignPayoutTier } from '@core/modules/dashboard/domain/entities'
+import { useCampaignApplications } from '@/modules/dashboard/application/hooks/useCampaignApplications'
+import { ApplicantProfileModal } from '@/modules/dashboard/presentation/components/ApplicantProfileModal'
 
 type CampaignStatus = 'draft' | 'published' | 'closed'
 
@@ -63,6 +65,13 @@ function TierPill() {
   return 'border-slate-400/25 bg-slate-500/10 text-slate-200'
 }
 
+function appBadge(status: string) {
+  if (status === 'shortlisted') return 'border-amber-500/25 bg-amber-500/10 text-amber-200'
+  if (status === 'accepted') return 'border-emerald-500/25 bg-emerald-500/10 text-emerald-200'
+  if (status === 'rejected') return 'border-rose-500/25 bg-rose-500/10 text-rose-200'
+  return 'border-white/10 bg-white/5 text-white/70'
+}
+
 export default function CampaignDetailsPage() {
   const { id } = useParams()
   const { profile } = useProfile() as any
@@ -91,6 +100,11 @@ export default function CampaignDetailsPage() {
   const [tiersLoading, setTiersLoading] = useState(false)
   const [tiersError, setTiersError] = useState<string | null>(null)
 
+  const apps = useCampaignApplications(role === UserRole.BRAND ? (id ?? '') : '')
+
+  const [profileOpen, setProfileOpen] = useState(false)
+  const [profileInfluencerId, setProfileInfluencerId] = useState<string | null>(null)
+
   const canApply = role === UserRole.INFLUENCER && item?.status === 'published' && !appliedAt
 
   useEffect(() => {
@@ -106,7 +120,6 @@ export default function CampaignDetailsPage() {
         const res = await httpClient.get<ApiEnvelope<CampaignDetails>>(`/api/v1/campaigns/${id}?scope=all`)
         const payload = (res as any).data ?? res
         const data = payload?.data ?? payload
-
         if (!mounted) return
         setItem(data as CampaignDetails)
       } catch (e: any) {
@@ -196,42 +209,68 @@ export default function CampaignDetailsPage() {
     }
   }
 
-  const tiersSorted = useMemo(() => {
-    return [...tiers].sort((a, b) => Number(a.fromValue) - Number(b.fromValue))
-  }, [tiers])
+  const tiersSorted = useMemo(() => [...tiers].sort((a, b) => Number(a.fromValue) - Number(b.fromValue)), [tiers])
+
+  const openApplicantProfile = (influencerId: string) => {
+    setProfileInfluencerId(influencerId)
+    setProfileOpen(true)
+  }
+
+  const closeApplicantProfile = () => {
+    setProfileOpen(false)
+    setProfileInfluencerId(null)
+  }
 
   return (
     <div className="bb-page px-4 py-6 md:px-6">
-      <div className="bb-pop flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-        <div>
-          <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-extrabold text-white/75">
-            <span className={`h-2 w-2 rounded-full ${statusDot(item?.status)}`} />
-            Campaign
+      <div className="bb-gradient-border bb-glass bb-ring bb-pop relative overflow-hidden rounded-[28px] border border-white/10 p-6 text-white">
+        <div className="pointer-events-none absolute inset-0 bb-spotlight" />
+        <div className="pointer-events-none absolute inset-0 bb-noise" />
+
+        <div className="relative flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+          <div className="min-w-0">
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-extrabold text-white/75">
+              <span className={`h-2 w-2 rounded-full ${statusDot(item?.status)}`} />
+              Campaign details
+            </div>
+
+            <h1 className="mt-3 truncate text-2xl font-black tracking-tight">{loading ? 'Loading…' : item?.title ?? '—'}</h1>
+
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <span className={`rounded-full border px-3 py-1 text-[11px] font-extrabold ${statusBadge(item?.status)}`}>
+                {item?.status ?? '—'}
+              </span>
+
+              <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-extrabold text-white/70">
+                Budget: {money(item?.budget, 'MAD')}
+              </span>
+
+              <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-extrabold text-white/70">
+                Dates: {fmtDate(item?.start_at)} → {fmtDate(item?.end_at)}
+              </span>
+            </div>
           </div>
 
-          <h1 className="mt-3 text-2xl font-black tracking-tight text-white">{loading ? 'Loading…' : item?.title ?? '—'}</h1>
-          <p className="mt-1 text-sm font-semibold text-white/60">Details & product information</p>
-        </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Link to="/campaigns" className="bb-btn-ghost h-11 px-5">
+              Back
+            </Link>
+            <Link to="/dashboard" className="bb-btn-ghost h-11 px-5">
+              Dashboard
+            </Link>
 
-        <div className="flex items-center gap-2">
-          <Link to="/campaigns" className="bb-btn-ghost h-11 px-5">
-            Back
-          </Link>
-          <Link to="/dashboard" className="bb-btn-ghost h-11 px-5">
-            Dashboard
-          </Link>
+            {role === UserRole.INFLUENCER && appliedAt ? (
+              <button disabled className="bb-btn-ghost h-11 px-5 opacity-70">
+                Applied {fmtDate(appliedAt)}
+              </button>
+            ) : null}
 
-          {role === UserRole.INFLUENCER && appliedAt ? (
-            <button disabled className="bb-btn-ghost h-11 px-5 opacity-70">
-              Applied {fmtDate(appliedAt)}
-            </button>
-          ) : null}
-
-          {canApply ? (
-            <button disabled={applyLoading} onClick={onApply} className="bb-btn-primary h-11 px-5">
-              {applyLoading ? 'Applying…' : 'Apply'}
-            </button>
-          ) : null}
+            {canApply ? (
+              <button disabled={applyLoading} onClick={onApply} className="bb-btn-primary h-11 px-5">
+                {applyLoading ? 'Applying…' : 'Apply'}
+              </button>
+            ) : null}
+          </div>
         </div>
       </div>
 
@@ -254,33 +293,17 @@ export default function CampaignDetailsPage() {
       ) : null}
 
       <div className="mt-5 grid grid-cols-1 gap-4 lg:grid-cols-12">
-        <div className="lg:col-span-7">
+        <div className="lg:col-span-7 space-y-4">
           <div className="bb-gradient-border bb-glass bb-ring bb-pop relative overflow-hidden rounded-[26px] border border-white/10 p-5 text-white">
             <div className="pointer-events-none absolute inset-0 bb-spotlight" />
             <div className="pointer-events-none absolute inset-0 bb-noise" />
 
             <div className="relative">
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-sm font-extrabold">Campaign details</p>
-                <span className={`rounded-full border px-3 py-1 text-[11px] font-extrabold ${statusBadge(item?.status)}`}>
-                  {item?.status ?? '—'}
-                </span>
-              </div>
+              <p className="text-sm font-extrabold">Overview</p>
 
               <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-4">
                 <p className="text-xs font-extrabold text-white/55">Objective</p>
                 <p className="mt-2 text-sm font-semibold text-white/80">{item?.objective ?? '—'}</p>
-              </div>
-
-              <div className="mt-4 grid grid-cols-2 gap-3">
-                <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                  <p className="text-xs font-extrabold text-white/55">Start</p>
-                  <p className="mt-2 text-sm font-extrabold text-white">{fmtDate(item?.start_at)}</p>
-                </div>
-                <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                  <p className="text-xs font-extrabold text-white/55">End</p>
-                  <p className="mt-2 text-sm font-extrabold text-white">{fmtDate(item?.end_at)}</p>
-                </div>
               </div>
 
               <div className="mt-4 grid grid-cols-2 gap-3">
@@ -295,14 +318,120 @@ export default function CampaignDetailsPage() {
                   <p className="mt-2 text-sm font-extrabold text-white">{money(item?.budget, 'MAD')}</p>
                 </div>
               </div>
-
-              {role === UserRole.BRAND ? (
-                <div className="mt-5 rounded-2xl border border-amber-500/20 bg-amber-500/10 p-4 text-sm font-semibold text-amber-100">
-                  Brands can browse campaigns but can’t apply.
-                </div>
-              ) : null}
             </div>
           </div>
+
+          {role === UserRole.BRAND ? (
+            <div className="bb-gradient-border bb-glass bb-ring bb-pop relative overflow-hidden rounded-[26px] border border-white/10 p-5 text-white">
+              <div className="pointer-events-none absolute inset-0 bb-spotlight" />
+              <div className="pointer-events-none absolute inset-0 bb-noise" />
+
+              <div className="relative">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-extrabold">Applications</p>
+                    <p className="mt-1 text-xs font-semibold text-white/55">Click an applicant to open the full profile</p>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button disabled={apps.loading} onClick={apps.refresh} className="bb-btn-ghost h-10 px-4">
+                      Refresh
+                    </button>
+                    <button disabled={apps.loading || !apps.hasMore} onClick={apps.loadMore} className="bb-btn-ghost h-10 px-4">
+                      Load more
+                    </button>
+                  </div>
+                </div>
+
+                <div className="mt-4 overflow-hidden rounded-2xl border border-white/10 bg-white/5">
+                  <div className="overflow-x-auto">
+                    <table className="w-full min-w-[760px] text-left text-sm text-white">
+                      <thead className="border-b border-white/10 text-xs font-extrabold uppercase tracking-wider text-white/55">
+                        <tr>
+                          <th className="px-4 py-3">Applicant</th>
+                          <th className="px-4 py-3">Status</th>
+                          <th className="px-4 py-3">Message</th>
+                          <th className="px-4 py-3">Applied</th>
+                          <th className="px-4 py-3 text-right">Actions</th>
+                        </tr>
+                      </thead>
+
+                      <tbody className="divide-y divide-white/10">
+                        {apps.loading && apps.items.length === 0 ? (
+                          <tr>
+                            <td className="px-4 py-6 text-white/60" colSpan={5}>
+                              Loading…
+                            </td>
+                          </tr>
+                        ) : null}
+
+                        {!apps.loading && apps.items.length === 0 ? (
+                          <tr>
+                            <td className="px-4 py-6 text-white/60" colSpan={5}>
+                              No applications yet.
+                            </td>
+                          </tr>
+                        ) : null}
+
+                        {apps.items.map((a) => {
+                          const name = a.influencer?.displayName ?? 'Unknown'
+                          const photo = a.influencer?.photoUrl ?? null
+                          const isMutating = apps.mutatingId === a.id
+                          const canShortlist = a.status === 'pending'
+                          const canFinalize = a.status === 'pending' || a.status === 'shortlisted'
+                          const canReject = a.status === 'pending' || a.status === 'shortlisted'
+
+                          return (
+                            <tr key={a.id} className="hover:bg-white/5">
+                              <td className="px-4 py-3">
+                                <button onClick={() => openApplicantProfile(a.influencerId)} className="flex items-center gap-3 text-left">
+                                  <div className="h-10 w-10 overflow-hidden rounded-2xl border border-white/10 bg-white/5">
+                                    {photo ? <img src={photo} alt="" className="h-full w-full object-cover" /> : null}
+                                  </div>
+                                  <div className="min-w-0">
+                                    <p className="truncate text-sm font-extrabold text-white">{name}</p>
+                                    <p className="mt-1 truncate text-xs font-semibold text-white/45">{a.influencerId}</p>
+                                  </div>
+                                </button>
+                              </td>
+
+                              <td className="px-4 py-3">
+                                <span className={`rounded-full border px-3 py-1 text-[11px] font-extrabold ${appBadge(a.status)}`}>
+                                  {a.status}
+                                </span>
+                              </td>
+
+                              <td className="px-4 py-3 text-white/70">
+                                {(a.message ?? '').trim() ? <span className="line-clamp-1">{a.message}</span> : <span className="text-white/45">—</span>}
+                              </td>
+
+                              <td className="px-4 py-3 text-white/70">{fmtDate(a.createdAt)}</td>
+
+                              <td className="px-4 py-3">
+                                <div className="flex items-center justify-end gap-2">
+                                  <button disabled={!canShortlist || isMutating} onClick={() => apps.shortlist(a.id)} className="bb-btn-ghost h-10 px-4 disabled:opacity-60">
+                                    Shortlist
+                                  </button>
+
+                                  <button disabled={!canFinalize || isMutating} onClick={() => apps.accept(a.id)} className="bb-btn-primary h-10 px-4 disabled:opacity-60">
+                                    Finalize
+                                  </button>
+
+                                  <button disabled={!canReject || isMutating} onClick={() => apps.reject(a.id)} className="bb-btn-ghost h-10 px-4 disabled:opacity-60">
+                                    Reject
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          )
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : null}
         </div>
 
         <div className="lg:col-span-5 space-y-4">
@@ -346,12 +475,6 @@ export default function CampaignDetailsPage() {
                   </div>
                 </div>
               </div>
-
-              {role === UserRole.INFLUENCER && appliedAt ? (
-                <div className="mt-5 rounded-2xl border border-slate-400/20 bg-slate-500/10 p-4 text-sm font-semibold text-slate-100">
-                  You already applied on {fmtDate(appliedAt)}.
-                </div>
-              ) : null}
             </div>
           </div>
 
@@ -362,7 +485,7 @@ export default function CampaignDetailsPage() {
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="text-sm font-extrabold">Payout tiers</p>
-                  <p className="mt-1 text-xs font-semibold text-white/55">Read-only here. Manage in Brand Campaign Manager.</p>
+                  <p className="mt-1 text-xs font-semibold text-white/55">Read-only here</p>
                 </div>
                 <span className={`rounded-full border px-3 py-1 text-[11px] font-extrabold ${TierPill()}`}>{tiersSorted.length} tiers</span>
               </div>
@@ -413,16 +536,12 @@ export default function CampaignDetailsPage() {
                   </table>
                 </div>
               </div>
-
-              {role === UserRole.BRAND ? (
-                <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-3 text-xs font-semibold text-white/60">
-                  To edit tiers: Dashboard → Open manager → edit campaign.
-                </div>
-              ) : null}
             </div>
           </div>
         </div>
       </div>
+
+      <ApplicantProfileModal open={profileOpen} influencerId={profileInfluencerId} onClose={closeApplicantProfile} />
     </div>
   )
 }

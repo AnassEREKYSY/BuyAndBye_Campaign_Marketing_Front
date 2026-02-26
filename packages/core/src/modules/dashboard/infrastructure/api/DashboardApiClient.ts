@@ -7,7 +7,9 @@ import type { ApiBrandCampaignSummary } from './types/ApiBrandCampaignSummary'
 import type { ApiTimelinePoint } from './types/ApiTimelinePoint'
 import type { ApiProduct } from './types/ApiProduct'
 import type { ApiCampaignPayoutTier } from './types/ApiCampaignPayoutTier'
+import type { ApiCampaignApplication } from './types/ApiCampaignApplication'
 import { HttpClient } from '@core/shared/services/http/HttpClient'
+import type { ApiInfluencerPublicProfile } from './types/ApiInfluencerPublicProfile'
 
 export class DashboardApiClient {
   constructor(private readonly http: HttpClient) {}
@@ -162,5 +164,28 @@ export class DashboardApiClient {
 
   async deleteCampaignTier(tierId: string) {
     return this.http.delete<ApiEnvelope<{ success: boolean }>>(`/api/v1/tiers/${tierId}`)
+  }
+
+  async listBrandCampaignApplications(campaignId: string, params: { page: number; size: number }) {
+    const q = new URLSearchParams()
+    q.set('page', String(params.page))
+    q.set('size', String(params.size))
+    return this.http.get<{ data: ApiCampaignApplication[] }>(`/api/v1/brand/campaigns/${campaignId}/applications?${q.toString()}`)
+  }
+
+  async shortlistApplication(applicationId: string) {
+    return this.http.post<ApiEnvelope<ApiCampaignApplication>>(`/api/v1/applications/${applicationId}/shortlist`, {})
+  }
+
+  async acceptApplication(applicationId: string) {
+    return this.http.post<ApiEnvelope<ApiCampaignApplication>>(`/api/v1/applications/${applicationId}/accept`, {})
+  }
+
+  async rejectApplication(applicationId: string) {
+    return this.http.post<ApiEnvelope<ApiCampaignApplication>>(`/api/v1/applications/${applicationId}/reject`, {})
+  }
+
+  async getInfluencerPublicProfile(influencerId: string) {
+    return this.http.get<{ data: ApiInfluencerPublicProfile }>(`/api/v1/brand/influencers/${influencerId}`)
   }
 }
