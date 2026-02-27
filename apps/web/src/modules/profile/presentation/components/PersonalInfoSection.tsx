@@ -16,11 +16,18 @@ function Avatar({ url, fallback }: { url?: string | null; fallback: string }) {
   const src = toAbsolute(url ?? '')
   return (
     <div className="flex items-center gap-4">
-      <div className="h-14 w-14 overflow-hidden rounded-3xl border border-white/10 bg-white/5 shadow-[0_18px_60px_rgba(0,0,0,0.35)]">
+      <div
+        className="h-14 w-14 overflow-hidden rounded-3xl border"
+        style={{
+          borderColor: 'rgb(var(--bb-border) / 0.10)',
+          backgroundColor: 'rgb(var(--bb-border) / 0.04)',
+          boxShadow: '0 18px 60px rgb(0 0 0 / 0.10)',
+        }}
+      >
         {src ? (
           <img src={src} alt="avatar" className="h-full w-full object-cover" />
         ) : (
-          <div className="grid h-full w-full place-items-center text-sm font-extrabold text-white/70">
+          <div className="grid h-full w-full place-items-center text-sm font-extrabold" style={{ color: 'rgb(var(--bb-muted) / 0.90)' }}>
             {fallback.slice(0, 2).toUpperCase()}
           </div>
         )}
@@ -164,15 +171,29 @@ export function PersonalInfoSection() {
             <Avatar url={headerImageUrl} fallback={profile.display_name || profile.email} />
             <div>
               <div className="flex flex-wrap items-center gap-2">
-                <h2 className="text-lg font-extrabold">{profile.display_name}</h2>
-                <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] font-extrabold text-white/70">
+                <h2 className="text-lg font-extrabold bb-title-text">{profile.display_name}</h2>
+                <span
+                  className="rounded-full border px-2.5 py-1 text-[11px] font-extrabold"
+                  style={{
+                    borderColor: 'rgb(var(--bb-border) / 0.10)',
+                    backgroundColor: 'rgb(var(--bb-border) / 0.04)',
+                    color: 'rgb(var(--bb-muted) / 0.90)',
+                  }}
+                >
                   {badge}
                 </span>
-                <span className="rounded-full border border-white/10 bg-black/20 px-2.5 py-1 text-[11px] font-extrabold text-white/55">
+                <span
+                  className="rounded-full border px-2.5 py-1 text-[11px] font-extrabold"
+                  style={{
+                    borderColor: 'rgb(var(--bb-border) / 0.10)',
+                    backgroundColor: 'rgb(var(--bb-border) / 0.04)',
+                    color: 'rgb(var(--bb-muted) / 0.82)',
+                  }}
+                >
                   Keep it complete ✨
                 </span>
               </div>
-              <p className="mt-1 text-sm text-white/55">{profile.email}</p>
+              <p className="mt-1 text-sm bb-subtle-text">{profile.email}</p>
             </div>
           </div>
 
@@ -184,9 +205,9 @@ export function PersonalInfoSection() {
     )
   }, [profile, refresh, isLoading, headerImageUrl])
 
-  if (!profile && isLoading) return <div className="text-white/70">Loading profile…</div>
-  if (!profile && error) return <div className="text-red-200">{error}</div>
-  if (!profile) return <div className="text-white/70">No profile loaded.</div>
+  if (!profile && isLoading) return <div className="bb-subtle-text">Loading profile…</div>
+  if (!profile && error) return <div className="text-rose-200">{error}</div>
+  if (!profile) return <div className="bb-subtle-text">No profile loaded.</div>
 
   return (
     <div className="space-y-6">
@@ -220,20 +241,10 @@ export function PersonalInfoSection() {
             </Field>
 
             <Field label="Industry">
-              <select
-                value={industry}
-                onChange={(e) => setIndustry(e.target.value)}
-                className={[
-                  'w-full rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white/95',
-                  'transition focus:border-white/20 focus:bg-black/35 focus:bb-focus',
-                  'shadow-[0_1px_0_rgba(255,255,255,0.06)_inset]',
-                ].join(' ')}
-              >
-                <option value="" className="bg-[#05060a]">
-                  Select an industry
-                </option>
+              <select value={industry} onChange={(e) => setIndustry(e.target.value)} className="bb-select w-full">
+                <option value="">Select an industry</option>
                 {INDUSTRIES.map((x) => (
-                  <option key={x} value={x} className="bg-[#05060a]">
+                  <option key={x} value={x}>
                     {x}
                   </option>
                 ))}
@@ -251,13 +262,19 @@ export function PersonalInfoSection() {
             <Field label="Brand logo" hint="PNG/JPG">
               <Input type="file" accept="image/*" onChange={(e) => setLogo(e.target.files?.[0] ?? null)} />
               {logoPreview ? (
-                <div className="mt-3 flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-3">
-                  <div className="h-10 w-10 overflow-hidden rounded-2xl border border-white/10 bg-black/30">
-                    <img src={logoPreview} alt="logo preview" className="h-full w-full object-cover" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-extrabold text-white/90">{logo?.name}</p>
-                    <p className="text-xs text-white/50">Ready to upload</p>
+                <div className="mt-3 rounded-2xl border p-3"
+                     style={{ borderColor: 'rgb(var(--bb-border) / 0.10)', backgroundColor: 'rgb(var(--bb-border) / 0.04)' }}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 overflow-hidden rounded-2xl border"
+                         style={{ borderColor: 'rgb(var(--bb-border) / 0.10)', backgroundColor: 'rgb(var(--bb-border) / 0.04)' }}
+                    >
+                      <img src={logoPreview} alt="logo preview" className="h-full w-full object-cover" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-extrabold bb-title-text">{logo?.name}</p>
+                      <p className="text-xs bb-subtle-text">Ready to upload</p>
+                    </div>
                   </div>
                 </div>
               ) : null}
@@ -268,8 +285,11 @@ export function PersonalInfoSection() {
             <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={4} placeholder="We sell amazing products…" />
           </Field>
 
-          <div className="flex flex-col gap-3 rounded-3xl border border-white/10 bg-white/5 p-4 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm text-white/60">Your changes will be saved securely.</p>
+          <div
+            className="flex flex-col gap-3 rounded-3xl border p-4 sm:flex-row sm:items-center sm:justify-between"
+            style={{ borderColor: 'rgb(var(--bb-border) / 0.10)', backgroundColor: 'rgb(var(--bb-border) / 0.04)' }}
+          >
+            <p className="text-sm bb-subtle-text">Your changes will be saved securely.</p>
             <PrimaryButton type="submit" disabled={isLoading}>
               Save changes
             </PrimaryButton>
@@ -302,33 +322,29 @@ export function PersonalInfoSection() {
             <Field label="Profile image" hint="PNG/JPG">
               <Input type="file" accept="image/*" onChange={(e) => setPhoto(e.target.files?.[0] ?? null)} />
               {photoPreview ? (
-                <div className="mt-3 flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-3">
-                  <div className="h-10 w-10 overflow-hidden rounded-2xl border border-white/10 bg-black/30">
-                    <img src={photoPreview} alt="photo preview" className="h-full w-full object-cover" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-extrabold text-white/90">{photo?.name}</p>
-                    <p className="text-xs text-white/50">Ready to upload</p>
+                <div className="mt-3 rounded-2xl border p-3"
+                     style={{ borderColor: 'rgb(var(--bb-border) / 0.10)', backgroundColor: 'rgb(var(--bb-border) / 0.04)' }}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 overflow-hidden rounded-2xl border"
+                         style={{ borderColor: 'rgb(var(--bb-border) / 0.10)', backgroundColor: 'rgb(var(--bb-border) / 0.04)' }}
+                    >
+                      <img src={photoPreview} alt="photo preview" className="h-full w-full object-cover" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-extrabold bb-title-text">{photo?.name}</p>
+                      <p className="text-xs bb-subtle-text">Ready to upload</p>
+                    </div>
                   </div>
                 </div>
               ) : null}
             </Field>
 
             <Field label="Niche">
-              <select
-                value={niche}
-                onChange={(e) => setNiche(e.target.value)}
-                className={[
-                  'w-full rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-white/95',
-                  'transition focus:border-white/20 focus:bg-black/35 focus:bb-focus',
-                  'shadow-[0_1px_0_rgba(255,255,255,0.06)_inset]',
-                ].join(' ')}
-              >
-                <option value="" className="bg-[#05060a]">
-                  Select a niche
-                </option>
+              <select value={niche} onChange={(e) => setNiche(e.target.value)} className="bb-select w-full">
+                <option value="">Select a niche</option>
                 {NICHES.map((x) => (
-                  <option key={x} value={x} className="bg-[#05060a]">
+                  <option key={x} value={x}>
                     {x}
                   </option>
                 ))}
@@ -376,8 +392,11 @@ export function PersonalInfoSection() {
             </Field>
           </div>
 
-          <div className="flex flex-col gap-3 rounded-3xl border border-white/10 bg-white/5 p-4 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm text-white/60">Your changes will be saved securely.</p>
+          <div
+            className="flex flex-col gap-3 rounded-3xl border p-4 sm:flex-row sm:items-center sm:justify-between"
+            style={{ borderColor: 'rgb(var(--bb-border) / 0.10)', backgroundColor: 'rgb(var(--bb-border) / 0.04)' }}
+          >
+            <p className="text-sm bb-subtle-text">Your changes will be saved securely.</p>
             <PrimaryButton type="submit" disabled={isLoading}>
               Save changes
             </PrimaryButton>

@@ -16,8 +16,8 @@ export function LoginPage() {
   }
 
   return (
-    <div className="bb-page">
-      <div className="bb-surface bb-surface-pad">
+    <div className="bb-page px-4 py-6 md:px-6">
+      <div className="bb-surface bb-surface-pad bb-pop">
         <div className="pointer-events-none absolute inset-0 bb-spotlight" />
         <div className="pointer-events-none absolute inset-0 bb-grid" />
         <div className="pointer-events-none absolute inset-0 bb-noise" />
@@ -29,13 +29,22 @@ export function LoginPage() {
             <p className="bb-p mt-4 max-w-xl">Access your workspace with a clean, secure experience.</p>
 
             <div className="mt-8 grid gap-3 sm:grid-cols-2">
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                <p className="text-sm font-extrabold text-white/90">Fast access</p>
-                <p className="mt-2 text-sm leading-6 text-white/65">Login and continue your workflow instantly.</p>
+              <div className="bb-card p-4">
+                <p className="text-sm font-extrabold" style={{ color: 'rgb(var(--bb-text) / 0.92)' }}>
+                  Fast access
+                </p>
+                <p className="mt-2 text-sm leading-6" style={{ color: 'rgb(var(--bb-muted) / 0.90)' }}>
+                  Login and continue your workflow instantly.
+                </p>
               </div>
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                <p className="text-sm font-extrabold text-white/90">Secure</p>
-                <p className="mt-2 text-sm leading-6 text-white/65">Token based authentication via API.</p>
+
+              <div className="bb-card p-4">
+                <p className="text-sm font-extrabold" style={{ color: 'rgb(var(--bb-text) / 0.92)' }}>
+                  Secure
+                </p>
+                <p className="mt-2 text-sm leading-6" style={{ color: 'rgb(var(--bb-muted) / 0.90)' }}>
+                  Token-based authentication via API.
+                </p>
               </div>
             </div>
           </div>
@@ -43,10 +52,10 @@ export function LoginPage() {
           <div className="lg:col-span-7">
             <div className="bb-card">
               <form onSubmit={onSubmit} className="grid gap-4">
-                <label className="grid gap-2 text-sm font-semibold text-white/80">
+                <label className="grid gap-2 text-sm font-semibold" style={{ color: 'rgb(var(--bb-muted) / 0.90)' }}>
                   Email
                   <input
-                    className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-white outline-none transition focus:border-sky-400/45 focus:bg-black/25"
+                    className="bb-input"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="you@company.com"
@@ -56,10 +65,10 @@ export function LoginPage() {
                   />
                 </label>
 
-                <label className="grid gap-2 text-sm font-semibold text-white/80">
+                <label className="grid gap-2 text-sm font-semibold" style={{ color: 'rgb(var(--bb-muted) / 0.90)' }}>
                   Password
                   <input
-                    className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-white outline-none transition focus:border-sky-400/45 focus:bg-black/25"
+                    className="bb-input"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Your password"
@@ -70,12 +79,16 @@ export function LoginPage() {
                 </label>
 
                 <button disabled={auth.isLoading} className="bb-btn-primary mt-2" type="submit">
-                  {auth.isLoading ? 'Logging in...' : 'Login'}
+                  {auth.isLoading ? 'Logging in…' : 'Login'}
                 </button>
 
-                <p className="mt-2 text-sm text-white/65">
+                <p className="mt-2 text-sm" style={{ color: 'rgb(var(--bb-muted) / 0.90)' }}>
                   No account?{' '}
-                  <Link to="/register" className="font-extrabold text-sky-300/90 hover:underline">
+                  <Link
+                    to="/register"
+                    className="font-extrabold underline underline-offset-4"
+                    style={{ color: 'rgb(var(--bb-text) / 0.92)', textDecorationColor: 'rgb(var(--bb-border) / 0.25)' }}
+                  >
                     Create one
                   </Link>
                 </p>

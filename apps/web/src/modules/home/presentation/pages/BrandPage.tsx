@@ -4,11 +4,7 @@ import { useInView } from '@/shared/hooks'
 function Reveal({ children, delayMs = 0 }: { children: React.ReactNode; delayMs?: number }) {
   const { ref, inView } = useInView<HTMLDivElement>()
   return (
-    <div
-      ref={ref}
-      className={`bb-fade-up ${inView ? 'bb-fade-up-in' : ''}`}
-      style={{ transitionDelay: `${delayMs}ms` }}
-    >
+    <div ref={ref} className={`bb-fade-up ${inView ? 'bb-fade-up-in' : ''}`} style={{ transitionDelay: `${delayMs}ms` }}>
       {children}
     </div>
   )
@@ -17,28 +13,43 @@ function Reveal({ children, delayMs = 0 }: { children: React.ReactNode; delayMs?
 function Card({ title, desc }: { title: string; desc: string }) {
   return (
     <div className="bb-card">
-      <p className="text-base font-extrabold tracking-tight text-white/90">{title}</p>
-      <p className="mt-2 text-sm leading-6 text-white/65">{desc}</p>
+      <p className="text-base font-extrabold tracking-tight bb-title-text">{title}</p>
+      <p className="mt-2 text-sm leading-6 bb-subtle-text">{desc}</p>
+    </div>
+  )
+}
+
+function TinyStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="bb-soft-box p-4">
+      <p className="text-xs font-semibold bb-muted-text">{label}</p>
+      <p className="mt-2 text-sm font-extrabold bb-title-text">{value}</p>
     </div>
   )
 }
 
 export function BrandPage() {
   return (
-    <div className="bb-page flex flex-col gap-10">
+    <div className="bb-page flex flex-col gap-10 px-4 py-6 md:px-6">
       <section className="bb-surface bb-surface-pad">
         <div className="pointer-events-none absolute inset-0 bb-spotlight" />
         <div className="pointer-events-none absolute inset-0 bb-grid" />
         <div className="pointer-events-none absolute inset-0 bb-noise" />
-        <div className="pointer-events-none absolute -inset-24 bb-float opacity-60 [background:conic-gradient(from_180deg_at_50%_50%,rgba(99,102,241,0.16),rgba(56,189,248,0.12),rgba(255,255,255,0.05),rgba(99,102,241,0.16))] blur-3xl" />
+        <div
+          className="pointer-events-none absolute -inset-24 bb-float opacity-60 blur-3xl"
+          style={{
+            background:
+              'conic-gradient(from 180deg at 50% 50%, rgba(99,102,241,0.16), rgba(56,189,248,0.12), rgba(255,255,255,0.05), rgba(99,102,241,0.16))',
+          }}
+        />
 
         <div className="relative grid gap-10 lg:grid-cols-2 lg:items-center">
           <div>
             <span className="bb-chip">For Brands</span>
             <h1 className="bb-title mt-4">Run creator campaigns with clean tracking and premium execution.</h1>
             <p className="bb-p mt-4 max-w-2xl">
-              Control ROI with clearer attribution, reduce manual operations, and keep the collaboration experience
-              professional for your brand.
+              Control ROI with clearer attribution, reduce manual operations, and keep the collaboration experience professional
+              for your brand.
             </p>
 
             <div className="mt-8 flex flex-wrap gap-3">
@@ -51,18 +62,9 @@ export function BrandPage() {
             </div>
 
             <div className="mt-8 grid gap-3 sm:grid-cols-3">
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                <p className="text-xs font-semibold text-white/60">Reporting</p>
-                <p className="mt-2 text-sm font-extrabold text-white/90">Realtime</p>
-              </div>
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                <p className="text-xs font-semibold text-white/60">Attribution</p>
-                <p className="mt-2 text-sm font-extrabold text-white/90">Links + codes</p>
-              </div>
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                <p className="text-xs font-semibold text-white/60">Operations</p>
-                <p className="mt-2 text-sm font-extrabold text-white/90">Less manual</p>
-              </div>
+              <TinyStat label="Reporting" value="Realtime" />
+              <TinyStat label="Attribution" value="Links + codes" />
+              <TinyStat label="Operations" value="Less manual" />
             </div>
           </div>
 
@@ -79,9 +81,7 @@ export function BrandPage() {
         <section className="grid gap-6 lg:grid-cols-12 lg:items-start">
           <div className="bb-card lg:col-span-5">
             <h2 className="bb-h2">What you control</h2>
-            <p className="bb-p mt-3">
-              Keep campaigns consistent while giving creators a clean workflow that improves performance.
-            </p>
+            <p className="bb-p mt-3">Keep campaigns consistent while giving creators a clean workflow that improves performance.</p>
             <div className="mt-6 grid gap-3">
               <Card title="Commission rules" desc="Rates and conditions stay clear and consistent." />
               <Card title="Approvals" desc="Choose who joins and keep quality high." />

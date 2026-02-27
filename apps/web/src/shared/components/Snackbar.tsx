@@ -1,38 +1,24 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { NotificationType } from '@buyandbye/core'
 import { useNotification } from '@/shared/context/notification'
+import {
+  CheckCircleIcon,
+  ExclamationTriangleIcon,
+  InformationCircleIcon,
+  XCircleIcon,
+} from '@heroicons/react/24/outline'
 
 function tone(type: NotificationType) {
   switch (type) {
     case 'success':
-      return {
-        wrap: 'border-emerald-400/25 bg-emerald-500/10 text-emerald-50',
-        dot: 'bg-emerald-400',
-        bar: 'bg-emerald-400/70',
-        label: 'Success',
-      }
+      return { wrap: 'bb-snack-success', label: 'Success', Icon: CheckCircleIcon }
     case 'error':
-      return {
-        wrap: 'border-rose-400/25 bg-rose-500/10 text-rose-50',
-        dot: 'bg-rose-400',
-        bar: 'bg-rose-400/70',
-        label: 'Error',
-      }
+      return { wrap: 'bb-snack-error', label: 'Error', Icon: XCircleIcon }
     case 'warning':
-      return {
-        wrap: 'border-amber-400/25 bg-amber-500/10 text-amber-50',
-        dot: 'bg-amber-400',
-        bar: 'bg-amber-400/70',
-        label: 'Warning',
-      }
+      return { wrap: 'bb-snack-warning', label: 'Warning', Icon: ExclamationTriangleIcon }
     case 'info':
     default:
-      return {
-        wrap: 'border-sky-400/25 bg-sky-500/10 text-sky-50',
-        dot: 'bg-sky-400',
-        bar: 'bg-sky-400/70',
-        label: 'Info',
-      }
+      return { wrap: 'bb-snack-info', label: 'Info', Icon: InformationCircleIcon }
   }
 }
 
@@ -50,40 +36,53 @@ export function Snackbar() {
     setVisible(true)
     setProgressKey((k) => k + 1)
     if (timer.current) window.clearTimeout(timer.current)
-    timer.current = window.setTimeout(() => setVisible(false), Math.max(400, duration - 180))
+    timer.current = window.setTimeout(() => setVisible(false), Math.max(450, duration - 180))
     return () => {
       if (timer.current) window.clearTimeout(timer.current)
     }
   }, [current, duration])
 
   if (!current || !t) return null
+  const Icon = t.Icon
 
   return (
     <div className="pointer-events-none fixed inset-x-0 top-4 z-[60] flex justify-center px-4">
       <div
-        className={[
-          'pointer-events-auto w-full max-w-xl overflow-hidden rounded-2xl border backdrop-blur',
-          'shadow-[0_24px_80px_rgba(0,0,0,0.55)]',
-          'transition duration-200 will-change-transform',
-          visible ? 'translate-y-0 opacity-100' : '-translate-y-2 opacity-0',
-          t.wrap,
-        ].join(' ')}
+        className={['pointer-events-auto w-full max-w-xl', 'bb-snack', t.wrap, visible ? 'bb-snack-in' : 'bb-snack-out'].join(' ')}
+        role="status"
+        aria-live="polite"
+        style={{
+          backgroundColor: 'rgb(var(--bb-surface) / 0.92)',
+          color: 'rgb(var(--bb-text) / 0.95)',
+        }}
       >
         <div className="flex items-start gap-3 px-4 py-3">
-          <span className={`mt-1.5 h-2.5 w-2.5 rounded-full ${t.dot}`} />
-          <div className="min-w-0">
-            <p className="text-xs font-extrabold tracking-wide text-white/85">{t.label}</p>
+          <span
+            className="mt-0.5 rounded-xl border p-2"
+            style={{
+              borderColor: 'rgb(var(--bb-border) / 0.10)',
+              backgroundColor: 'rgb(var(--bb-border) / 0.04)',
+            }}
+          >
+            <Icon className="h-5 w-5" />
+          </span>
+
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-extrabold tracking-wide" style={{ color: 'rgb(var(--bb-muted) / 0.85)' }}>
+              {t.label}
+            </p>
             <p className="mt-0.5 truncate text-sm font-extrabold leading-6">{current.message}</p>
           </div>
         </div>
 
-        <div className="h-1 w-full bg-white/5">
+        <div className="h-1 w-full" style={{ backgroundColor: 'rgb(var(--bb-border) / 0.06)' }}>
           <div
             key={progressKey}
-            className={`h-full ${t.bar}`}
+            className="h-full"
             style={{
               width: '100%',
               transformOrigin: 'left',
+              backgroundColor: 'rgb(var(--bb-accent) / 0.55)',
               animation: `bb-snack-progress ${duration}ms linear forwards`,
             }}
           />
@@ -91,8 +90,8 @@ export function Snackbar() {
 
         <style>{`
           @keyframes bb-snack-progress {
-            from { transform: scaleX(1); opacity: 0.95; }
-            to { transform: scaleX(0); opacity: 0.6; }
+            from { transform: scaleX(1); opacity: 0.9; }
+            to { transform: scaleX(0); opacity: 0.55; }
           }
         `}</style>
       </div>

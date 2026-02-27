@@ -5,6 +5,7 @@ import { UserRole } from '@core/modules/auth/domain/entities'
 import { useBrandManagement } from '../../application/hooks/useBrandManagement'
 import { BrandCampaignModal } from '../components/BrandCampaignModal'
 import type { Campaign } from '@core/modules/dashboard'
+import { DashboardHeader } from '@/modules/dashboard/presentation/components/DashboardHeader'
 
 type TierDraft = {
   id?: string
@@ -15,16 +16,24 @@ type TierDraft = {
   currency: string | null
 }
 
-function StatusPill({ status }: { status: Campaign['status'] }) {
-  const cfg = useMemo(() => {
-    if (status === 'published') return { label: 'published', cls: 'border-emerald-400/25 bg-emerald-500/10 text-emerald-200' }
-    if (status === 'draft') return { label: 'draft', cls: 'border-amber-400/25 bg-amber-500/10 text-amber-200' }
-    return { label: 'closed', cls: 'border-slate-400/25 bg-slate-500/10 text-slate-200' }
-  }, [status])
+function pillForCampaignStatus(status: Campaign['status']) {
+  if (status === 'published') {
+    return { label: 'published', border: 'rgb(16 185 129 / 0.25)', bg: 'rgb(16 185 129 / 0.10)', text: 'rgb(110 231 183 / 0.95)' }
+  }
+  if (status === 'draft') {
+    return { label: 'draft', border: 'rgb(245 158 11 / 0.25)', bg: 'rgb(245 158 11 / 0.10)', text: 'rgb(253 230 138 / 0.95)' }
+  }
+  return { label: 'closed', border: 'rgb(var(--bb-border) / 0.10)', bg: 'rgb(var(--bb-border) / 0.04)', text: 'rgb(var(--bb-muted) / 0.90)' }
+}
 
+function StatusPill({ status }: { status: Campaign['status'] }) {
+  const p = useMemo(() => pillForCampaignStatus(status), [status])
   return (
-    <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-extrabold ${cfg.cls}`}>
-      {cfg.label}
+    <span
+      className="inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-extrabold"
+      style={{ borderColor: p.border, backgroundColor: p.bg, color: p.text }}
+    >
+      {p.label}
     </span>
   )
 }
@@ -84,6 +93,42 @@ function IconEye() {
   )
 }
 
+function skelBg() {
+  return { backgroundColor: 'rgb(var(--bb-border) / 0.06)' }
+}
+
+function SkeletonRow() {
+  return (
+    <tr className="bb-tr">
+      <td className="bb-td">
+        <div className="h-4 w-2/3 rounded" style={skelBg()} />
+      </td>
+      <td className="bb-td">
+        <div className="h-4 w-40 rounded" style={skelBg()} />
+      </td>
+      <td className="bb-td">
+        <div className="h-4 w-28 rounded" style={skelBg()} />
+      </td>
+      <td className="bb-td">
+        <div className="h-4 w-12 rounded" style={skelBg()} />
+      </td>
+      <td className="bb-td">
+        <div className="h-6 w-24 rounded-full" style={skelBg()} />
+      </td>
+      <td className="bb-td">
+        <div className="h-4 w-36 rounded" style={skelBg()} />
+      </td>
+      <td className="bb-td text-right">
+        <div className="ml-auto flex justify-end gap-2">
+          <div className="h-10 w-10 rounded-full" style={skelBg()} />
+          <div className="h-10 w-10 rounded-full" style={skelBg()} />
+          <div className="h-10 w-10 rounded-full" style={skelBg()} />
+        </div>
+      </td>
+    </tr>
+  )
+}
+
 export default function BrandCampaignsManagementPage() {
   const nav = useNavigate()
   const { profile } = useProfile() as any
@@ -111,19 +156,31 @@ export default function BrandCampaignsManagementPage() {
   const [open, setOpen] = useState(false)
   const [editing, setEditing] = useState<Campaign | null>(null)
   const [editingTiers, setEditingTiers] = useState<TierDraft[]>([])
+  const [search, setSearch] = useState('')
 
   if (role !== UserRole.BRAND) {
     return (
       <div className="bb-page px-4 py-6 md:px-6">
-        <div className="bb-pop rounded-3xl border border-white/10 bg-white/5 p-5 text-sm font-semibold text-white/70">
+        <div className="bb-empty bb-pop" style={{ color: 'rgb(var(--bb-muted) / 0.90)' }}>
           Forbidden
         </div>
       </div>
     )
   }
 
-  const items = (campaignsRes as any)?.items ?? (campaignsRes as any)?.data ?? []
+  const items: Campaign[] = (campaignsRes as any)?.items ?? (campaignsRes as any)?.data ?? []
   const products = (productsRes as any)?.items ?? (productsRes as any)?.data ?? []
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    if (!q) return items
+    return items.filter((c: any) => {
+      const title = (c?.title ?? '').toLowerCase()
+      const status = (c?.status ?? '').toLowerCase()
+      const product = ((c as any)?.product?.name ?? c?.productId ?? '').toLowerCase()
+      return title.includes(q) || status.includes(q) || product.includes(q)
+    })
+  }, [items, search])
 
   async function openCreate() {
     setEditing(null)
@@ -138,115 +195,118 @@ export default function BrandCampaignsManagementPage() {
     setOpen(true)
   }
 
+  const rightSlot = (
+    <div className="flex w-full flex-wrap items-center justify-end gap-2 md:w-auto">
+      <button
+        onClick={() => {
+          void refreshProducts()
+          void refreshCampaigns()
+        }}
+        className="bb-btn-ghost h-11 px-5"
+      >
+        Refresh
+      </button>
+      <button onClick={() => void openCreate()} className="bb-btn-primary h-11 px-5">
+        New campaign
+      </button>
+    </div>
+  )
+
   return (
     <div className="bb-page px-4 py-6 md:px-6">
       <div className="bb-pop">
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div>
-            <p className="text-xs font-extrabold uppercase tracking-wider text-white/45">Brand</p>
-            <h1 className="mt-2 text-2xl font-black tracking-tight text-white">Campaigns</h1>
-            <p className="mt-1 text-sm font-semibold text-white/60">Create, publish, manage campaigns + tiers.</p>
-          </div>
-
-          <div className="flex gap-3">
-            <button
-              onClick={() => {
-                void refreshProducts()
-                void refreshCampaigns()
-              }}
-              className="bb-btn-ghost h-11 px-5"
-            >
-              Refresh
-            </button>
-            <button onClick={() => void openCreate()} className="bb-btn-ghost h-11 px-5">
-              New campaign
-            </button>
-          </div>
-        </div>
+        <DashboardHeader
+          title="Campaigns"
+          subtitle="Create, publish, manage campaigns + tiers."
+          search={search}
+          onSearch={setSearch}
+          rightSlot={rightSlot}
+          searchPlaceholder="Search by title, product, status…"
+        />
       </div>
 
       {campaignsError ? (
-        <div className="bb-pop mt-5 rounded-3xl border border-rose-500/25 bg-rose-500/10 p-4 text-sm font-semibold text-rose-100">
+        <div
+          className="bb-pop mt-5 rounded-3xl border p-4 text-sm font-semibold"
+          style={{
+            borderColor: 'rgb(244 63 94 / 0.25)',
+            backgroundColor: 'rgb(244 63 94 / 0.10)',
+            color: 'rgb(var(--bb-text) / 0.92)',
+          }}
+        >
           {campaignsError}
         </div>
       ) : null}
 
-      <div className="bb-pop mt-6 overflow-hidden rounded-3xl border border-white/10 bg-white/5">
+      <div className="bb-pop mt-6 bb-table-wrap">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[1100px] text-left text-sm text-white">
-            <thead className="border-b border-white/10 text-xs font-extrabold uppercase tracking-wider text-white/55">
+          <table className="bb-table min-w-[1100px]">
+            <thead className="bb-thead">
               <tr>
-                <th className="px-4 py-3">Title</th>
-                <th className="px-4 py-3">Product</th>
-                <th className="px-4 py-3">Commission</th>
-                <th className="px-4 py-3">Applications</th>
-                <th className="px-4 py-3">Status</th>
-                <th className="px-4 py-3">Updated</th>
-                <th className="px-4 py-3 text-right">Actions</th>
+                <th className="bb-th">Title</th>
+                <th className="bb-th">Product</th>
+                <th className="bb-th">Commission</th>
+                <th className="bb-th">Applications</th>
+                <th className="bb-th">Status</th>
+                <th className="bb-th">Updated</th>
+                <th className="bb-th text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/10">
+
+            <tbody>
               {campaignsLoading && items.length === 0 ? (
-                <tr>
-                  <td className="px-4 py-6 text-white/60" colSpan={7}>
-                    Loading…
+                <>
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <SkeletonRow key={i} />
+                  ))}
+                </>
+              ) : null}
+
+              {!campaignsLoading && filtered.length === 0 ? (
+                <tr className="bb-tr">
+                  <td className="bb-td bb-muted" colSpan={7}>
+                    No campaigns found.
                   </td>
                 </tr>
               ) : null}
 
-              {!campaignsLoading && items.length === 0 ? (
-                <tr>
-                  <td className="px-4 py-6 text-white/60" colSpan={7}>
-                    No campaigns yet.
-                  </td>
-                </tr>
-              ) : null}
+              {filtered.map((c: Campaign) => (
+                <tr key={c.id} className="bb-tr bb-tr-hover">
+                  <td className="bb-td font-semibold">{c.title}</td>
 
-              {items.map((c: Campaign) => (
-                <tr key={c.id}>
-                  <td className="px-4 py-4 font-semibold">{c.title}</td>
-                  <td className="px-4 py-4 text-white/75">{(c as any).product?.name ?? c.productId}</td>
-                  <td className="px-4 py-4 text-white/75">
+                  <td className="bb-td bb-muted">{(c as any).product?.name ?? c.productId}</td>
+
+                  <td className="bb-td bb-muted">
                     {c.commissionType} • {Number(c.commissionValue).toFixed(2)}
                   </td>
-                  <td className="px-4 py-4 text-white/75">{(c as any).applicationsCount ?? 0}</td>
-                  <td className="px-4 py-4">
+
+                  <td className="bb-td bb-muted">{(c as any).applicationsCount ?? 0}</td>
+
+                  <td className="bb-td">
                     <StatusPill status={c.status} />
                   </td>
-                  <td className="px-4 py-4 text-white/60">{c.updatedAt ? new Date(c.updatedAt).toLocaleString() : '—'}</td>
-                  <td className="px-4 py-4">
+
+                  <td className="bb-td" style={{ color: 'rgb(var(--bb-muted) / 0.82)' }}>
+                    {c.updatedAt ? new Date(c.updatedAt).toLocaleString() : '—'}
+                  </td>
+
+                  <td className="bb-td">
                     <div className="flex justify-end gap-2">
-                      <button
-                        title="Details"
-                        onClick={() => nav(`/campaigns/${c.id}`)}
-                        className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white/90 transition hover:-translate-y-0.5 hover:bg-white/10"
-                      >
+                      <button title="Details" onClick={() => nav(`/campaigns/${c.id}`)} className="bb-icon-btn">
                         <IconEye />
                       </button>
 
-                      <button
-                        title="Edit (includes tiers)"
-                        onClick={() => void openEdit(c)}
-                        className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white/90 transition hover:-translate-y-0.5 hover:bg-white/10"
-                      >
+                      <button title="Edit (includes tiers)" onClick={() => void openEdit(c)} className="bb-icon-btn">
                         <IconEdit />
                       </button>
 
                       {c.status === 'draft' ? (
-                        <button
-                          title="Publish"
-                          onClick={() => void onPublishCampaign(c.id)}
-                          className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white/90 transition hover:-translate-y-0.5 hover:bg-white/10"
-                        >
+                        <button title="Publish" onClick={() => void onPublishCampaign(c.id)} className="bb-icon-btn">
                           <IconRocket />
                         </button>
                       ) : null}
 
-                      <button
-                        title="Delete"
-                        onClick={() => void onDeleteCampaign(c.id)}
-                        className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white/90 transition hover:-translate-y-0.5 hover:bg-white/10"
-                      >
+                      <button title="Delete" onClick={() => void onDeleteCampaign(c.id)} className="bb-icon-btn">
                         <IconTrash />
                       </button>
                     </div>

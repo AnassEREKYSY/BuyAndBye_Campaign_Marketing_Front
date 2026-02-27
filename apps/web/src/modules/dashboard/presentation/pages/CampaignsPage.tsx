@@ -5,6 +5,7 @@ import { CoreTokenStorage } from '@/shared/services/storage'
 import { env } from '@/shared'
 import { useProfile } from '@/modules/profile/application/hooks/useProfile'
 import { UserRole } from '@core/modules/auth/domain/entities'
+import { DashboardHeader } from '@/modules/dashboard/presentation/components/DashboardHeader'
 
 type CampaignStatus = 'draft' | 'published' | 'closed'
 type CampaignListItem = {
@@ -44,7 +45,7 @@ function statusBadge(status?: string) {
   if (status === 'published') return 'border-emerald-500/25 bg-emerald-500/10 text-emerald-200'
   if (status === 'draft') return 'border-amber-500/25 bg-amber-500/10 text-amber-200'
   if (status === 'closed') return 'border-rose-500/25 bg-rose-500/10 text-rose-200'
-  return 'border-white/10 bg-white/5 text-white/70'
+  return 'border-slate-400/25 bg-slate-500/10 text-slate-200'
 }
 
 function statusDot(status?: string) {
@@ -52,6 +53,16 @@ function statusDot(status?: string) {
   if (status === 'draft') return 'bg-amber-300/90 shadow-[0_0_18px_rgba(245,158,11,0.35)]'
   if (status === 'closed') return 'bg-rose-300/90 shadow-[0_0_18px_rgba(244,63,94,0.35)]'
   return 'bg-white/35'
+}
+
+function SkeletonCard() {
+  return (
+    <div className="bb-card relative overflow-hidden">
+      <div className="h-4 w-2/3 rounded bg-black/10 dark:bg-white/10" />
+      <div className="mt-3 h-3 w-1/3 rounded bg-black/10 dark:bg-white/10" />
+      <div className="mt-6 h-10 rounded-2xl bg-black/10 dark:bg-white/10" />
+    </div>
+  )
 }
 
 export default function CampaignsPage() {
@@ -67,7 +78,7 @@ export default function CampaignsPage() {
   const tokenStorage = useMemo(() => new CoreTokenStorage(), [])
   const httpClient = useMemo(() => new HttpClient(env.BACKEND_BASE_URL, tokenStorage), [tokenStorage])
 
-  const [query, setQuery] = useState('')
+  const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
   const [size, setSize] = useState(12)
 
@@ -151,77 +162,65 @@ export default function CampaignsPage() {
   }, [httpClient, page, size])
 
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase()
+    const q = search.trim().toLowerCase()
     if (!q) return items
     return items.filter((c) => (c.title ?? '').toLowerCase().includes(q) || (c.product?.name ?? '').toLowerCase().includes(q))
-  }, [items, query])
+  }, [items, search])
 
   const canPrev = meta.current > 1
   const canNext = meta.current < meta.last
 
+  const rightSlot = (
+    <div className="flex w-full flex-wrap items-center justify-end gap-2 md:w-auto">
+      <select
+        value={size}
+        onChange={(e) => {
+          setSize(Number(e.target.value))
+          setPage(1)
+        }}
+        className="bb-select"
+      >
+        <option value={8}>8 / page</option>
+        <option value={12}>12 / page</option>
+        <option value={20}>20 / page</option>
+      </select>
+
+      <div className="flex items-center gap-2">
+        <button disabled={!canPrev} onClick={() => setPage((p) => Math.max(1, p - 1))} className="bb-btn-ghost h-11 px-4 disabled:opacity-50">
+          Prev
+        </button>
+        <button disabled={!canNext} onClick={() => setPage((p) => p + 1)} className="bb-btn-primary h-11 px-4 disabled:opacity-50">
+          Next
+        </button>
+      </div>
+
+      <Link to="/dashboard" className="bb-btn-ghost h-11 px-4">
+        Dashboard
+      </Link>
+    </div>
+  )
+
   return (
     <div className="bb-page px-4 py-6 md:px-6">
-      <div className="bb-gradient-border bb-glass bb-ring bb-pop relative overflow-hidden rounded-[26px] border border-white/10 p-5 text-white">
-        <div className="pointer-events-none absolute inset-0 bb-spotlight" />
-        <div className="pointer-events-none absolute inset-0 bb-grid" />
-        <div className="pointer-events-none absolute inset-0 bb-noise" />
+      <div className="bb-pop">
+        <DashboardHeader
+          title="Browse campaigns"
+          subtitle="Only published campaigns are shown."
+          search={search}
+          onSearch={(v) => {
+            setSearch(v)
+            setPage(1)
+          }}
+          rightSlot={rightSlot}
+          searchPlaceholder="Filter by title or product…"
+        />
+      </div>
 
-        <div className="relative flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-extrabold text-white/75">
-              <span className="inline-block h-2 w-2 rounded-full bg-emerald-300/80 shadow-[0_0_18px_rgba(16,185,129,0.35)]" />
-              Published campaigns
-            </div>
-            <h1 className="mt-3 text-2xl font-black tracking-tight text-white">Browse campaigns</h1>
-            <p className="mt-1 text-sm font-semibold text-white/60">Only published campaigns are shown.</p>
-          </div>
-
-          <Link to="/dashboard" className="bb-btn-ghost h-11 px-5">
-            Back to dashboard
-          </Link>
-        </div>
-
-        <div className="relative mt-5 grid grid-cols-1 gap-3 md:grid-cols-12 md:items-center">
-          <div className="md:col-span-7">
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Filter by title or product…"
-              className="h-12 w-full rounded-2xl border border-white/10 bg-white/5 px-4 text-sm font-extrabold text-white placeholder:text-white/35 outline-none transition focus:border-white/20 focus:bg-white/10 focus:shadow-[0_0_0_6px_rgba(56,189,248,0.12)]"
-            />
-          </div>
-
-          <div className="md:col-span-3">
-            <select
-              value={size}
-              onChange={(e) => {
-                setSize(Number(e.target.value))
-                setPage(1)
-              }}
-              className="h-12 w-full rounded-2xl border border-white/10 bg-white/5 px-3 text-sm font-extrabold text-white outline-none transition hover:bg-white/10 focus:border-white/20 focus:shadow-[0_0_0_6px_rgba(56,189,248,0.12)]"
-            >
-              <option value={8}>8</option>
-              <option value={12}>12</option>
-              <option value={20}>20</option>
-            </select>
-          </div>
-
-          <div className="md:col-span-2 flex items-center justify-end gap-2">
-            <button disabled={!canPrev} onClick={() => setPage((p) => Math.max(1, p - 1))} className="bb-btn-ghost h-12 px-4 disabled:opacity-50">
-              Prev
-            </button>
-            <button disabled={!canNext} onClick={() => setPage((p) => p + 1)} className="bb-btn-primary h-12 px-4 disabled:opacity-50">
-              Next
-            </button>
-          </div>
-        </div>
-
-        <div className="relative mt-3 flex items-center justify-between text-xs font-semibold text-white/45">
-          <span>
-            Page {meta.current} / {meta.last}
-          </span>
-          <span>{meta.total} total</span>
-        </div>
+      <div className="mt-3 flex items-center justify-between text-xs font-semibold bb-muted-weak">
+        <span>
+          Page {meta.current} / {meta.last}
+        </span>
+        <span>{meta.total} total</span>
       </div>
 
       {error ? (
@@ -233,20 +232,18 @@ export default function CampaignsPage() {
       <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {(loading ? Array.from({ length: size }) : filtered).map((c: any, idx: number) =>
           loading ? (
-            <div key={`sk_${idx}`} className="bb-card bb-pop relative overflow-hidden rounded-[26px] border border-white/10 bg-white/5 p-5">
-              <div className="h-4 w-2/3 rounded bg-white/10" />
-              <div className="mt-3 h-3 w-1/3 rounded bg-white/10" />
-              <div className="mt-6 h-10 rounded-2xl bg-white/10" />
+            <div key={`sk_${idx}`} className="bb-pop">
+              <SkeletonCard />
             </div>
           ) : (
             <Link
               key={c.id}
               to={`/campaigns/${c.id}`}
-              className={`bb-gradient-border bb-glass bb-ring bb-pop group relative overflow-hidden rounded-[26px] border border-white/10 p-5 text-white transition will-change-transform hover:-translate-y-0.5 ${
+              className={`bb-pop bb-card group relative overflow-hidden rounded-[26px] border p-5 transition will-change-transform hover:-translate-y-0.5 ${
                 appliedMap[c.id] ? 'opacity-70 grayscale-[0.25]' : ''
               }`}
             >
-              <div className="bb-shimmer pointer-events-none absolute inset-0 opacity-70" />
+              <div className="pointer-events-none absolute inset-0 bb-shimmer opacity-70" />
 
               <div className="relative">
                 <div className="flex items-start justify-between gap-3">
@@ -255,8 +252,8 @@ export default function CampaignsPage() {
                       <span className={`h-2 w-2 shrink-0 rounded-full ${statusDot(c.status)}`} />
                       <p className="truncate text-sm font-extrabold">{c.title}</p>
                     </div>
-                    <p className="mt-1 truncate text-xs font-semibold text-white/55">
-                      Product: <span className="text-white/80">{c.product?.name ?? '—'}</span>
+                    <p className="mt-1 truncate text-xs font-semibold bb-muted-weak">
+                      Product: <span className="opacity-90">{c.product?.name ?? '—'}</span>
                     </p>
                   </div>
 
@@ -274,24 +271,27 @@ export default function CampaignsPage() {
                 </div>
 
                 <div className="mt-4 grid grid-cols-2 gap-3">
-                  <div className="rounded-2xl border border-white/10 bg-white/5 p-3 transition group-hover:bg-white/8">
-                    <p className="text-[11px] font-extrabold text-white/55">Start</p>
-                    <p className="mt-2 text-xs font-extrabold text-white/85">{fmtDate(c.start_at)}</p>
+                  <div className="rounded-2xl border border-white/10 bg-white/5 p-3 transition group-hover:bg-white/10 dark:border-white/10 dark:bg-white/5">
+                    <p className="text-[11px] font-extrabold bb-muted-weak">Start</p>
+                    <p className="mt-2 text-xs font-extrabold opacity-90">{fmtDate(c.start_at)}</p>
                   </div>
-                  <div className="rounded-2xl border border-white/10 bg-white/5 p-3 transition group-hover:bg-white/8">
-                    <p className="text-[11px] font-extrabold text-white/55">End</p>
-                    <p className="mt-2 text-xs font-extrabold text-white/85">{fmtDate(c.end_at)}</p>
+
+                  <div className="rounded-2xl border border-white/10 bg-white/5 p-3 transition group-hover:bg-white/10 dark:border-white/10 dark:bg-white/5">
+                    <p className="text-[11px] font-extrabold bb-muted-weak">End</p>
+                    <p className="mt-2 text-xs font-extrabold opacity-90">{fmtDate(c.end_at)}</p>
                   </div>
                 </div>
 
-                <div className="mt-4 flex items-center justify-between text-xs font-semibold text-white/55">
-                  <span className="truncate">{c.commission_type ? `${c.commission_type} • ${Number(c.commission_value ?? 0)}` : '—'}</span>
-                  <span className="shrink-0">{money(c.budget, 'MAD')}</span>
+                <div className="mt-4 flex items-center justify-between text-xs font-semibold bb-muted">
+                  <span className="truncate">
+                    {c.commission_type ? `${c.commission_type} • ${Number(c.commission_value ?? 0)}` : '—'}
+                  </span>
+                  <span className="shrink-0 opacity-90">{money(c.budget, 'MAD')}</span>
                 </div>
 
                 <div className="mt-4 flex items-center justify-between">
-                  <span className="text-[11px] font-extrabold text-white/45">Open details</span>
-                  <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-extrabold text-white/75 transition group-hover:bg-white/10">
+                  <span className="text-[11px] font-extrabold bb-muted-weak">Open details</span>
+                  <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-extrabold opacity-90 transition group-hover:bg-white/10">
                     View
                   </span>
                 </div>

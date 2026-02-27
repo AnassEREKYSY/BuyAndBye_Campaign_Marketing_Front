@@ -1,4 +1,3 @@
-// apps/web/src/modules/dashboard/presentation/components/BrandCampaignModal.tsx
 import { useEffect, useMemo, useState } from 'react'
 import type { Campaign } from '@core/modules/dashboard'
 import type { CreateCampaignDTO, UpdateCampaignDTO } from '@core/modules/dashboard/domain/dtos'
@@ -104,7 +103,6 @@ export function BrandCampaignModal({ open, onClose, products, initial, initialTi
   const [endAt, setEndAt] = useState('')
 
   const [tiers, setTiers] = useState<TierDraft[]>([])
-
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -164,20 +162,11 @@ export function BrandCampaignModal({ open, onClose, products, initial, initialTi
       setError(null)
       setSaving(true)
 
-      if (!productId) {
-        setError('Product is required')
-        return
-      }
-      if (!title.trim()) {
-        setError('Title is required')
-        return
-      }
+      if (!productId) return setError('Product is required')
+      if (!title.trim()) return setError('Title is required')
 
       const cv = toNumberOrNull(commissionValue.trim())
-      if (cv === null) {
-        setError('Commission value is required')
-        return
-      }
+      if (cv === null) return setError('Commission value is required')
 
       const payloadBase = {
         title: title.trim(),
@@ -190,27 +179,17 @@ export function BrandCampaignModal({ open, onClose, products, initial, initialTi
       }
 
       if (payloadBase.startAt && payloadBase.endAt && payloadBase.endAt < payloadBase.startAt) {
-        setError('End date must be after start date')
-        return
+        return setError('End date must be after start date')
       }
 
       const normalized = normalizeTiers(tiers)
       const tierErr = validateTiers(normalized)
-      if (tierErr) {
-        setError(tierErr)
-        return
-      }
+      if (tierErr) return setError(tierErr)
 
       if (isEdit && initial) {
         await onUpdate(initial.id, payloadBase as UpdateCampaignDTO, normalized)
       } else {
-        await onCreate(
-          {
-            productId,
-            ...(payloadBase as any),
-          } as CreateCampaignDTO,
-          normalized,
-        )
+        await onCreate({ productId, ...(payloadBase as any) } as CreateCampaignDTO, normalized)
       }
 
       onClose()
@@ -222,39 +201,53 @@ export function BrandCampaignModal({ open, onClose, products, initial, initialTi
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/70 p-3 sm:p-4">
+    <div
+      className="fixed inset-0 z-50 bg-black/70 p-3 sm:p-4"
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget) onClose()
+      }}
+    >
       <div className="mx-auto flex h-[calc(100vh-1.5rem)] max-w-6xl flex-col sm:h-[calc(100vh-2rem)]">
-        <div className="bb-gradient-border bb-glass bb-ring relative flex h-full flex-col overflow-hidden rounded-[26px] border border-white/10 text-white">
+        <div className="bb-surface bb-pop flex h-full flex-col overflow-hidden rounded-[26px]">
           <div className="pointer-events-none absolute inset-0 bb-spotlight" />
           <div className="pointer-events-none absolute inset-0 bb-noise" />
 
-          <div className="relative flex items-start justify-between gap-3 border-b border-white/10 bg-black/20 px-4 py-4 sm:px-5">
+          {/* Header */}
+          <div
+            className="relative flex items-start justify-between gap-3 border-b px-4 py-4 sm:px-5"
+            style={{ borderColor: 'rgb(var(--bb-border) / 0.10)', backgroundColor: 'rgb(var(--bb-surface) / 0.70)' }}
+          >
             <div className="min-w-0">
-              <p className="truncate text-sm font-extrabold tracking-tight">{isEdit ? 'Edit campaign' : 'Create campaign'}</p>
-              <p className="mt-1 text-xs font-semibold text-white/55">Campaign details + payout tiers.</p>
+              <p className="truncate text-sm font-extrabold tracking-tight" style={{ color: 'rgb(var(--bb-text) / 0.95)' }}>
+                {isEdit ? 'Edit campaign' : 'Create campaign'}
+              </p>
+              <p className="mt-1 text-xs font-semibold" style={{ color: 'rgb(var(--bb-muted) / 0.85)' }}>
+                Campaign details + payout tiers.
+              </p>
             </div>
-            <div className="flex gap-2">
-              <button onClick={onClose} className="bb-btn-ghost h-10 px-4">
-                Close
-              </button>
-            </div>
+
+            <button onClick={onClose} className="bb-btn-ghost h-10 px-4">
+              Close
+            </button>
           </div>
 
+          {/* Body */}
           <div className="relative flex-1 overflow-y-auto px-4 py-4 sm:px-5 bb-soft-scroll">
             {error ? (
-              <div className="mb-4 rounded-2xl border border-rose-500/25 bg-rose-500/10 p-3 text-sm font-semibold text-rose-100">
+              <div
+                className="mb-4 rounded-2xl border p-3 text-sm font-semibold"
+                style={{ borderColor: 'rgb(244 63 94 / 0.25)', backgroundColor: 'rgb(244 63 94 / 0.10)', color: 'rgb(var(--bb-text) / 0.92)' }}
+              >
                 {error}
               </div>
             ) : null}
 
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
               <div className="md:col-span-2">
-                <label className="text-xs font-extrabold text-white/70">Product</label>
-                <select
-                  className="mt-2 h-11 w-full rounded-2xl border border-white/10 bg-white/5 px-4 text-sm font-semibold text-white outline-none"
-                  value={productId}
-                  onChange={(e) => setProductId(e.target.value)}
-                >
+                <label className="text-xs font-extrabold" style={{ color: 'rgb(var(--bb-muted) / 0.85)' }}>
+                  Product
+                </label>
+                <select className="bb-select mt-2 w-full" value={productId} onChange={(e) => setProductId(e.target.value)}>
                   {products.map((p) => (
                     <option key={p.id} value={p.id}>
                       {p.name}
@@ -264,19 +257,24 @@ export function BrandCampaignModal({ open, onClose, products, initial, initialTi
               </div>
 
               <div className="md:col-span-2">
-                <label className="text-xs font-extrabold text-white/70">Title</label>
-                <input
-                  className="mt-2 h-11 w-full rounded-2xl border border-white/10 bg-white/5 px-4 text-sm font-semibold text-white outline-none"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  placeholder="Campaign title"
-                />
+                <label className="text-xs font-extrabold" style={{ color: 'rgb(var(--bb-muted) / 0.85)' }}>
+                  Title
+                </label>
+                <input className="bb-input mt-2" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Campaign title" />
               </div>
 
               <div className="md:col-span-2">
-                <label className="text-xs font-extrabold text-white/70">Objective</label>
+                <label className="text-xs font-extrabold" style={{ color: 'rgb(var(--bb-muted) / 0.85)' }}>
+                  Objective
+                </label>
                 <textarea
-                  className="mt-2 min-h-[90px] w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white outline-none"
+                  className="mt-2 w-full rounded-2xl border px-4 py-3 text-sm font-semibold outline-none transition"
+                  style={{
+                    minHeight: 90,
+                    borderColor: 'rgb(var(--bb-border) / 0.10)',
+                    backgroundColor: 'rgb(var(--bb-card) / 0.80)',
+                    color: 'rgb(var(--bb-text) / 0.95)',
+                  }}
                   value={objective}
                   onChange={(e) => setObjective(e.target.value)}
                   placeholder="Objective (optional)"
@@ -284,21 +282,21 @@ export function BrandCampaignModal({ open, onClose, products, initial, initialTi
               </div>
 
               <div>
-                <label className="text-xs font-extrabold text-white/70">Commission type</label>
-                <select
-                  className="mt-2 h-11 w-full rounded-2xl border border-white/10 bg-white/5 px-4 text-sm font-semibold text-white outline-none"
-                  value={commissionType}
-                  onChange={(e) => setCommissionType(e.target.value as any)}
-                >
+                <label className="text-xs font-extrabold" style={{ color: 'rgb(var(--bb-muted) / 0.85)' }}>
+                  Commission type
+                </label>
+                <select className="bb-select mt-2 w-full" value={commissionType} onChange={(e) => setCommissionType(e.target.value as any)}>
                   <option value="percent">Percent</option>
                   <option value="fixed">Fixed</option>
                 </select>
               </div>
 
               <div>
-                <label className="text-xs font-extrabold text-white/70">Commission value</label>
+                <label className="text-xs font-extrabold" style={{ color: 'rgb(var(--bb-muted) / 0.85)' }}>
+                  Commission value
+                </label>
                 <input
-                  className="mt-2 h-11 w-full rounded-2xl border border-white/10 bg-white/5 px-4 text-sm font-semibold text-white outline-none"
+                  className="bb-input mt-2"
                   value={commissionValue}
                   onChange={(e) => setCommissionValue(e.target.value)}
                   placeholder={commissionType === 'percent' ? '10' : '50'}
@@ -306,43 +304,39 @@ export function BrandCampaignModal({ open, onClose, products, initial, initialTi
               </div>
 
               <div>
-                <label className="text-xs font-extrabold text-white/70">Budget</label>
-                <input
-                  className="mt-2 h-11 w-full rounded-2xl border border-white/10 bg-white/5 px-4 text-sm font-semibold text-white outline-none"
-                  value={budget}
-                  onChange={(e) => setBudget(e.target.value)}
-                  placeholder="2000"
-                />
+                <label className="text-xs font-extrabold" style={{ color: 'rgb(var(--bb-muted) / 0.85)' }}>
+                  Budget
+                </label>
+                <input className="bb-input mt-2" value={budget} onChange={(e) => setBudget(e.target.value)} placeholder="2000" />
               </div>
 
               <div>
-                <label className="text-xs font-extrabold text-white/70">Start date</label>
-                <input
-                  type="date"
-                  className="mt-2 h-11 w-full rounded-2xl border border-white/10 bg-white/5 px-4 text-sm font-semibold text-white outline-none"
-                  value={startAt}
-                  onChange={(e) => setStartAt(e.target.value)}
-                />
+                <label className="text-xs font-extrabold" style={{ color: 'rgb(var(--bb-muted) / 0.85)' }}>
+                  Start date
+                </label>
+                <input type="date" className="bb-input mt-2" value={startAt} onChange={(e) => setStartAt(e.target.value)} />
               </div>
 
               <div>
-                <label className="text-xs font-extrabold text-white/70">End date</label>
-                <input
-                  type="date"
-                  className="mt-2 h-11 w-full rounded-2xl border border-white/10 bg-white/5 px-4 text-sm font-semibold text-white outline-none"
-                  value={endAt}
-                  onChange={(e) => setEndAt(e.target.value)}
-                  min={startAt || undefined}
-                />
+                <label className="text-xs font-extrabold" style={{ color: 'rgb(var(--bb-muted) / 0.85)' }}>
+                  End date
+                </label>
+                <input type="date" className="bb-input mt-2" value={endAt} onChange={(e) => setEndAt(e.target.value)} min={startAt || undefined} />
               </div>
             </div>
 
-            <div className="mt-6 rounded-3xl border border-white/10 bg-white/5 p-4">
+            {/* Tiers */}
+            <div className="mt-6 bb-card p-4">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-sm font-extrabold">Payout tiers</p>
-                  <p className="mt-1 text-xs font-semibold text-white/55">Clicks ranges used to compute payouts.</p>
+                  <p className="text-sm font-extrabold" style={{ color: 'rgb(var(--bb-text) / 0.95)' }}>
+                    Payout tiers
+                  </p>
+                  <p className="mt-1 text-xs font-semibold" style={{ color: 'rgb(var(--bb-muted) / 0.85)' }}>
+                    Click ranges used to compute payouts.
+                  </p>
                 </div>
+
                 <button onClick={addTier} className="bb-btn-ghost h-10 px-4">
                   <span className="inline-flex items-center gap-2">
                     <IconPlus />
@@ -351,28 +345,28 @@ export function BrandCampaignModal({ open, onClose, products, initial, initialTi
                 </button>
               </div>
 
-              <div className="mt-4 overflow-hidden rounded-2xl border border-white/10">
+              <div className="mt-4 bb-table-wrap">
                 <div className="overflow-x-auto">
-                  <table className="w-full min-w-[860px] text-left text-sm text-white">
-                    <thead className="border-b border-white/10 text-xs font-extrabold uppercase tracking-wider text-white/55">
+                  <table className="bb-table min-w-[860px]">
+                    <thead className="bb-thead">
                       <tr>
-                        <th className="px-4 py-3">Metric</th>
-                        <th className="px-4 py-3">From</th>
-                        <th className="px-4 py-3">To</th>
-                        <th className="px-4 py-3">Payout</th>
-                        <th className="px-4 py-3">Currency</th>
-                        <th className="px-4 py-3 text-right">Action</th>
+                        <th className="bb-th">Metric</th>
+                        <th className="bb-th">From</th>
+                        <th className="bb-th">To</th>
+                        <th className="bb-th">Payout</th>
+                        <th className="bb-th">Currency</th>
+                        <th className="bb-th text-right">Action</th>
                       </tr>
                     </thead>
 
-                    <tbody className="divide-y divide-white/10">
+                    <tbody>
                       {tiers.map((t, idx) => (
-                        <tr key={t.id ?? `new_${idx}`}>
-                          <td className="px-4 py-3 font-semibold">clicks</td>
+                        <tr key={t.id ?? `new_${idx}`} className="bb-tr bb-tr-hover">
+                          <td className="bb-td font-semibold">clicks</td>
 
-                          <td className="px-4 py-3">
+                          <td className="bb-td">
                             <input
-                              className="h-10 w-28 rounded-2xl border border-white/10 bg-white/5 px-3 text-sm font-semibold text-white outline-none"
+                              className="bb-input h-10 w-28 px-3"
                               value={String(t.fromValue)}
                               onChange={(e) => {
                                 const v = toIntOrNull(e.target.value)
@@ -382,9 +376,9 @@ export function BrandCampaignModal({ open, onClose, products, initial, initialTi
                             />
                           </td>
 
-                          <td className="px-4 py-3">
+                          <td className="bb-td">
                             <input
-                              className="h-10 w-28 rounded-2xl border border-white/10 bg-white/5 px-3 text-sm font-semibold text-white outline-none"
+                              className="bb-input h-10 w-28 px-3"
                               value={t.toValue === null ? '' : String(t.toValue)}
                               onChange={(e) => {
                                 const raw = e.target.value.trim()
@@ -396,9 +390,9 @@ export function BrandCampaignModal({ open, onClose, products, initial, initialTi
                             />
                           </td>
 
-                          <td className="px-4 py-3">
+                          <td className="bb-td">
                             <input
-                              className="h-10 w-36 rounded-2xl border border-white/10 bg-white/5 px-3 text-sm font-semibold text-white outline-none"
+                              className="bb-input h-10 w-36 px-3"
                               value={String(t.payoutAmount)}
                               onChange={(e) => {
                                 const v = toNumberOrNull(e.target.value)
@@ -408,22 +402,18 @@ export function BrandCampaignModal({ open, onClose, products, initial, initialTi
                             />
                           </td>
 
-                          <td className="px-4 py-3">
+                          <td className="bb-td">
                             <input
-                              className="h-10 w-24 rounded-2xl border border-white/10 bg-white/5 px-3 text-sm font-semibold text-white outline-none"
+                              className="bb-input h-10 w-24 px-3"
                               value={t.currency ?? 'MAD'}
                               onChange={(e) => updateTier(idx, { currency: e.target.value })}
                               placeholder="MAD"
                             />
                           </td>
 
-                          <td className="px-4 py-3">
+                          <td className="bb-td">
                             <div className="flex justify-end">
-                              <button
-                                onClick={() => removeTier(idx)}
-                                className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white/90 transition hover:-translate-y-0.5 hover:bg-white/10"
-                                title="Remove"
-                              >
+                              <button onClick={() => removeTier(idx)} className="bb-icon-btn" title="Remove">
                                 <IconTrash />
                               </button>
                             </div>
@@ -432,8 +422,8 @@ export function BrandCampaignModal({ open, onClose, products, initial, initialTi
                       ))}
 
                       {tiers.length === 0 ? (
-                        <tr>
-                          <td colSpan={6} className="px-4 py-6 text-white/60">
+                        <tr className="bb-tr">
+                          <td colSpan={6} className="bb-td bb-muted">
                             No tiers
                           </td>
                         </tr>
@@ -447,11 +437,15 @@ export function BrandCampaignModal({ open, onClose, products, initial, initialTi
             <div className="h-4" />
           </div>
 
-          <div className="relative flex items-center justify-end gap-3 border-t border-white/10 bg-black/20 px-4 py-4 sm:px-5">
+          {/* Footer */}
+          <div
+            className="relative flex items-center justify-end gap-3 border-t px-4 py-4 sm:px-5"
+            style={{ borderColor: 'rgb(var(--bb-border) / 0.10)', backgroundColor: 'rgb(var(--bb-surface) / 0.70)' }}
+          >
             <button onClick={onClose} className="bb-btn-ghost h-11 px-5">
               Cancel
             </button>
-            <button onClick={() => void submit()} disabled={saving} className="bb-btn-ghost h-11 px-5">
+            <button onClick={() => void submit()} disabled={saving} className="bb-btn-primary h-11 px-5 disabled:opacity-60">
               {saving ? 'Saving…' : 'Save'}
             </button>
           </div>

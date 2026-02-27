@@ -23,9 +23,22 @@ export function RegisterPage() {
     navigate('/dashboard', { replace: true })
   }
 
+  const roleBtn = (active: boolean) =>
+    active
+      ? {
+          borderColor: 'rgb(var(--bb-accent) / 0.35)',
+          backgroundColor: 'rgb(var(--bb-border) / 0.04)',
+          color: 'rgb(var(--bb-text) / 0.92)',
+        }
+      : {
+          borderColor: 'rgb(var(--bb-border) / 0.10)',
+          backgroundColor: 'rgb(var(--bb-card) / 0.70)',
+          color: 'rgb(var(--bb-muted) / 0.90)',
+        }
+
   return (
-    <div className="bb-page">
-      <div className="bb-surface bb-surface-pad">
+    <div className="bb-page px-4 py-6 md:px-6">
+      <div className="bb-surface bb-surface-pad bb-pop">
         <div className="pointer-events-none absolute inset-0 bb-spotlight" />
         <div className="pointer-events-none absolute inset-0 bb-grid" />
         <div className="pointer-events-none absolute inset-0 bb-noise" />
@@ -35,17 +48,26 @@ export function RegisterPage() {
             <span className="bb-chip">Get started</span>
             <h1 className="bb-title mt-4">Create account</h1>
             <p className="bb-p mt-4 max-w-xl">
-              Choose your profile: <span className="font-extrabold text-white/90">{roleLabel}</span>.
+              Choose your profile: <span style={{ color: 'rgb(var(--bb-text) / 0.95)' }} className="font-extrabold">{roleLabel}</span>.
             </p>
 
             <div className="mt-8 grid gap-3 sm:grid-cols-2">
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                <p className="text-sm font-extrabold text-white/90">Clean onboarding</p>
-                <p className="mt-2 text-sm leading-6 text-white/65">Fast signup and a premium first impression.</p>
+              <div className="bb-card p-4">
+                <p className="text-sm font-extrabold" style={{ color: 'rgb(var(--bb-text) / 0.92)' }}>
+                  Clean onboarding
+                </p>
+                <p className="mt-2 text-sm leading-6" style={{ color: 'rgb(var(--bb-muted) / 0.90)' }}>
+                  Fast signup and a premium first impression.
+                </p>
               </div>
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                <p className="text-sm font-extrabold text-white/90">Role based</p>
-                <p className="mt-2 text-sm leading-6 text-white/65">Brand and influencer experiences are tailored.</p>
+
+              <div className="bb-card p-4">
+                <p className="text-sm font-extrabold" style={{ color: 'rgb(var(--bb-text) / 0.92)' }}>
+                  Role based
+                </p>
+                <p className="mt-2 text-sm leading-6" style={{ color: 'rgb(var(--bb-muted) / 0.90)' }}>
+                  Brand and influencer experiences are tailored.
+                </p>
               </div>
             </div>
           </div>
@@ -56,32 +78,27 @@ export function RegisterPage() {
                 <button
                   type="button"
                   onClick={() => setRole('brand')}
-                  className={`rounded-2xl border px-4 py-3 text-sm font-extrabold transition ${
-                    role === 'brand'
-                      ? 'border-sky-400/45 bg-white/8 text-white'
-                      : 'border-white/10 bg-black/10 text-white/75 hover:bg-white/6'
-                  }`}
+                  className="rounded-2xl border px-4 py-3 text-sm font-extrabold transition"
+                  style={roleBtn(role === 'brand')}
                 >
                   Brand
                 </button>
+
                 <button
                   type="button"
                   onClick={() => setRole('influencer')}
-                  className={`rounded-2xl border px-4 py-3 text-sm font-extrabold transition ${
-                    role === 'influencer'
-                      ? 'border-sky-400/45 bg-white/8 text-white'
-                      : 'border-white/10 bg-black/10 text-white/75 hover:bg-white/6'
-                  }`}
+                  className="rounded-2xl border px-4 py-3 text-sm font-extrabold transition"
+                  style={roleBtn(role === 'influencer')}
                 >
                   Influencer
                 </button>
               </div>
 
               <form onSubmit={onSubmit} className="mt-6 grid gap-4">
-                <label className="grid gap-2 text-sm font-semibold text-white/80">
+                <label className="grid gap-2 text-sm font-semibold" style={{ color: 'rgb(var(--bb-muted) / 0.90)' }}>
                   Full name
                   <input
-                    className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-white outline-none transition focus:border-sky-400/45 focus:bg-black/25"
+                    className="bb-input"
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     placeholder="Your name"
@@ -91,10 +108,10 @@ export function RegisterPage() {
                   />
                 </label>
 
-                <label className="grid gap-2 text-sm font-semibold text-white/80">
+                <label className="grid gap-2 text-sm font-semibold" style={{ color: 'rgb(var(--bb-muted) / 0.90)' }}>
                   Email
                   <input
-                    className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-white outline-none transition focus:border-sky-400/45 focus:bg-black/25"
+                    className="bb-input"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="you@company.com"
@@ -104,10 +121,10 @@ export function RegisterPage() {
                   />
                 </label>
 
-                <label className="grid gap-2 text-sm font-semibold text-white/80">
+                <label className="grid gap-2 text-sm font-semibold" style={{ color: 'rgb(var(--bb-muted) / 0.90)' }}>
                   Password
                   <input
-                    className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-white outline-none transition focus:border-sky-400/45 focus:bg-black/25"
+                    className="bb-input"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Create a strong password"
@@ -118,12 +135,16 @@ export function RegisterPage() {
                 </label>
 
                 <button disabled={auth.isLoading} className="bb-btn-primary mt-2" type="submit">
-                  {auth.isLoading ? 'Creating...' : 'Create account'}
+                  {auth.isLoading ? 'Creating…' : 'Create account'}
                 </button>
 
-                <p className="mt-2 text-sm text-white/65">
+                <p className="mt-2 text-sm" style={{ color: 'rgb(var(--bb-muted) / 0.90)' }}>
                   Already have an account?{' '}
-                  <Link to="/login" className="font-extrabold text-sky-300/90 hover:underline">
+                  <Link
+                    to="/login"
+                    className="font-extrabold underline underline-offset-4"
+                    style={{ color: 'rgb(var(--bb-text) / 0.92)', textDecorationColor: 'rgb(var(--bb-border) / 0.25)' }}
+                  >
                     Login
                   </Link>
                 </p>

@@ -1,18 +1,48 @@
 import { Navigate } from 'react-router-dom'
+import { Suspense, lazy } from 'react'
 import { MainLayout } from './MainLayout'
 import { AuthGuard } from './guards'
+import { HomeRedirect } from './HomeRedirect'
+
 import { LoginPage } from '@/modules/auth/presentation/pages/LoginPage'
 import { RegisterPage } from '@/modules/auth/presentation/pages/RegisterPage'
 import { BrandPage, ContactPage, InfluencerPage } from '@/modules/home/presentation/pages'
 import { ProfilePage } from '@/modules/profile/presentation/pages/ProfilePage'
-import DashboardPage from '@/modules/dashboard/presentation/pages/DashboardPage'
-import { CampaignDetailsPage, CampaignsPage } from '@/modules'
-import BrandProductsPage from '@/modules/dashboard/presentation/pages/BrandProductsPage'
-import BrandCampaignsManagementPage from '@/modules/dashboard/presentation/pages/BrandCampaignsManagementPage'
-import InfluencerApplicationsPage from '@/modules/dashboard/presentation/pages/InfluencerApplicationsPage'
-import CollaborationsPage from '@/modules/dashboard/presentation/pages/CollaborationsPage'
-import CollaborationDetailsPage from '@/modules/dashboard/presentation/pages/CollaborationDetailsPage'
-import { HomeRedirect } from './HomeRedirect'
+
+const DashboardPage = lazy(() => import('@/modules/dashboard/presentation/pages/DashboardPage'))
+const CampaignsPage = lazy(() => import('@/modules').then(m => ({ default: m.CampaignsPage })))
+const CampaignDetailsPage = lazy(() => import('@/modules').then(m => ({ default: m.CampaignDetailsPage })))
+
+const BrandProductsPage = lazy(() => import('@/modules/dashboard/presentation/pages/BrandProductsPage'))
+const BrandCampaignsManagementPage = lazy(() => import('@/modules/dashboard/presentation/pages/BrandCampaignsManagementPage'))
+const InfluencerApplicationsPage = lazy(() => import('@/modules/dashboard/presentation/pages/InfluencerApplicationsPage'))
+const CollaborationsPage = lazy(() => import('@/modules/dashboard/presentation/pages/CollaborationsPage'))
+const CollaborationDetailsPage = lazy(() => import('@/modules/dashboard/presentation/pages/CollaborationDetailsPage'))
+
+function PageLoader() {
+  return (
+    <div className="bb-page">
+      <div className="bb-surface bb-surface-pad">
+        <div className="pointer-events-none absolute inset-0 bb-spotlight" />
+        <div className="pointer-events-none absolute inset-0 bb-grid" />
+        <div className="pointer-events-none absolute inset-0 bb-noise" />
+        <div className="relative grid gap-4">
+          <div className="h-6 w-44 rounded-full bg-white/10 dark:bg-white/10" />
+          <div className="h-10 w-2/3 rounded-2xl bg-white/10 dark:bg-white/10" />
+          <div className="mt-4 grid gap-3 sm:grid-cols-3">
+            <div className="h-28 rounded-3xl bg-white/10" />
+            <div className="h-28 rounded-3xl bg-white/10" />
+            <div className="h-28 rounded-3xl bg-white/10" />
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+const Lazy = ({ children }: { children: React.ReactNode }) => (
+  <Suspense fallback={<PageLoader />}>{children}</Suspense>
+)
 
 export const routes = [
   {
@@ -28,18 +58,19 @@ export const routes = [
       {
         element: <AuthGuard />,
         children: [
-          { path: '/dashboard', element: <DashboardPage /> },
-          { path: '/campaigns', element: <CampaignsPage /> },
-          { path: '/campaigns/:id', element: <CampaignDetailsPage /> },
+          { path: '/dashboard', element: <Lazy><DashboardPage /></Lazy> },
+          { path: '/campaigns', element: <Lazy><CampaignsPage /></Lazy> },
+          { path: '/campaigns/:id', element: <Lazy><CampaignDetailsPage /></Lazy> },
 
-          { path: '/applications', element: <InfluencerApplicationsPage /> },
+          { path: '/applications', element: <Lazy><InfluencerApplicationsPage /></Lazy> },
 
-          { path: '/collaborations', element: <CollaborationsPage /> },
-          { path: '/collaborations/:id', element: <CollaborationDetailsPage /> },
+          { path: '/collaborations', element: <Lazy><CollaborationsPage /></Lazy> },
+          { path: '/collaborations/:id', element: <Lazy><CollaborationDetailsPage /></Lazy> },
 
-          { path: '/dashboard/brand/products', element: <BrandProductsPage /> },
-          { path: '/dashboard/brand/campaigns', element: <BrandCampaignsManagementPage /> },
+          { path: '/dashboard/brand/products', element: <Lazy><BrandProductsPage /></Lazy> },
+          { path: '/dashboard/brand/campaigns', element: <Lazy><BrandCampaignsManagementPage /></Lazy> },
           { path: '/profile', element: <ProfilePage /> },
+
           { path: '/app', element: <Navigate to="/dashboard" replace /> },
         ],
       },

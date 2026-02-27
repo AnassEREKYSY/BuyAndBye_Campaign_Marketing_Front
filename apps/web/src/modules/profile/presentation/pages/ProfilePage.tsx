@@ -8,7 +8,6 @@ import {
   ProfileShell,
   SocialMediaSection,
 } from '../components'
-
 import {
   UserCircleIcon,
   Cog6ToothIcon,
@@ -20,7 +19,7 @@ import {
 type TabKey = 'personal' | 'settings' | 'socials' | 'payments' | 'logout'
 
 function IconWrap({ children }: { children: React.ReactNode }) {
-  return <span className="grid h-5 w-5 place-items-center text-white/85">{children}</span>
+  return <span className="grid h-5 w-5 place-items-center" style={{ color: 'rgb(var(--bb-text) / 0.88)' }}>{children}</span>
 }
 
 function ProfilePageInner() {
@@ -85,7 +84,7 @@ function ProfilePageInner() {
   return (
     <ProfileShell
       title="Your Profile"
-      subtitle="A premium space to manage your identity, socials, and account preferences."
+      subtitle="Manage identity, socials, and account preferences."
       items={items}
       activeKey={active}
       onSelect={(k) => setActive(k as TabKey)}

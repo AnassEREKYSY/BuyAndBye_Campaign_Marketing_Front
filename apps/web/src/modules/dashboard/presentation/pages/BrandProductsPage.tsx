@@ -4,15 +4,28 @@ import { UserRole } from '@core/modules/auth/domain/entities'
 import { useBrandManagement } from '../../application/hooks/useBrandManagement'
 import { BrandProductModal } from '../components/BrandProductModal'
 import { Product } from '@core/modules/dashboard/domain/entities'
+import { DashboardHeader } from '@/modules/dashboard/presentation/components/DashboardHeader'
+
+function pillForProductStatus(status: Product['status']) {
+  if (status === 'active') {
+    return { label: 'active', border: 'rgb(16 185 129 / 0.25)', bg: 'rgb(16 185 129 / 0.10)', text: 'rgb(110 231 183 / 0.95)' }
+  }
+  if (status === 'draft') {
+    return { label: 'draft', border: 'rgb(245 158 11 / 0.25)', bg: 'rgb(245 158 11 / 0.10)', text: 'rgb(253 230 138 / 0.95)' }
+  }
+  return { label: 'archived', border: 'rgb(var(--bb-border) / 0.10)', bg: 'rgb(var(--bb-border) / 0.04)', text: 'rgb(var(--bb-muted) / 0.90)' }
+}
 
 function StatusPill({ status }: { status: Product['status'] }) {
-  const cfg = useMemo(() => {
-    if (status === 'active') return { label: 'active', cls: 'border-emerald-400/25 bg-emerald-500/10 text-emerald-200' }
-    if (status === 'draft') return { label: 'draft', cls: 'border-amber-400/25 bg-amber-500/10 text-amber-200' }
-    return { label: 'archived', cls: 'border-slate-400/25 bg-slate-500/10 text-slate-200' }
-  }, [status])
-
-  return <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-extrabold ${cfg.cls}`}>{cfg.label}</span>
+  const p = useMemo(() => pillForProductStatus(status), [status])
+  return (
+    <span
+      className="inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-extrabold"
+      style={{ borderColor: p.border, backgroundColor: p.bg, color: p.text }}
+    >
+      {p.label}
+    </span>
+  )
 }
 
 function IconEdit() {
@@ -62,6 +75,38 @@ function IconLink() {
   )
 }
 
+function skelBg() {
+  return { backgroundColor: 'rgb(var(--bb-border) / 0.06)' }
+}
+
+function SkeletonRow() {
+  return (
+    <tr className="bb-tr">
+      <td className="bb-td">
+        <div className="h-4 w-2/3 rounded" style={skelBg()} />
+      </td>
+      <td className="bb-td">
+        <div className="h-6 w-20 rounded-full" style={skelBg()} />
+      </td>
+      <td className="bb-td">
+        <div className="h-4 w-24 rounded" style={skelBg()} />
+      </td>
+      <td className="bb-td">
+        <div className="h-4 w-20 rounded" style={skelBg()} />
+      </td>
+      <td className="bb-td">
+        <div className="h-4 w-28 rounded" style={skelBg()} />
+      </td>
+      <td className="bb-td text-right">
+        <div className="ml-auto flex justify-end gap-2">
+          <div className="h-10 w-10 rounded-full" style={skelBg()} />
+          <div className="h-10 w-10 rounded-full" style={skelBg()} />
+        </div>
+      </td>
+    </tr>
+  )
+}
+
 export default function BrandProductsPage() {
   const { profile } = useProfile() as any
 
@@ -71,102 +116,131 @@ export default function BrandProductsPage() {
     return null
   }, [profile]) as UserRole | null
 
-  const {
-    productsLoading,
-    productsError,
-    productsRes,
-    refreshProducts,
-    onCreateProduct,
-    onUpdateProduct,
-    onDeleteProduct,
-  } = useBrandManagement()
+  const { productsLoading, productsError, productsRes, refreshProducts, onCreateProduct, onUpdateProduct, onDeleteProduct } =
+    useBrandManagement()
 
-  const products = useMemo(() => productsRes?.items ?? [], [productsRes])
+  const products = useMemo(() => (productsRes as any)?.items ?? (productsRes as any)?.data ?? [], [productsRes])
 
   const [open, setOpen] = useState(false)
   const [editing, setEditing] = useState<Product | null>(null)
+  const [search, setSearch] = useState('')
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    if (!q) return products
+    return products.filter((p: Product) => {
+      const name = (p.name ?? '').toLowerCase()
+      const st = String(p.status ?? '').toLowerCase()
+      const cur = String(p.currency ?? '').toLowerCase()
+      return name.includes(q) || st.includes(q) || cur.includes(q)
+    })
+  }, [products, search])
 
   if (role !== UserRole.BRAND) {
     return (
       <div className="bb-page px-4 py-6 md:px-6">
-        <div className="bb-pop rounded-3xl border border-white/10 bg-white/5 p-5 text-sm font-semibold text-white/70">Forbidden</div>
+        <div className="bb-empty bb-pop" style={{ color: 'rgb(var(--bb-muted) / 0.90)' }}>
+          Forbidden
+        </div>
       </div>
     )
   }
 
+  const rightSlot = (
+    <div className="flex w-full flex-wrap items-center justify-end gap-2 md:w-auto">
+      <button onClick={() => void refreshProducts()} className="bb-btn-ghost h-11 px-5">
+        Refresh
+      </button>
+      <button
+        onClick={() => {
+          setEditing(null)
+          setOpen(true)
+        }}
+        className="bb-btn-primary h-11 px-5"
+      >
+        New product
+      </button>
+    </div>
+  )
+
   return (
     <div className="bb-page px-4 py-6 md:px-6">
       <div className="bb-pop">
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div>
-            <p className="text-xs font-extrabold uppercase tracking-wider text-white/45">Brand</p>
-            <h1 className="mt-2 text-2xl font-black tracking-tight text-white">Products</h1>
-            <p className="mt-1 text-sm font-semibold text-white/60">Create and manage your products.</p>
-          </div>
-
-          <div className="flex gap-3">
-            <button onClick={() => void refreshProducts()} className="bb-btn-ghost h-11 px-5">
-              Refresh
-            </button>
-            <button
-              onClick={() => {
-                setEditing(null)
-                setOpen(true)
-              }}
-              className="bb-btn-ghost h-11 px-5"
-            >
-              New product
-            </button>
-          </div>
-        </div>
+        <DashboardHeader
+          title="Products"
+          subtitle="Create and manage your products."
+          search={search}
+          onSearch={setSearch}
+          rightSlot={rightSlot}
+          searchPlaceholder="Search by name, status, currency…"
+        />
       </div>
 
       {productsError ? (
-        <div className="bb-pop mt-5 rounded-3xl border border-rose-500/25 bg-rose-500/10 p-4 text-sm font-semibold text-rose-100">
+        <div
+          className="bb-pop mt-5 rounded-3xl border p-4 text-sm font-semibold"
+          style={{
+            borderColor: 'rgb(244 63 94 / 0.25)',
+            backgroundColor: 'rgb(244 63 94 / 0.10)',
+            color: 'rgb(var(--bb-text) / 0.92)',
+          }}
+        >
           {productsError}
         </div>
       ) : null}
 
-      <div className="bb-pop mt-6 overflow-hidden rounded-3xl border border-white/10 bg-white/5">
+      <div className="bb-pop mt-6 bb-table-wrap">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[900px] text-left text-sm text-white">
-            <thead className="border-b border-white/10 text-xs font-extrabold uppercase tracking-wider text-white/55">
+          <table className="bb-table min-w-[900px]">
+            <thead className="bb-thead">
               <tr>
-                <th className="px-4 py-3">Name</th>
-                <th className="px-4 py-3">Status</th>
-                <th className="px-4 py-3">Price</th>
-                <th className="px-4 py-3">Landing</th>
-                <th className="px-4 py-3">Updated</th>
-                <th className="px-4 py-3 text-right">Actions</th>
+                <th className="bb-th">Name</th>
+                <th className="bb-th">Status</th>
+                <th className="bb-th">Price</th>
+                <th className="bb-th">Landing</th>
+                <th className="bb-th">Updated</th>
+                <th className="bb-th text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/10">
+
+            <tbody>
               {productsLoading && products.length === 0 ? (
-                <tr>
-                  <td className="px-4 py-6 text-white/60" colSpan={6}>
-                    Loading…
+                <>
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <SkeletonRow key={i} />
+                  ))}
+                </>
+              ) : null}
+
+              {!productsLoading && filtered.length === 0 ? (
+                <tr className="bb-tr">
+                  <td className="bb-td bb-muted" colSpan={6}>
+                    No products found.
                   </td>
                 </tr>
               ) : null}
 
-              {!productsLoading && products.length === 0 ? (
-                <tr>
-                  <td className="px-4 py-6 text-white/60" colSpan={6}>
-                    No products yet.
-                  </td>
-                </tr>
-              ) : null}
+              {filtered.map((p: Product) => (
+                <tr key={p.id} className="bb-tr bb-tr-hover">
+                  <td className="bb-td font-semibold">{p.name}</td>
 
-              {products.map((p) => (
-                <tr key={p.id} className="bg-transparent">
-                  <td className="px-4 py-4 font-semibold">{p.name}</td>
-                  <td className="px-4 py-4">
+                  <td className="bb-td">
                     <StatusPill status={p.status} />
                   </td>
-                  <td className="px-4 py-4 text-white/75">{p.price !== null ? `${p.price.toFixed(2)} ${p.currency ?? ''}` : '—'}</td>
-                  <td className="px-4 py-4 text-white/75">
+
+                  <td className="bb-td bb-muted">
+                    {p.price !== null && p.price !== undefined ? `${p.price.toFixed(2)} ${p.currency ?? ''}` : '—'}
+                  </td>
+
+                  <td className="bb-td bb-muted">
                     {p.landingUrl ? (
-                      <a className="inline-flex items-center gap-2 text-white/85 underline" href={p.landingUrl} target="_blank" rel="noreferrer">
+                      <a
+                        className="inline-flex items-center gap-2 underline underline-offset-4"
+                        style={{ textDecorationColor: 'rgb(var(--bb-border) / 0.25)', color: 'rgb(var(--bb-text) / 0.86)' }}
+                        href={p.landingUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
                         <IconLink />
                         open
                       </a>
@@ -174,8 +248,12 @@ export default function BrandProductsPage() {
                       '—'
                     )}
                   </td>
-                  <td className="px-4 py-4 text-white/60">{p.updatedAt ? new Date(p.updatedAt).toLocaleString() : '—'}</td>
-                  <td className="px-4 py-4">
+
+                  <td className="bb-td" style={{ color: 'rgb(var(--bb-muted) / 0.82)' }}>
+                    {p.updatedAt ? new Date(p.updatedAt).toLocaleString() : '—'}
+                  </td>
+
+                  <td className="bb-td">
                     <div className="flex justify-end gap-2">
                       <button
                         title="Edit"
@@ -183,16 +261,12 @@ export default function BrandProductsPage() {
                           setEditing(p)
                           setOpen(true)
                         }}
-                        className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white/90 transition hover:-translate-y-0.5 hover:bg-white/10"
+                        className="bb-icon-btn"
                       >
                         <IconEdit />
                       </button>
 
-                      <button
-                        title="Delete"
-                        onClick={() => void onDeleteProduct(p.id)}
-                        className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white/90 transition hover:-translate-y-0.5 hover:bg-white/10"
-                      >
+                      <button title="Delete" onClick={() => void onDeleteProduct(p.id)} className="bb-icon-btn">
                         <IconTrash />
                       </button>
                     </div>

@@ -1,13 +1,12 @@
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/modules/auth/application/context'
-import { UserIcon } from '@heroicons/react/24/outline'
-import { useEffect, useState } from 'react'
-import { env } from '@/shared/config/env'
-import { CoreTokenStorage } from '@/shared/services/storage/CoreTokenStorage'
-import { HttpClient } from '@core/shared/services/http/HttpClient'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { useTheme } from '@/shared/context/theme'
+import { UserIcon, Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline'
 import { ProfileApiClient } from '@core/modules/profile/infrastructure/api/ProfileApiClient'
 import type { ApiUserProfileResponse } from '@core/modules/profile/infrastructure/api/types/ApiUserProfileResponse'
-import { useTheme } from '@/shared/context/theme'
+import { httpClient } from '@/shared/api/http'
+import { env } from '@/shared/config/env'
 
 type NavItem = { to: string; label: string }
 
@@ -15,10 +14,14 @@ const publicNavItems: NavItem[] = [
   { to: '/', label: 'Home' },
   { to: '/brand', label: 'Brand' },
   { to: '/influencer', label: 'Influencer' },
-  { to: '/contact', label: 'Contact Us' },
+  { to: '/contact', label: 'Contact' },
 ]
 
-const authedNavItems: NavItem[] = [{ to: '/dashboard', label: 'Dashboard' }]
+const authedNavItems: NavItem[] = [
+  { to: '/dashboard', label: 'Dashboard' },
+  { to: '/campaigns', label: 'Campaigns' },
+  { to: '/collaborations', label: 'Collaborations' },
+]
 
 function cx(...classes: Array<string | false | undefined | null>) {
   return classes.filter(Boolean).join(' ')
@@ -35,6 +38,7 @@ type Payload = {
   influencerProfile?: InfluencerProfile | null
   influencer_profile?: InfluencerProfile | null
 }
+
 function unwrap(res: ApiUserProfileResponse): Payload {
   return (res as any)?.data?.id ? ((res as any).data as Payload) : (res as any)
 }
@@ -47,6 +51,8 @@ function toAbsolute(url: string) {
   const path = u.startsWith('/') ? u : `/${u}`
   return `${base}${path}`
 }
+
+const AVATAR_CACHE_KEY = 'bb_avatar_url'
 
 function IconSun() {
   return (
@@ -80,44 +86,53 @@ function IconMoon() {
 export function Navbar() {
   const location = useLocation()
   const navigate = useNavigate()
-  const isAuthRoute = location.pathname === '/login' || location.pathname === '/register'
-
   const auth = useAuth()
-  const isLoggedIn = auth.isAuthenticated
-
-  const navItems = isLoggedIn ? authedNavItems : publicNavItems
-
-  const [profileImageUrl, setProfileImageUrl] = useState<string>('')
-
   const { mode, toggle } = useTheme()
+
+  const isLoggedIn = auth.isAuthenticated
+  const isAuthRoute = location.pathname === '/login' || location.pathname === '/register'
+  const navItems = useMemo(() => (isLoggedIn ? authedNavItems : publicNavItems), [isLoggedIn])
+
+  const [mobileOpen, setMobileOpen] = useState(false)
+  const [profileImageUrl, setProfileImageUrl] = useState<string>(() => localStorage.getItem(AVATAR_CACHE_KEY) ?? '')
+  const fetchingRef = useRef(false)
+
+  useEffect(() => {
+    setMobileOpen(false)
+  }, [location.pathname])
 
   useEffect(() => {
     if (!isLoggedIn) {
       setProfileImageUrl('')
+      try {
+        localStorage.removeItem(AVATAR_CACHE_KEY)
+      } catch {}
       return
     }
+    if (fetchingRef.current) return
 
     let cancelled = false
+    fetchingRef.current = true
 
     ;(async () => {
       try {
-        const tokenStorage = new CoreTokenStorage()
-        const http = new HttpClient(env.BACKEND_BASE_URL, tokenStorage)
-        const api = new ProfileApiClient(http)
-
+        const api = new ProfileApiClient(httpClient)
         const raw = await api.getMyProfile()
         const u = unwrap(raw)
-
         if (cancelled) return
 
         const logo = (u.brandProfile?.logo_url ?? u.brand_profile?.logo_url ?? '')?.trim() || ''
         const photo = (u.photo_url ?? '')?.trim() || ''
-
         const finalUrl = toAbsolute(logo || photo)
+
         setProfileImageUrl(finalUrl)
+        try {
+          localStorage.setItem(AVATAR_CACHE_KEY, finalUrl)
+        } catch {}
       } catch {
-        if (cancelled) return
-        setProfileImageUrl('')
+        if (!cancelled) setProfileImageUrl('')
+      } finally {
+        fetchingRef.current = false
       }
     })()
 
@@ -131,94 +146,92 @@ export function Navbar() {
     navigate('/', { replace: true })
   }
 
-  function goToProfile() {
-    navigate('/profile')
-  }
-
   return (
-    <header className="sticky top-0 z-50 border-b border-black/10 bg-white/70 text-slate-900 backdrop-blur dark:border-white/10 dark:bg-[#05060a]/70 dark:text-white">
-      <div className="pointer-events-none absolute inset-x-0 top-0 z-0 h-16 bg-gradient-to-r from-indigo-500/10 via-sky-400/8 to-cyan-400/10" />
+    <header className="sticky top-0 z-50">
+      <div className="bb-nav">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
+          {/* Left */}
+          <div className="flex items-center gap-3">
+            <NavLink to={isLoggedIn ? '/dashboard' : '/'} className="flex items-center gap-2" aria-label="Buy & Bye">
+              <span className="bb-logo-dot" />
+              <span className="text-sm font-extrabold tracking-tight" style={{ color: 'rgb(var(--bb-text) / 0.95)' }}>
+                Buy & Bye
+              </span>
+            </NavLink>
 
-      <div className="relative z-10 mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
-        <div className="flex items-center gap-4">
-          <NavLink
-            to={isLoggedIn ? '/dashboard' : '/'}
-            className="flex items-center gap-2"
-            aria-label="Buy & Bye home"
-          >
-            <span className="h-9 w-9 rounded-2xl border border-black/10 bg-gradient-to-br from-indigo-500/80 to-sky-400/70 shadow-[0_14px_40px_rgba(56,189,248,0.12)] bb-gradient-shift dark:border-white/10" />
-            <span className="text-sm font-extrabold tracking-tight text-slate-900/95 dark:text-white/95">Buy & Bye</span>
-          </NavLink>
+            <nav className="hidden items-center gap-1 md:flex" aria-label="Primary">
+              {navItems.map((item) => (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  end={item.to === '/'}
+                  className={({ isActive }) => cx('bb-nav-link', isActive && 'bb-nav-link-active')}
+                >
+                  {item.label}
+                </NavLink>
+              ))}
+            </nav>
+          </div>
 
-          <nav className="hidden items-center gap-1 md:flex" aria-label="Primary">
-            {navItems.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                end={item.to === '/'}
-                className={({ isActive }) =>
-                  cx(
-                    'rounded-full px-3 py-2 text-sm font-semibold transition',
-                    'text-slate-700 hover:bg-black/5 hover:text-slate-900 dark:text-white/70 dark:hover:bg-white/5 dark:hover:text-white',
-                    isActive && 'bg-black/8 text-slate-900 dark:bg-white/8 dark:text-white',
-                  )
-                }
-              >
-                {item.label}
+          {/* Right */}
+          <div className="flex items-center gap-2">
+            <button type="button" onClick={toggle} className="bb-nav-btn" aria-label="Toggle theme">
+              {mode === 'dark' ? <IconSun /> : <IconMoon />}
+              <span className="hidden sm:inline">{mode === 'dark' ? 'Light' : 'Dark'}</span>
+            </button>
+
+            {isLoggedIn && (
+              <button type="button" onClick={() => navigate('/profile')} className="bb-avatar" aria-label="Profile">
+                {profileImageUrl ? (
+                  <img
+                    src={profileImageUrl}
+                    alt="Profile"
+                    className="h-full w-full object-cover"
+                    referrerPolicy="no-referrer"
+                  />
+                ) : (
+                  <UserIcon className="h-5 w-5" style={{ color: 'rgb(var(--bb-text) / 0.85)' }} />
+                )}
+              </button>
+            )}
+
+            {isLoggedIn ? (
+              <button type="button" onClick={onLogout} className="bb-nav-btn">
+                Logout
+              </button>
+            ) : (
+              <NavLink to={isAuthRoute ? '/' : '/login'} className={cx(isAuthRoute ? 'bb-nav-btn' : 'bb-nav-cta')}>
+                {isAuthRoute ? 'Back' : 'Login'}
               </NavLink>
-            ))}
-          </nav>
+            )}
+
+            <button
+              type="button"
+              className="bb-nav-btn md:hidden"
+              onClick={() => setMobileOpen((v) => !v)}
+              aria-label="Open menu"
+            >
+              {mobileOpen ? <XMarkIcon className="h-5 w-5" /> : <Bars3Icon className="h-5 w-5" />}
+            </button>
+          </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          {isLoggedIn && (
-            <button
-              type="button"
-              onClick={goToProfile}
-              className="mr-1 grid h-10 w-10 place-items-center overflow-hidden rounded-full border border-black/10 bg-black/5 shadow-[0_10px_30px_rgba(0,0,0,0.20)] transition hover:-translate-y-0.5 hover:bg-black/10 dark:border-white/10 dark:bg-white/5 dark:shadow-[0_10px_30px_rgba(0,0,0,0.45)] dark:hover:bg-white/10"
-              aria-label="Open profile"
-              title="Profile"
-            >
-              {profileImageUrl ? (
-                <img src={profileImageUrl} alt="Profile" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
-              ) : (
-                <UserIcon className="h-5 w-5 text-slate-900/85 dark:text-white/85" />
-              )}
-            </button>
-          )}
-
-          <button
-            type="button"
-            onClick={toggle}
-            className="inline-flex h-10 items-center gap-2 rounded-full border border-black/10 bg-black/5 px-3 text-sm font-extrabold text-slate-900/90 transition hover:-translate-y-0.5 hover:bg-black/10 dark:border-white/10 dark:bg-white/5 dark:text-white/90 dark:hover:bg-white/10"
-            aria-label="Toggle theme"
-            title={mode === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-          >
-            {mode === 'dark' ? <IconSun /> : <IconMoon />}
-            <span className="hidden sm:inline">{mode === 'dark' ? 'Light' : 'Dark'}</span>
-          </button>
-
-          {isLoggedIn ? (
-            <button
-              type="button"
-              onClick={onLogout}
-              className="inline-flex items-center justify-center rounded-full border border-black/10 bg-black/5 px-4 py-2 text-sm font-extrabold text-slate-900/90 transition hover:-translate-y-0.5 hover:bg-black/10 dark:border-white/10 dark:bg-white/5 dark:text-white/90 dark:hover:bg-white/10"
-            >
-              Logout
-            </button>
-          ) : (
-            <NavLink
-              to={isAuthRoute ? '/' : '/login'}
-              className={cx(
-                'inline-flex items-center justify-center rounded-full px-4 py-2 text-sm font-extrabold transition hover:-translate-y-0.5',
-                isAuthRoute
-                  ? 'border border-black/10 bg-black/5 text-slate-900/90 hover:bg-black/10 dark:border-white/10 dark:bg-white/5 dark:text-white/90 dark:hover:bg-white/10'
-                  : 'bb-gradient-shift bg-gradient-to-r from-indigo-500/95 via-sky-400/85 to-cyan-400/85 text-white shadow-[0_16px_45px_rgba(56,189,248,0.14)]',
-              )}
-            >
-              {isAuthRoute ? 'Back to Home' : 'Login'}
-            </NavLink>
-          )}
+        {/* Mobile panel */}
+        <div className={cx('md:hidden', mobileOpen ? 'block' : 'hidden')}>
+          <div className="mx-auto max-w-7xl px-4 pb-4 sm:px-6">
+            <div className="bb-nav-panel">
+              {navItems.map((item) => (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  end={item.to === '/'}
+                  className={({ isActive }) => cx('bb-nav-link block px-3 py-2', isActive && 'bb-nav-link-active')}
+                >
+                  {item.label}
+                </NavLink>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </header>

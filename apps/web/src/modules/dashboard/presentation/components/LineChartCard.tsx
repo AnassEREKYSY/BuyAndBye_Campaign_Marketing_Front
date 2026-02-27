@@ -41,42 +41,42 @@ export function LineChartCard({ title, subtitle, data, height = 220 }: Props) {
     const lastV = points.at(-1)?.total ?? 0
     const prevV = points.length > 1 ? points.at(-2)?.total ?? lastV : lastV
 
-    return {
-      path: d,
-      min: minV,
-      max: maxV,
-      last: lastV,
-      trendUp: lastV >= prevV,
-    }
+    return { path: d, min: minV, max: maxV, last: lastV, trendUp: lastV >= prevV }
   }, [data])
 
   return (
-    <div className="rounded-3xl border border-white/10 bg-[#0e0f12] p-4 text-white shadow-[0_16px_44px_rgba(0,0,0,0.45)]">
-      <div className="flex items-start justify-between gap-3">
+    <div className="bb-card bb-pop relative overflow-hidden rounded-[26px] p-4">
+      <div className="pointer-events-none absolute inset-0 bb-spotlight opacity-60" />
+      <div className="pointer-events-none absolute inset-0 bb-noise" />
+
+      <div className="relative flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-sm font-extrabold tracking-tight">{title}</p>
-          <p className="mt-0.5 text-xs font-semibold text-white/50">{subtitle}</p>
+          <p className="text-sm font-extrabold tracking-tight" style={{ color: 'rgb(var(--bb-text) / 0.96)' }}>
+            {title}
+          </p>
+          <p className="mt-0.5 text-xs font-semibold bb-muted-weak">{subtitle}</p>
         </div>
 
         <div
-          className={`rounded-full border px-3 py-1 text-xs font-extrabold ${
-            trendUp
-              ? 'border-emerald-500/25 bg-emerald-500/10 text-emerald-200'
-              : 'border-rose-500/25 bg-rose-500/10 text-rose-200'
-          }`}
+          className="rounded-full border px-3 py-1 text-xs font-extrabold"
+          style={{
+            borderColor: trendUp ? 'rgb(16 185 129 / 0.25)' : 'rgb(244 63 94 / 0.25)',
+            backgroundColor: trendUp ? 'rgb(16 185 129 / 0.10)' : 'rgb(244 63 94 / 0.10)',
+            color: trendUp ? 'rgb(110 231 183 / 0.95)' : 'rgb(253 164 175 / 0.95)',
+          }}
         >
           {last}
         </div>
       </div>
 
-      <div className="mt-3 rounded-2xl border border-white/10 bg-black/20">
-        <svg viewBox="0 0 900 300" className="w-full" style={{ height }}>
+      <div className="bb-soft-box relative mt-3 overflow-hidden">
+        <svg viewBox="0 0 900 300" className="w-full" style={{ height, color: 'rgb(var(--bb-text) / 0.90)' }}>
           <path d={path} fill="none" stroke="currentColor" strokeWidth="3" opacity={0.9} />
           <path d={`${path} L 882 282 L 18 282 Z`} fill="currentColor" opacity={0.08} />
         </svg>
       </div>
 
-      <div className="mt-3 flex items-center justify-between text-xs font-semibold text-white/45">
+      <div className="mt-3 flex items-center justify-between text-xs font-semibold bb-muted-weak">
         <span>Min: {clamp(min, 0, Number.MAX_SAFE_INTEGER)}</span>
         <span>Max: {clamp(max, 0, Number.MAX_SAFE_INTEGER)}</span>
       </div>
