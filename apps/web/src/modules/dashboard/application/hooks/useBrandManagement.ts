@@ -1,7 +1,4 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { DashboardContainer } from '@core/modules/dashboard/infrastructure/container/DashboardContainer'
-import { HttpClient } from '@core/shared/services/http/HttpClient'
-import { env } from '@/shared/config/env'
 import { useNotification } from '@/shared/context/notification'
 import type {
   CreateCampaignDTO,
@@ -11,8 +8,8 @@ import type {
   CreateCampaignPayoutTierDTO,
   UpdateCampaignPayoutTierDTO,
 } from '@core/modules/dashboard/domain/dtos'
-import { CoreTokenStorage } from '@/shared/services/storage'
 import { Campaign, CampaignPayoutTier, Paginated, Product } from '@core/modules/dashboard/domain/entities'
+import { dashboardContainer } from '@/shared/api/dashboardContainer'
 
 type TierDraft = {
   id?: string
@@ -21,11 +18,6 @@ type TierDraft = {
   toValue: number | null
   payoutAmount: number
   currency: string | null
-}
-
-function buildHttpClient() {
-  const tokenStorage = new CoreTokenStorage()
-  return new HttpClient(env.BACKEND_BASE_URL, tokenStorage)
 }
 
 function toDraft(t: CampaignPayoutTier): TierDraft {
@@ -59,9 +51,6 @@ function asPaginated<T>(raw: any): Paginated<T> {
 export function useBrandManagement() {
   const notify = useNotification()
 
-  const httpClient = useMemo(() => buildHttpClient(), [])
-  const container = useMemo(() => DashboardContainer.getInstance(httpClient), [httpClient])
-
   const [productsLoading, setProductsLoading] = useState(false)
   const [productsError, setProductsError] = useState<string | null>(null)
   const [productsPage, setProductsPage] = useState(1)
@@ -74,21 +63,21 @@ export function useBrandManagement() {
   const [campaignsSize, setCampaignsSize] = useState(50)
   const [campaignsRes, setCampaignsRes] = useState<Paginated<Campaign> | null>(null)
 
-  const listProducts = useMemo(() => container.listBrandProductsUseCase, [container])
-  const createProduct = useMemo(() => container.createProductUseCase, [container])
-  const updateProduct = useMemo(() => container.updateProductUseCase, [container])
-  const deleteProduct = useMemo(() => container.deleteProductUseCase, [container])
+  const listProducts = useMemo(() => dashboardContainer.listBrandProductsUseCase, [])
+  const createProduct = useMemo(() => dashboardContainer.createProductUseCase, [])
+  const updateProduct = useMemo(() => dashboardContainer.updateProductUseCase, [])
+  const deleteProduct = useMemo(() => dashboardContainer.deleteProductUseCase, [])
 
-  const listCampaigns = useMemo(() => container.listCampaignsUseCase, [container])
-  const createCampaign = useMemo(() => container.createCampaignUseCase, [container])
-  const updateCampaign = useMemo(() => container.updateCampaignUseCase, [container])
-  const publishCampaign = useMemo(() => container.publishCampaignUseCase, [container])
-  const deleteCampaign = useMemo(() => container.deleteCampaignUseCase, [container])
+  const listCampaigns = useMemo(() => dashboardContainer.listCampaignsUseCase, [])
+  const createCampaign = useMemo(() => dashboardContainer.createCampaignUseCase, [])
+  const updateCampaign = useMemo(() => dashboardContainer.updateCampaignUseCase, [])
+  const publishCampaign = useMemo(() => dashboardContainer.publishCampaignUseCase, [])
+  const deleteCampaign = useMemo(() => dashboardContainer.deleteCampaignUseCase, [])
 
-  const listCampaignTiers = useMemo(() => container.listCampaignTiersUseCase, [container])
-  const createCampaignTier = useMemo(() => container.createCampaignTierUseCase, [container])
-  const updateCampaignTier = useMemo(() => container.updateCampaignTierUseCase, [container])
-  const deleteCampaignTier = useMemo(() => container.deleteCampaignTierUseCase, [container])
+  const listCampaignTiers = useMemo(() => dashboardContainer.listCampaignTiersUseCase, [])
+  const createCampaignTier = useMemo(() => dashboardContainer.createCampaignTierUseCase, [])
+  const updateCampaignTier = useMemo(() => dashboardContainer.updateCampaignTierUseCase, [])
+  const deleteCampaignTier = useMemo(() => dashboardContainer.deleteCampaignTierUseCase, [])
 
   const refreshProducts = useCallback(async () => {
     try {
@@ -167,9 +156,7 @@ export function useBrandManagement() {
       const existingById = new Map((existing ?? []).map((t) => [t.id, t]))
 
       const desiredIds = new Set<string>()
-      for (const d of desired) {
-        if (d.id) desiredIds.add(d.id)
-      }
+      for (const d of desired) if (d.id) desiredIds.add(d.id)
 
       for (const t of existing ?? []) {
         if (!desiredIds.has(t.id)) {

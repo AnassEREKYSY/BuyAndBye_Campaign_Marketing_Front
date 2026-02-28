@@ -1,15 +1,22 @@
 import { useMemo } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useProfile } from '@/modules/profile/application/hooks/useProfile'
 import { UserRole } from '@core/modules/auth/domain/entities'
 import { useDashboard } from '../../application/hooks/useDashboard'
-import { DashboardTopBar } from '../components/DashboardTopBar'
-import { DashboardHeader } from '../components/DashboardHeader'
 import { StatCard } from '../components/StatCard'
 import { LineChartCard } from '../components/LineChartCard'
 import { CollaborationsTable } from '../components/CollaborationsTable'
 import { PayoutsCard } from '../components/PayoutsCard'
 import { BrandManagementTopButtons } from '../components/BrandManagementTopButtons'
+import {
+  ArrowPathIcon,
+  Squares2X2Icon,
+  MagnifyingGlassIcon,
+  AdjustmentsHorizontalIcon,
+  ChartBarIcon,
+  RocketLaunchIcon,
+  BoltIcon,
+} from '@heroicons/react/24/outline'
 
 function money(amount: number, currency: string) {
   const v = Number.isFinite(amount) ? amount : 0
@@ -71,6 +78,21 @@ function SkeletonCard() {
   )
 }
 
+function TopPill({ children }: { children: React.ReactNode }) {
+  return (
+    <span
+      className="inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[11px] font-extrabold"
+      style={{
+        borderColor: 'rgb(var(--bb-border) / 0.10)',
+        backgroundColor: 'rgb(var(--bb-border) / 0.04)',
+        color: 'rgb(var(--bb-muted) / 0.90)',
+      }}
+    >
+      {children}
+    </span>
+  )
+}
+
 export default function DashboardPage() {
   const { profile } = useProfile() as any
   const nav = useNavigate()
@@ -94,49 +116,16 @@ export default function DashboardPage() {
     brandSummary,
     timeline,
     refresh,
-    search,
-    setSearch,
-    selectedCampaignId,
-    setSelectedCampaignId,
-    campaignsAll,
   } = useDashboard(role)
 
   const headerTitle =
-    role === UserRole.BRAND ? 'Brand dashboard' : role === UserRole.INFLUENCER ? 'Influencer dashboard' : 'Dashboard'
+    role === UserRole.BRAND ? 'Brand Dashboard' : role === UserRole.INFLUENCER ? 'Influencer Dashboard' : 'Dashboard'
   const headerSubtitle =
     role === UserRole.BRAND
       ? 'Campaign performance & collaborations'
       : role === UserRole.INFLUENCER
         ? 'Clicks, collaborations & earnings'
         : 'Overview'
-
-  const rightSlot = (
-    <div className="flex flex-wrap items-center justify-end gap-2">
-      {role === UserRole.BRAND ? (
-        <select
-          value={selectedCampaignId ?? ''}
-          onChange={(e) => setSelectedCampaignId(e.target.value || null)}
-          className="h-11 rounded-2xl border px-3 text-sm font-extrabold outline-none transition"
-          style={{
-            borderColor: 'rgb(var(--bb-border) / 0.10)',
-            backgroundColor: 'rgb(var(--bb-card) / 0.92)',
-            color: 'rgb(var(--bb-text) / 0.95)',
-          }}
-        >
-          <option value="">Auto (published first)</option>
-          {campaignsAll.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.title}
-            </option>
-          ))}
-        </select>
-      ) : null}
-
-      <button onClick={() => void refresh({ force: true })} className="bb-btn-ghost h-11 px-5">
-        Refresh
-      </button>
-    </div>
-  )
 
   const stats = useMemo(() => {
     if (role === UserRole.INFLUENCER && influencerDashboard) {
@@ -175,40 +164,138 @@ export default function DashboardPage() {
 
   return (
     <div className="bb-page px-4 py-6 md:px-6">
-      <div className="bb-pop">
-        <DashboardHeader
-          title={headerTitle}
-          subtitle={headerSubtitle}
-          search={search}
-          onSearch={setSearch}
-          rightSlot={rightSlot}
-          searchPlaceholder={role === UserRole.BRAND ? 'Search my campaigns…' : 'Search campaigns…'}
-        />
-      </div>
+      {/* TOP SECTION (NO SEARCH) */}
+      <section
+        className="bb-pop relative overflow-hidden rounded-3xl border p-5 sm:p-6"
+        style={{
+          borderColor: 'rgb(var(--bb-border) / 0.10)',
+          backgroundColor: 'rgb(var(--bb-surface) / 0.82)',
+          backdropFilter: 'blur(12px)',
+        }}
+      >
+        <div className="pointer-events-none absolute inset-0 bb-spotlight" />
+        <div className="pointer-events-none absolute inset-0 bb-grid" />
+        <div className="pointer-events-none absolute inset-0 bb-noise" />
 
-      <div className="mt-4 bb-pop">
-        <DashboardTopBar />
-      </div>
+        <div className="relative">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <TopPill>
+                  <ChartBarIcon className="h-4 w-4" />
+                  Overview
+                </TopPill>
+                <TopPill>{headerSubtitle}</TopPill>
+              </div>
 
-      {role === UserRole.BRAND ? (
-        <div className="mt-4 bb-pop">
-          <BrandManagementTopButtons />
+              <h1 className="mt-3 text-2xl font-black tracking-tight sm:text-3xl" style={{ color: 'rgb(var(--bb-text) / 0.98)' }}>
+                {headerTitle}
+              </h1>
+
+              <p className="mt-2 max-w-2xl text-sm font-semibold leading-6" style={{ color: 'rgb(var(--bb-muted) / 0.92)' }}>
+                Quick stats, trends, and collaboration tracking in one place.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <Link to="/campaigns" className="bb-btn-ghost h-11 px-4">
+                <span className="inline-flex items-center gap-2">
+                  <RocketLaunchIcon className="h-5 w-5" />
+                  <span>Browse campaigns</span>
+                </span>
+              </Link>
+
+              <button onClick={() => void refresh({ force: true })} className="bb-btn-primary h-11 px-4">
+                <span className="inline-flex items-center gap-2">
+                  <ArrowPathIcon className="h-5 w-5" />
+                  <span>Refresh</span>
+                </span>
+              </button>
+
+              <Link to="/campaigns" className="bb-icon-btn h-11 w-11" aria-label="Campaigns">
+                <MagnifyingGlassIcon className="h-5 w-5" />
+              </Link>
+
+              <Link to="/dashboard" className="bb-icon-btn h-11 w-11" aria-label="Dashboard">
+                <Squares2X2Icon className="h-5 w-5" />
+              </Link>
+
+              <button className="bb-icon-btn h-11 w-11" aria-label="Filters">
+                <AdjustmentsHorizontalIcon className="h-5 w-5" />
+              </button>
+            </div>
+          </div>
+
+          {error ? (
+            <div
+              className="bb-pop mt-4 rounded-3xl border p-4 text-sm font-semibold"
+              style={{
+                borderColor: 'rgb(244 63 94 / 0.25)',
+                backgroundColor: 'rgb(244 63 94 / 0.10)',
+                color: 'rgb(var(--bb-text) / 0.92)',
+              }}
+            >
+              {error}
+            </div>
+          ) : null}
         </div>
-      ) : null}
+      </section>
 
-      {error ? (
+      {/* BROWSE CAMPAIGNS (REDESIGNED BLOCK) */}
+      <section className="mt-4 bb-pop">
         <div
-          className="bb-pop mt-5 rounded-3xl border p-4 text-sm font-semibold"
+          className="relative overflow-hidden rounded-3xl border p-5 sm:p-6"
           style={{
-            borderColor: 'rgb(244 63 94 / 0.25)',
-            backgroundColor: 'rgb(244 63 94 / 0.10)',
-            color: 'rgb(var(--bb-text) / 0.92)',
+            borderColor: 'rgb(var(--bb-border) / 0.10)',
+            backgroundColor: 'rgb(var(--bb-card) / 0.78)',
           }}
         >
-          {error}
+          <div className="pointer-events-none absolute inset-0 bb-grid" />
+          <div className="pointer-events-none absolute inset-0 bb-noise" />
+
+          <div className="relative flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <p className="text-sm font-extrabold" style={{ color: 'rgb(var(--bb-text) / 0.96)' }}>
+                Campaign marketplace
+              </p>
+              <p className="mt-1 text-xs font-semibold" style={{ color: 'rgb(var(--bb-muted) / 0.86)' }}>
+                Browse published campaigns and open details instantly.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <Link to="/campaigns" className="bb-btn-primary h-11 px-5">
+                Browse campaigns
+              </Link>
+              {role === UserRole.INFLUENCER ? (
+                <Link to="/applications" className="bb-btn-ghost h-11 px-5">
+                  My applications
+                </Link>
+              ) : null}
+              <Link to="/collaborations" className="bb-btn-ghost h-11 px-5">
+                Collaborations
+              </Link>
+            </div>
+          </div>
         </div>
+      </section>
+
+      {/* MANAGEMENT BUTTONS (REDESIGNED WRAPPER) */}
+      {role === UserRole.BRAND ? (
+        <section className="mt-4 bb-pop">
+          <div
+            className="rounded-3xl border p-3 sm:p-4"
+            style={{
+              borderColor: 'rgb(var(--bb-border) / 0.10)',
+              backgroundColor: 'rgb(var(--bb-card) / 0.72)',
+            }}
+          >
+            <BrandManagementTopButtons />
+          </div>
+        </section>
       ) : null}
 
+      {/* STAT CARDS (SAME COMPONENT, CLEAN GRID) */}
       <div className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-4">
         {loading ? (
           Array.from({ length: 4 }).map((_, i) => (

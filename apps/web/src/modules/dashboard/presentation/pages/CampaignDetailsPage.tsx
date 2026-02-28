@@ -9,7 +9,16 @@ import { DashboardContainer } from '@core/modules/dashboard'
 import type { CampaignPayoutTier } from '@core/modules/dashboard/domain/entities'
 import { useCampaignApplications } from '@/modules/dashboard/application/hooks/useCampaignApplications'
 import { ApplicantProfileModal } from '@/modules/dashboard/presentation/components/ApplicantProfileModal'
-import { DashboardHeader } from '@/modules/dashboard/presentation/components/DashboardHeader'
+import {
+  ArrowLeftIcon,
+  Squares2X2Icon,
+  PaperAirplaneIcon,
+  CheckCircleIcon,
+  ClockIcon,
+  CalendarDaysIcon,
+  BanknotesIcon,
+  TagIcon,
+} from '@heroicons/react/24/outline'
 
 type CampaignStatus = 'draft' | 'published' | 'closed'
 
@@ -79,6 +88,75 @@ function Alert({ kind, children }: { kind: 'error' | 'success'; children: React.
   return (
     <div className="bb-pop rounded-3xl border p-4 text-sm font-semibold" style={styles}>
       {children}
+    </div>
+  )
+}
+
+function TopActionLink({
+  to,
+  icon,
+  label,
+}: {
+  to: string
+  icon: React.ReactNode
+  label: string
+}) {
+  return (
+    <Link
+      to={to}
+      className="bb-icon-btn h-11 w-11 sm:w-auto sm:px-4"
+      aria-label={label}
+    >
+      <span className="inline-flex items-center gap-2">
+        <span className="grid h-9 w-9 place-items-center rounded-full border"
+          style={{
+            borderColor: 'rgb(var(--bb-border) / 0.10)',
+            backgroundColor: 'rgb(var(--bb-border) / 0.04)',
+          }}
+        >
+          {icon}
+        </span>
+        <span className="hidden sm:inline text-sm font-extrabold">{label}</span>
+      </span>
+    </Link>
+  )
+}
+
+function TopChip({
+  icon,
+  label,
+  value,
+}: {
+  icon: React.ReactNode
+  label: string
+  value: string
+}) {
+  return (
+    <div
+      className="flex items-center gap-3 rounded-2xl border px-4 py-3"
+      style={{
+        borderColor: 'rgb(var(--bb-border) / 0.10)',
+        backgroundColor: 'rgb(var(--bb-border) / 0.04)',
+      }}
+    >
+      <span
+        className="grid h-10 w-10 place-items-center rounded-2xl border"
+        style={{
+          borderColor: 'rgb(var(--bb-border) / 0.10)',
+          backgroundColor: 'rgb(var(--bb-border) / 0.04)',
+          color: 'rgb(var(--bb-text) / 0.90)',
+        }}
+      >
+        {icon}
+      </span>
+      <div className="min-w-0">
+        <p className="text-[11px] font-extrabold tracking-wide" style={{ color: 'rgb(var(--bb-muted) / 0.82)' }}>
+          {label}
+        </p>
+        <p className="mt-0.5 truncate text-sm font-extrabold" style={{ color: 'rgb(var(--bb-text) / 0.92)' }}>
+          {value}
+        </p>
+      </div>
     </div>
   )
 }
@@ -224,72 +302,114 @@ export default function CampaignDetailsPage() {
     setProfileInfluencerId(null)
   }
 
-  const rightSlot = (
-    <div className="flex w-full flex-wrap items-center justify-end gap-2 md:w-auto">
-      <Link to="/campaigns" className="bb-btn-ghost h-11 px-5">
-        Back
-      </Link>
-      <Link to="/dashboard" className="bb-btn-ghost h-11 px-5">
-        Dashboard
-      </Link>
-
-      {role === UserRole.INFLUENCER && appliedAt ? (
-        <button disabled className="bb-btn-ghost h-11 px-5 opacity-70">
-          Applied {fmtDate(appliedAt)}
-        </button>
-      ) : null}
-
-      {canApply ? (
-        <button disabled={applyLoading} onClick={onApply} className="bb-btn-primary h-11 px-5">
-          {applyLoading ? 'Applying…' : 'Apply'}
-        </button>
-      ) : null}
-    </div>
-  )
-
   const st = statusPill(item?.status)
 
   return (
     <div className="bb-page px-4 py-6 md:px-6">
-      <div className="bb-pop">
-        <DashboardHeader
-          title={loading ? 'Loading…' : item?.title ?? 'Campaign'}
-          subtitle="Campaign details, product info, tiers and applications."
-          search=""
-          onSearch={() => {}}
-          rightSlot={rightSlot}
-          searchPlaceholder=""
-        />
-      </div>
+      {/* TOP SECTION */}
+      <section
+        className="bb-pop relative overflow-hidden rounded-3xl border p-5 sm:p-6"
+        style={{
+          borderColor: 'rgb(var(--bb-border) / 0.10)',
+          backgroundColor: 'rgb(var(--bb-surface) / 0.80)',
+          backdropFilter: 'blur(12px)',
+        }}
+      >
+        <div className="pointer-events-none absolute inset-0 bb-spotlight" />
+        <div className="pointer-events-none absolute inset-0 bb-grid" />
+        <div className="pointer-events-none absolute inset-0 bb-noise" />
 
-      <div className="bb-pop mt-3 flex flex-wrap gap-2">
-        <span
-          className="rounded-full border px-3 py-1 text-[11px] font-extrabold"
-          style={{ borderColor: st.border, backgroundColor: st.bg, color: st.text }}
-        >
-          {item?.status ?? '—'}
-        </span>
+        <div className="relative">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <span
+                  className="rounded-full border px-3 py-1 text-[11px] font-extrabold"
+                  style={{ borderColor: st.border, backgroundColor: st.bg, color: st.text }}
+                >
+                  {item?.status ?? '—'}
+                </span>
 
-        {[
-          `Budget: ${money(item?.budget, 'MAD')}`,
-          `Dates: ${fmtDate(item?.start_at)} → ${fmtDate(item?.end_at)}`,
-          item?.commission_type ? `Commission: ${item.commission_type} • ${Number(item.commission_value ?? 0)}` : null,
-        ]
-          .filter(Boolean)
-          .map((x) => (
-            <span
-              key={String(x)}
-              className="rounded-full border px-3 py-1 text-[11px] font-extrabold"
-              style={{
-                borderColor: 'rgb(var(--bb-border) / 0.10)',
-                backgroundColor: 'rgb(var(--bb-border) / 0.04)',
-                color: 'rgb(var(--bb-muted) / 0.90)',
-              }}
-            >
-              {x}
-            </span>
-          ))}
-      </div>
+                <span
+                  className="rounded-full border px-3 py-1 text-[11px] font-extrabold"
+                  style={{
+                    borderColor: 'rgb(var(--bb-border) / 0.10)',
+                    backgroundColor: 'rgb(var(--bb-border) / 0.04)',
+                    color: 'rgb(var(--bb-muted) / 0.90)',
+                  }}
+                >
+                  Campaign
+                </span>
+              </div>
+
+              <h1 className="mt-3 truncate text-2xl font-black tracking-tight sm:text-3xl" style={{ color: 'rgb(var(--bb-text) / 0.98)' }}>
+                {loading ? 'Loading…' : item?.title ?? 'Campaign'}
+              </h1>
+
+              <p className="mt-2 max-w-2xl text-sm font-semibold leading-6" style={{ color: 'rgb(var(--bb-muted) / 0.90)' }}>
+                {loading ? '—' : (item?.objective ?? 'Campaign details, product info, tiers and applications.')}
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-start gap-2 lg:justify-end">
+              <TopActionLink to="/campaigns" label="Back" icon={<ArrowLeftIcon className="h-5 w-5" />} />
+              <TopActionLink to="/dashboard" label="Dashboard" icon={<Squares2X2Icon className="h-5 w-5" />} />
+
+              {role === UserRole.INFLUENCER && appliedAt ? (
+                <div
+                  className="inline-flex h-11 items-center gap-2 rounded-full border px-4 text-sm font-extrabold"
+                  style={{
+                    borderColor: 'rgb(var(--bb-border) / 0.10)',
+                    backgroundColor: 'rgb(var(--bb-border) / 0.04)',
+                    color: 'rgb(var(--bb-text) / 0.92)',
+                  }}
+                >
+                  <CheckCircleIcon className="h-5 w-5" style={{ color: 'rgb(16 185 129 / 0.9)' }} />
+                  <span className="hidden sm:inline">Applied</span>
+                  <span className="text-xs font-semibold" style={{ color: 'rgb(var(--bb-muted) / 0.85)' }}>
+                    {fmtDate(appliedAt)}
+                  </span>
+                </div>
+              ) : null}
+
+              {canApply ? (
+                <button disabled={applyLoading} onClick={onApply} className="bb-btn-primary h-11 px-4">
+                  <span className="inline-flex items-center gap-2">
+                    <span
+                      className="grid h-9 w-9 place-items-center rounded-full border"
+                      style={{
+                        borderColor: 'rgb(255 255 255 / 0.18)',
+                        backgroundColor: 'rgb(255 255 255 / 0.10)',
+                      }}
+                    >
+                      {applyLoading ? <ClockIcon className="h-5 w-5" /> : <PaperAirplaneIcon className="h-5 w-5" />}
+                    </span>
+                    <span className="hidden sm:inline">{applyLoading ? 'Applying…' : 'Apply'}</span>
+                  </span>
+                </button>
+              ) : null}
+            </div>
+          </div>
+
+          <div className="mt-5 grid gap-3 sm:grid-cols-3">
+            <TopChip
+              icon={<BanknotesIcon className="h-5 w-5" />}
+              label="Budget"
+              value={money(item?.budget, 'MAD')}
+            />
+            <TopChip
+              icon={<CalendarDaysIcon className="h-5 w-5" />}
+              label="Dates"
+              value={`${fmtDate(item?.start_at)} → ${fmtDate(item?.end_at)}`}
+            />
+            <TopChip
+              icon={<TagIcon className="h-5 w-5" />}
+              label="Commission"
+              value={item?.commission_type ? `${item.commission_type} • ${Number(item.commission_value ?? 0)}` : '—'}
+            />
+          </div>
+        </div>
+      </section>
 
       {error ? <div className="mt-5"><Alert kind="error">{error}</Alert></div> : null}
       {applyError ? <div className="mt-4"><Alert kind="error">{applyError}</Alert></div> : null}

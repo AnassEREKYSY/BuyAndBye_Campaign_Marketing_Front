@@ -6,10 +6,10 @@ import {
   UserIcon,
   Bars3Icon,
   XMarkIcon,
-  ArrowLeftIcon,
   SunIcon,
   MoonIcon,
   ArrowRightOnRectangleIcon,
+  ArrowLeftIcon,
 } from '@heroicons/react/24/outline'
 import { ProfileApiClient } from '@core/modules/profile/infrastructure/api/ProfileApiClient'
 import type { ApiUserProfileResponse } from '@core/modules/profile/infrastructure/api/types/ApiUserProfileResponse'
@@ -61,6 +61,52 @@ function toAbsolute(url: string) {
 }
 
 const AVATAR_CACHE_KEY = 'bb_avatar_url'
+
+function IconPill({
+  label,
+  icon,
+  onClick,
+  to,
+  kind = 'ghost',
+  ariaLabel,
+}: {
+  label: string
+  icon: React.ReactNode
+  onClick?: () => void
+  to?: string
+  kind?: 'ghost' | 'cta'
+  ariaLabel?: string
+}) {
+  const className = kind === 'cta' ? 'bb-nav-cta h-10 px-3' : 'bb-nav-btn h-10 px-3'
+  const content = (
+    <span className="inline-flex items-center gap-2">
+      <span
+        className="grid h-8 w-8 place-items-center rounded-full border"
+        style={{
+          borderColor: 'rgb(var(--bb-border) / 0.10)',
+          backgroundColor: 'rgb(var(--bb-border) / 0.04)',
+        }}
+      >
+        {icon}
+      </span>
+      <span className="hidden sm:inline">{label}</span>
+    </span>
+  )
+
+  if (to) {
+    return (
+      <NavLink to={to} className={className} aria-label={ariaLabel ?? label}>
+        {content}
+      </NavLink>
+    )
+  }
+
+  return (
+    <button type="button" onClick={onClick} className={className} aria-label={ariaLabel ?? label}>
+      {content}
+    </button>
+  )
+}
 
 export function Navbar() {
   const location = useLocation()
@@ -152,19 +198,14 @@ export function Navbar() {
           </div>
 
           <div className="flex items-center gap-2">
-            <button type="button" onClick={toggle} className="bb-nav-btn" aria-label="Toggle theme">
+            <button type="button" onClick={toggle} className="bb-icon-btn h-10 w-10" aria-label="Toggle theme">
               {mode === 'dark' ? <SunIcon className="h-5 w-5" /> : <MoonIcon className="h-5 w-5" />}
             </button>
 
             {isLoggedIn && (
               <button type="button" onClick={() => navigate('/profile')} className="bb-avatar" aria-label="Profile">
                 {profileImageUrl ? (
-                  <img
-                    src={profileImageUrl}
-                    alt="Profile"
-                    className="h-full w-full object-cover"
-                    referrerPolicy="no-referrer"
-                  />
+                  <img src={profileImageUrl} alt="Profile" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
                 ) : (
                   <UserIcon className="h-5 w-5" style={{ color: 'rgb(var(--bb-text) / 0.85)' }} />
                 )}
@@ -172,22 +213,28 @@ export function Navbar() {
             )}
 
             {isLoggedIn ? (
-              <button type="button" onClick={onLogout} className="bb-nav-btn" aria-label="Logout">
-                <ArrowRightOnRectangleIcon className="h-5 w-5" />
-              </button>
+              <IconPill
+                label="Logout"
+                ariaLabel="Logout"
+                onClick={onLogout}
+                icon={<ArrowRightOnRectangleIcon className="h-5 w-5" />}
+                kind="ghost"
+              />
             ) : (
-              <NavLink
+              <IconPill
+                label={isAuthRoute ? 'Back' : 'Login'}
+                ariaLabel={isAuthRoute ? 'Back' : 'Login'}
                 to={isAuthRoute ? '/' : '/login'}
-                className={cx(isAuthRoute ? 'bb-nav-btn' : 'bb-nav-cta')}
-                aria-label={isAuthRoute ? 'Back' : 'Login'}
-              >
-                {isAuthRoute ? <ArrowLeftIcon className="h-5 w-5" /> : <ArrowRightOnRectangleIcon className="h-5 w-5" />}
-              </NavLink>
+                icon={
+                  isAuthRoute ? <ArrowLeftIcon className="h-5 w-5" /> : <ArrowRightOnRectangleIcon className="h-5 w-5" />
+                }
+                kind={isAuthRoute ? 'ghost' : 'cta'}
+              />
             )}
 
             <button
               type="button"
-              className="bb-nav-btn md:hidden"
+              className="bb-icon-btn h-10 w-10 md:hidden"
               onClick={() => setMobileOpen((v) => !v)}
               aria-label="Open menu"
             >

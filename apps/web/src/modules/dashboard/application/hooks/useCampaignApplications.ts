@@ -1,15 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { DashboardContainer } from '@core/modules/dashboard'
-import { HttpClient } from '@core/shared/services/http/HttpClient'
-import { CoreTokenStorage } from '@/shared/services/storage'
-import { env } from '@/shared'
 import type { CampaignApplication } from '@core/modules/dashboard/domain/entities'
 import { useNotification } from '@/shared/context/notification'
-
-function buildHttpClient() {
-  const tokenStorage = new CoreTokenStorage()
-  return new HttpClient(env.BACKEND_BASE_URL, tokenStorage)
-}
+import { dashboardContainer } from '@/shared/api/dashboardContainer'
 
 type NotifyPayload = { type: 'success' | 'error' | 'info'; message: string }
 
@@ -39,17 +31,17 @@ export function useCampaignApplications(campaignId: string) {
   const [mutatingId, setMutatingId] = useState<string | null>(null)
   const [hasMore, setHasMore] = useState(true)
 
-  const container = useMemo(() => {
-    const http = buildHttpClient()
-    return DashboardContainer.getInstance(http)
-  }, [])
+  const listApps = useMemo(() => dashboardContainer.listBrandCampaignApplicationsUseCase, [])
+  const shortlistUc = useMemo(() => dashboardContainer.shortlistApplicationUseCase, [])
+  const acceptUc = useMemo(() => dashboardContainer.acceptApplicationUseCase, [])
+  const rejectUc = useMemo(() => dashboardContainer.rejectApplicationUseCase, [])
 
   const load = useCallback(
     async (nextPage: number) => {
       if (!campaignId) return
       setLoading(true)
       try {
-        const res = await container.listBrandCampaignApplicationsUseCase.execute(campaignId, { page: nextPage, size })
+        const res = await listApps.execute(campaignId, { page: nextPage, size })
         setItems((prev) => (nextPage === 1 ? res : [...prev, ...res]))
         setPage(nextPage)
         setHasMore((res ?? []).length === size)
@@ -59,7 +51,7 @@ export function useCampaignApplications(campaignId: string) {
         setLoading(false)
       }
     },
-    [campaignId, container, notify, size],
+    [campaignId, listApps, notify, size],
   )
 
   const refresh = useCallback(async () => {
@@ -79,7 +71,7 @@ export function useCampaignApplications(campaignId: string) {
     async (applicationId: string) => {
       setMutatingId(applicationId)
       try {
-        const updated = await container.shortlistApplicationUseCase.execute(applicationId)
+        const updated = await shortlistUc.execute(applicationId)
         setItems((prev) => prev.map((a) => (a.id === applicationId ? updated : a)))
         notify({ type: 'success', message: 'Application shortlisted.' })
       } catch (e: any) {
@@ -88,14 +80,14 @@ export function useCampaignApplications(campaignId: string) {
         setMutatingId(null)
       }
     },
-    [container, notify],
+    [shortlistUc, notify],
   )
 
   const accept = useCallback(
     async (applicationId: string) => {
       setMutatingId(applicationId)
       try {
-        const updated = await container.acceptApplicationUseCase.execute(applicationId)
+        const updated = await acceptUc.execute(applicationId)
         setItems((prev) => prev.map((a) => (a.id === applicationId ? updated : a)))
         notify({ type: 'success', message: 'Candidate finalized. Collaboration started.' })
       } catch (e: any) {
@@ -104,14 +96,14 @@ export function useCampaignApplications(campaignId: string) {
         setMutatingId(null)
       }
     },
-    [container, notify],
+    [acceptUc, notify],
   )
 
   const reject = useCallback(
     async (applicationId: string) => {
       setMutatingId(applicationId)
       try {
-        const updated = await container.rejectApplicationUseCase.execute(applicationId)
+        const updated = await rejectUc.execute(applicationId)
         setItems((prev) => prev.map((a) => (a.id === applicationId ? updated : a)))
         notify({ type: 'success', message: 'Application rejected.' })
       } catch (e: any) {
@@ -120,7 +112,7 @@ export function useCampaignApplications(campaignId: string) {
         setMutatingId(null)
       }
     },
-    [container, notify],
+    [rejectUc, notify],
   )
 
   return {

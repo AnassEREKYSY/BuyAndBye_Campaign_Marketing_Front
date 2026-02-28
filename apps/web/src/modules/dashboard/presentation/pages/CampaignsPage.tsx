@@ -6,6 +6,14 @@ import { env } from '@/shared'
 import { useProfile } from '@/modules/profile/application/hooks/useProfile'
 import { UserRole } from '@core/modules/auth/domain/entities'
 import { DashboardHeader } from '@/modules/dashboard/presentation/components/DashboardHeader'
+import {
+  Squares2X2Icon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  AdjustmentsHorizontalIcon,
+  MagnifyingGlassIcon,
+  SparklesIcon,
+} from '@heroicons/react/24/outline'
 
 type CampaignStatus = 'draft' | 'published' | 'closed'
 type CampaignListItem = {
@@ -62,6 +70,21 @@ function SkeletonCard() {
       <div className="mt-3 h-3 w-1/3 rounded bg-black/10 dark:bg-white/10" />
       <div className="mt-6 h-10 rounded-2xl bg-black/10 dark:bg-white/10" />
     </div>
+  )
+}
+
+function TopPill({ children }: { children: React.ReactNode }) {
+  return (
+    <span
+      className="inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[11px] font-extrabold"
+      style={{
+        borderColor: 'rgb(var(--bb-border) / 0.10)',
+        backgroundColor: 'rgb(var(--bb-border) / 0.04)',
+        color: 'rgb(var(--bb-muted) / 0.90)',
+      }}
+    >
+      {children}
+    </span>
   )
 }
 
@@ -171,63 +194,114 @@ export default function CampaignsPage() {
   const canNext = meta.current < meta.last
 
   const rightSlot = (
-    <div className="flex w-full flex-wrap items-center justify-end gap-2 md:w-auto">
-      <select
-        value={size}
-        onChange={(e) => {
-          setSize(Number(e.target.value))
-          setPage(1)
-        }}
-        className="bb-select"
-      >
-        <option value={8}>8 / page</option>
-        <option value={12}>12 / page</option>
-        <option value={20}>20 / page</option>
-      </select>
-
+    <div className="flex w-full flex-col gap-2 md:w-auto md:flex-row md:items-center md:justify-end">
       <div className="flex items-center gap-2">
-        <button disabled={!canPrev} onClick={() => setPage((p) => Math.max(1, p - 1))} className="bb-btn-ghost h-11 px-4 disabled:opacity-50">
-          Prev
-        </button>
-        <button disabled={!canNext} onClick={() => setPage((p) => p + 1)} className="bb-btn-primary h-11 px-4 disabled:opacity-50">
-          Next
-        </button>
-      </div>
+        <select
+          value={size}
+          onChange={(e) => {
+            setSize(Number(e.target.value))
+            setPage(1)
+          }}
+          className="bb-select"
+        >
+          <option value={8}>8 / page</option>
+          <option value={12}>12 / page</option>
+          <option value={20}>20 / page</option>
+        </select>
 
-      <Link to="/dashboard" className="bb-btn-ghost h-11 px-4">
-        Dashboard
-      </Link>
+        <button disabled={!canPrev} onClick={() => setPage((p) => Math.max(1, p - 1))} className="bb-icon-btn h-11 w-11 disabled:opacity-50" aria-label="Previous">
+          <ChevronLeftIcon className="h-5 w-5" />
+        </button>
+        <button disabled={!canNext} onClick={() => setPage((p) => p + 1)} className="bb-icon-btn h-11 w-11 disabled:opacity-50" aria-label="Next">
+          <ChevronRightIcon className="h-5 w-5" />
+        </button>
+
+        <Link to="/dashboard" className="bb-icon-btn h-11 w-11" aria-label="Dashboard">
+          <Squares2X2Icon className="h-5 w-5" />
+        </Link>
+      </div>
     </div>
   )
 
   return (
     <div className="bb-page px-4 py-6 md:px-6">
-      <div className="bb-pop">
-        <DashboardHeader
-          title="Browse campaigns"
-          subtitle="Only published campaigns are shown."
-          search={search}
-          onSearch={(v) => {
-            setSearch(v)
-            setPage(1)
-          }}
-          rightSlot={rightSlot}
-          searchPlaceholder="Filter by title or product…"
-        />
-      </div>
+      {/* TOP SECTION (CLEAN + STYLISH) */}
+      <section
+        className="bb-pop relative overflow-hidden rounded-3xl border p-5 sm:p-6"
+        style={{
+          borderColor: 'rgb(var(--bb-border) / 0.10)',
+          backgroundColor: 'rgb(var(--bb-surface) / 0.82)',
+          backdropFilter: 'blur(12px)',
+        }}
+      >
+        <div className="pointer-events-none absolute inset-0 bb-spotlight" />
+        <div className="pointer-events-none absolute inset-0 bb-grid" />
+        <div className="pointer-events-none absolute inset-0 bb-noise" />
 
-      <div className="mt-3 flex items-center justify-between text-xs font-semibold bb-muted-weak">
-        <span>
-          Page {meta.current} / {meta.last}
-        </span>
-        <span>{meta.total} total</span>
-      </div>
+        <div className="relative">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <TopPill>
+                  <SparklesIcon className="h-4 w-4" />
+                  Published
+                </TopPill>
+                <TopPill>
+                  Page {meta.current}/{meta.last}
+                </TopPill>
+                <TopPill>{meta.total} total</TopPill>
+              </div>
 
-      {error ? (
-        <div className="bb-pop mt-5 rounded-3xl border border-rose-500/25 bg-rose-500/10 p-4 text-sm font-semibold text-rose-100">
-          {error}
+              <h1 className="mt-3 text-2xl font-black tracking-tight sm:text-3xl" style={{ color: 'rgb(var(--bb-text) / 0.98)' }}>
+                Campaign marketplace
+              </h1>
+
+              <p className="mt-2 max-w-2xl text-sm font-semibold leading-6" style={{ color: 'rgb(var(--bb-muted) / 0.92)' }}>
+                Find offers, compare budgets, and open details in one click.
+              </p>
+            </div>
+
+            <div className="w-full lg:w-auto">
+              <div className="bb-pop rounded-3xl border p-2"
+                style={{
+                  borderColor: 'rgb(var(--bb-border) / 0.10)',
+                  backgroundColor: 'rgb(var(--bb-border) / 0.04)',
+                }}
+              >
+                <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-end">
+                  <div className="relative flex-1">
+                    <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'rgb(var(--bb-muted) / 0.85)' }}>
+                      <MagnifyingGlassIcon className="h-5 w-5" />
+                    </span>
+                    <input
+                      value={search}
+                      onChange={(e) => {
+                        setSearch(e.target.value)
+                        setPage(1)
+                      }}
+                      placeholder="Search by title or product…"
+                      className="bb-input pl-11"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-end gap-2">
+                    <span className="bb-icon-btn h-11 w-11" aria-label="Filters">
+                      <AdjustmentsHorizontalIcon className="h-5 w-5" />
+                    </span>
+                    {rightSlot}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {error ? (
+            <div className="bb-pop mt-4 rounded-3xl border border-rose-500/25 bg-rose-500/10 p-4 text-sm font-semibold text-rose-100">
+              {error}
+            </div>
+          ) : null}
         </div>
-      ) : null}
+      </section>
 
       <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {(loading ? Array.from({ length: size }) : filtered).map((c: any, idx: number) =>

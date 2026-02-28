@@ -10,4 +10,10 @@ export default defineConfig({
       '@core': path.resolve(__dirname, '../../packages/core/src'),
     },
   },
+  optimizeDeps: {
+    include: ['axios'],
+  },
+  server: {
+    fs: { allow: ['..'] },
+  },
 })

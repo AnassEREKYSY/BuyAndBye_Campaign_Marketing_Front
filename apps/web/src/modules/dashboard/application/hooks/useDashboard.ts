@@ -42,19 +42,27 @@ const CACHE_TTL_MS = 15_000
 const cache = new Map<string, DashboardSnapshot>()
 const inflight = new Map<string, Promise<DashboardSnapshot>>()
 
-function cacheKey(role: UserRole, campaignStatus: string, selectedCampaignId: string | null) {
-  return `${role}|${campaignStatus}|${selectedCampaignId ?? 'auto'}`
+function cacheKey(role: UserRole, campaignStatus: string) {
+  return `${role}|${campaignStatus}`
+}
+
+async function getInfluencerAppliesCountFast(): Promise<number> {
+  const res = await httpClient.get<any>(`/api/v1/applications?page=1&size=1`)
+  const payload = (res as any).data ?? res
+  const meta = payload?.meta ?? payload?.pagination ?? payload?.data?.meta ?? null
+  const total = Number(meta?.total ?? payload?.total ?? payload?.data?.total ?? NaN)
+  if (Number.isFinite(total)) return total
+  const list = (payload?.data ?? payload?.items ?? []) as any[]
+  return Array.isArray(list) ? list.length : 0
 }
 
 async function loadInfluencerExtras() {
-  const [dash, pays, apps] = await Promise.all([
+  const [dash, pays, appliesCount] = await Promise.all([
     dashboardContainer.getInfluencerDashboardUseCase.execute(),
     dashboardContainer.listInfluencerPayoutsUseCase.execute(),
-    httpClient.get<any>(`/api/v1/applications?page=1&size=200`),
+    getInfluencerAppliesCountFast(),
   ])
-  const payload = (apps as any).data ?? apps
-  const list = (payload?.data ?? []) as any[]
-  return { dash, pays, appliesCount: list.length }
+  return { dash, pays, appliesCount }
 }
 
 export function useDashboard(role: UserRole | null) {
@@ -71,7 +79,13 @@ export function useDashboard(role: UserRole | null) {
   const [payouts, setPayouts] = useState<Payout[]>([])
   const [appliesCount, setAppliesCount] = useState<number>(0)
 
-  const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(null)
+  const [selectedCampaignId, _setSelectedCampaignId] = useState<string | null>(null)
+  const selectedCampaignIdRef = useRef<string | null>(null)
+  const setSelectedCampaignId = useCallback((id: string | null) => {
+    selectedCampaignIdRef.current = id
+    _setSelectedCampaignId(id)
+  }, [])
+
   const [brandSummary, setBrandSummary] = useState<BrandCampaignSummary | null>(null)
   const [timeline, setTimeline] = useState<DashboardTimelinePoint[]>([])
 
@@ -83,13 +97,12 @@ export function useDashboard(role: UserRole | null) {
     }
   }, [])
 
-  const refresh = useCallback(
+  const refreshBase = useCallback(
     async (opts?: { force?: boolean }) => {
       const r = role as UserRole | null
       if (!r) return
 
-      const key = cacheKey(r, campaignStatus, selectedCampaignId)
-
+      const key = cacheKey(r, campaignStatus)
       const cached = cache.get(key)
       const fresh = cached && Date.now() - cached.at <= CACHE_TTL_MS
 
@@ -104,6 +117,7 @@ export function useDashboard(role: UserRole | null) {
         setAppliesCount(cached!.appliesCount)
         setBrandSummary(cached!.brandSummary)
         setTimeline(cached!.timeline)
+        if (r === UserRole.BRAND) setSelectedCampaignId(cached!.selectedCampaignId)
         return
       }
 
@@ -119,6 +133,7 @@ export function useDashboard(role: UserRole | null) {
         setAppliesCount(snap.appliesCount)
         setBrandSummary(snap.brandSummary)
         setTimeline(snap.timeline)
+        if (r === UserRole.BRAND) setSelectedCampaignId(snap.selectedCampaignId)
         return
       }
 
@@ -143,7 +158,7 @@ export function useDashboard(role: UserRole | null) {
             influencerDashboard: null,
             payouts: [],
             appliesCount: 0,
-            selectedCampaignId: selectedCampaignId ?? null,
+            selectedCampaignId: selectedCampaignIdRef.current ?? null,
             brandSummary: null,
             timeline: [],
           }
@@ -163,7 +178,7 @@ export function useDashboard(role: UserRole | null) {
 
           if (r === UserRole.BRAND) {
             const pick =
-              selectedCampaignId ??
+              selectedCampaignIdRef.current ??
               (snap.campaigns.find((c) => c.status === 'published')?.id ?? snap.campaigns[0]?.id ?? null)
 
             snap.selectedCampaignId = pick
@@ -199,7 +214,7 @@ export function useDashboard(role: UserRole | null) {
             influencerDashboard: null,
             payouts: [],
             appliesCount: 0,
-            selectedCampaignId,
+            selectedCampaignId: selectedCampaignIdRef.current ?? null,
             brandSummary: null,
             timeline: [],
           }
@@ -229,12 +244,60 @@ export function useDashboard(role: UserRole | null) {
         setSelectedCampaignId(snap.selectedCampaignId ?? null)
       }
     },
-    [role, campaignStatus, selectedCampaignId],
+    [role, campaignStatus, setSelectedCampaignId],
   )
 
   useEffect(() => {
-    void refresh()
-  }, [refresh])
+    void refreshBase()
+  }, [refreshBase])
+
+  const brandDetailsInflight = useRef<Map<string, Promise<{ summary: BrandCampaignSummary; t: DashboardTimelinePoint[] }>>>(
+    new Map(),
+  )
+
+  const refreshBrandDetails = useCallback(
+    async (campaignId: string) => {
+      const r = role as UserRole | null
+      if (r !== UserRole.BRAND || !campaignId) return
+
+      const key = campaignId
+      const infl = brandDetailsInflight.current
+      if (infl.has(key)) {
+        const res = await infl.get(key)!
+        if (!mountedRef.current) return
+        setBrandSummary(res.summary)
+        setTimeline(res.t)
+        return
+      }
+
+      const p = (async () => {
+        const { from, to } = lastNDaysRange(14)
+        const [summary, t] = await Promise.all([
+          dashboardContainer.getBrandCampaignSummaryUseCase.execute(campaignId),
+          dashboardContainer.getBrandCampaignTimelineUseCase.execute(campaignId, { from, to, group: 'day' }),
+        ])
+        return { summary, t }
+      })()
+
+      infl.set(key, p)
+
+      try {
+        const res = await p
+        if (!mountedRef.current) return
+        setBrandSummary(res.summary)
+        setTimeline(res.t)
+      } finally {
+        infl.delete(key)
+      }
+    },
+    [role],
+  )
+
+  useEffect(() => {
+    if (role !== UserRole.BRAND) return
+    if (!selectedCampaignId) return
+    void refreshBrandDetails(selectedCampaignId)
+  }, [role, selectedCampaignId, refreshBrandDetails])
 
   const filteredCampaigns = useMemo(() => {
     const q = search.trim().toLowerCase()
@@ -250,6 +313,13 @@ export function useDashboard(role: UserRole | null) {
       all: campaigns.length,
     }
   }, [campaigns])
+
+  const refresh = useCallback(
+    async (opts?: { force?: boolean }) => {
+      await refreshBase(opts)
+    },
+    [refreshBase],
+  )
 
   return {
     loading,
