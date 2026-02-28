@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from 'react'
-import { useProfile } from '../../application/hooks/useProfile'
+import { useMemo } from 'react'
 import { Field, Input, PrimaryButton, SectionTitle, SubtleCard } from './ui'
 import { GlobeAltIcon } from '@heroicons/react/24/outline'
+import { useSocialLinksForm } from '../../application/hooks/useSocialLinksForm'
 
 function InstagramIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
@@ -12,11 +12,7 @@ function InstagramIcon(props: React.SVGProps<SVGSVGElement>) {
         strokeWidth="2"
         strokeLinejoin="round"
       />
-      <path
-        d="M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z"
-        stroke="currentColor"
-        strokeWidth="2"
-      />
+      <path d="M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z" stroke="currentColor" strokeWidth="2" />
       <path d="M17.5 6.5h.01" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
     </svg>
   )
@@ -25,18 +21,8 @@ function InstagramIcon(props: React.SVGProps<SVGSVGElement>) {
 function TikTokIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" fill="none" {...props}>
-      <path
-        d="M14 3v10.2a3.8 3.8 0 1 1-3.3-3.77"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
-      <path
-        d="M14 3c.8 2.8 2.8 4.8 6 5.2"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
+      <path d="M14 3v10.2a3.8 3.8 0 1 1-3.3-3.77" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <path d="M14 3c.8 2.8 2.8 4.8 6 5.2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
     </svg>
   )
 }
@@ -58,12 +44,7 @@ function YouTubeIcon(props: React.SVGProps<SVGSVGElement>) {
 function MediaKitIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" fill="none" {...props}>
-      <path
-        d="M7 3h7l3 3v15H7V3Z"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinejoin="round"
-      />
+      <path d="M7 3h7l3 3v15H7V3Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
       <path d="M14 3v3h3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
       <path d="M9 10h6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
       <path d="M9 14h6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
@@ -138,36 +119,15 @@ function normalizeHost(url: string) {
 }
 
 export function SocialMediaSection() {
-  const { profile, refresh, isLoading, updateInfluencer } = useProfile()
+  const vm = useSocialLinksForm()
 
-  const [instagram, setInstagram] = useState('')
-  const [tiktok, setTiktok] = useState('')
-  const [youtube, setYoutube] = useState('')
-  const [mediaKit, setMediaKit] = useState('')
+  const role = vm.profile?.role ?? null
 
-  useEffect(() => {
-    if (!profile) refresh()
-  }, [profile, refresh])
+  const websiteValue = useMemo(() => ((vm.profile as any)?.influencerProfile as any)?.website_url ?? '', [vm.profile])
 
-  useEffect(() => {
-    if (!profile) return
-    const p = profile.influencerProfile ?? {}
-    setInstagram(p.instagram_url ?? '')
-    setTiktok(p.tiktok_url ?? '')
-    setYoutube(p.youtube_url ?? '')
-    setMediaKit(p.media_kit_url ?? '')
-  }, [profile])
+  if (!vm.profile) return <div className="bb-subtle-text">Loading…</div>
 
-  const score = useMemo(() => {
-    const links = [instagram, tiktok, youtube, mediaKit].filter((x) => x.trim()).length
-    if (links === 0) return { label: 'No links', cls: 'text-slate-400' }
-    if (links <= 2) return { label: 'Good start', cls: 'text-sky-300' }
-    return { label: 'Strong', cls: 'text-emerald-300' }
-  }, [instagram, tiktok, youtube, mediaKit])
-
-  if (!profile) return <div className="bb-subtle-text">Loading…</div>
-
-  if (profile.role !== 'influencer') {
+  if (role !== 'influencer') {
     return (
       <div className="space-y-3">
         <SectionTitle title="Social media" subtitle="Social links are part of the influencer profile." />
@@ -183,14 +143,9 @@ export function SocialMediaSection() {
   return (
     <form
       className="space-y-6"
-      onSubmit={(e) => {
+      onSubmit={async (e) => {
         e.preventDefault()
-        updateInfluencer({
-          instagram_url: instagram,
-          tiktok_url: tiktok,
-          youtube_url: youtube,
-          media_kit_url: mediaKit,
-        })
+        await vm.submit()
       }}
     >
       <SectionTitle
@@ -198,10 +153,10 @@ export function SocialMediaSection() {
         subtitle="Add official profile links to boost trust and approvals."
         right={
           <span
-            className={`rounded-full border px-3 py-2 text-xs font-extrabold ${score.cls}`}
+            className={`rounded-full border px-3 py-2 text-xs font-extrabold ${vm.score.cls}`}
             style={{ borderColor: 'rgb(var(--bb-border) / 0.10)', backgroundColor: 'rgb(var(--bb-border) / 0.04)' }}
           >
-            {score.label}
+            {vm.score.label}
           </span>
         }
       />
@@ -217,41 +172,41 @@ export function SocialMediaSection() {
         <SocialRow
           label="Instagram"
           placeholder="https://instagram.com/username"
-          value={instagram}
-          onChange={setInstagram}
-          preview={normalizeHost(instagram)}
+          value={vm.instagram}
+          onChange={vm.setInstagram}
+          preview={normalizeHost(vm.instagram)}
           icon={<InstagramIcon className="h-5 w-5" />}
         />
         <SocialRow
           label="TikTok"
           placeholder="https://tiktok.com/@username"
-          value={tiktok}
-          onChange={setTiktok}
-          preview={normalizeHost(tiktok)}
+          value={vm.tiktok}
+          onChange={vm.setTiktok}
+          preview={normalizeHost(vm.tiktok)}
           icon={<TikTokIcon className="h-5 w-5" />}
         />
         <SocialRow
           label="YouTube"
           placeholder="https://youtube.com/@username"
-          value={youtube}
-          onChange={setYoutube}
-          preview={normalizeHost(youtube)}
+          value={vm.youtube}
+          onChange={vm.setYoutube}
+          preview={normalizeHost(vm.youtube)}
           icon={<YouTubeIcon className="h-5 w-5" />}
         />
         <SocialRow
           label="Media kit"
           placeholder="https://drive.google.com/…"
-          value={mediaKit}
-          onChange={setMediaKit}
-          preview={normalizeHost(mediaKit)}
+          value={vm.mediaKit}
+          onChange={vm.setMediaKit}
+          preview={normalizeHost(vm.mediaKit)}
           icon={<MediaKitIcon className="h-5 w-5" />}
         />
         <SocialRow
           label="Website (optional)"
           placeholder="https://your-site.com"
-          value={(profile.influencerProfile as any)?.website_url ?? ''}
+          value={websiteValue}
           onChange={() => {}}
-          preview={''}
+          preview={normalizeHost(websiteValue)}
           icon={<GlobeAltIcon className="h-5 w-5" />}
         />
       </div>
@@ -261,7 +216,7 @@ export function SocialMediaSection() {
         style={{ borderColor: 'rgb(var(--bb-border) / 0.10)', backgroundColor: 'rgb(var(--bb-border) / 0.04)' }}
       >
         <div className="text-sm bb-subtle-text">Keep links accurate to improve approvals.</div>
-        <PrimaryButton type="submit" disabled={isLoading}>
+        <PrimaryButton type="submit" disabled={vm.isLoading}>
           Save social links
         </PrimaryButton>
       </div>

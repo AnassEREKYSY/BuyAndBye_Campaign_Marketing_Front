@@ -116,11 +116,23 @@ export function Navbar() {
 
   const isLoggedIn = auth.isAuthenticated
   const isAuthRoute = location.pathname === '/login' || location.pathname === '/register'
-  const navItems = useMemo(() => (isLoggedIn ? authedNavItems : publicNavItems), [isLoggedIn])
 
   const [mobileOpen, setMobileOpen] = useState(false)
   const [profileImageUrl, setProfileImageUrl] = useState<string>(() => localStorage.getItem(AVATAR_CACHE_KEY) ?? '')
+  const [role, setRole] = useState<'brand' | 'influencer' | null>(null)
   const fetchingRef = useRef(false)
+
+  const navItems = useMemo(() => {
+    if (!isLoggedIn) return publicNavItems
+    if (role === 'brand') {
+      return [
+        ...authedNavItems,
+        { to: '/dashboard/brand/products', label: 'Products' },
+        { to: '/dashboard/brand/campaigns', label: 'My campaigns' },
+      ]
+    }
+    return authedNavItems
+  }, [isLoggedIn, role])
 
   useEffect(() => {
     setMobileOpen(false)
@@ -129,6 +141,7 @@ export function Navbar() {
   useEffect(() => {
     if (!isLoggedIn) {
       setProfileImageUrl('')
+      setRole(null)
       try {
         localStorage.removeItem(AVATAR_CACHE_KEY)
       } catch {}
@@ -151,11 +164,16 @@ export function Navbar() {
         const finalUrl = toAbsolute(logo || photo)
 
         setProfileImageUrl(finalUrl)
+        setRole(u.role ?? null)
+
         try {
           localStorage.setItem(AVATAR_CACHE_KEY, finalUrl)
         } catch {}
       } catch {
-        if (!cancelled) setProfileImageUrl('')
+        if (!cancelled) {
+          setProfileImageUrl('')
+          setRole(null)
+        }
       } finally {
         fetchingRef.current = false
       }

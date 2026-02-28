@@ -1,11 +1,8 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import { HttpClient } from '@core/shared/services/http/HttpClient'
-import { CoreTokenStorage } from '@/shared/services/storage'
-import { env } from '@/shared'
 import { useProfile } from '@/modules/profile/application/hooks/useProfile'
 import { UserRole } from '@core/modules/auth/domain/entities'
-import { DashboardHeader } from '@/modules/dashboard/presentation/components/DashboardHeader'
+import { useCampaignsMarketplace } from '@/modules/dashboard/application/hooks/useCampaignsMarketplace'
 import {
   Squares2X2Icon,
   ChevronLeftIcon,
@@ -14,30 +11,6 @@ import {
   MagnifyingGlassIcon,
   SparklesIcon,
 } from '@heroicons/react/24/outline'
-
-type CampaignStatus = 'draft' | 'published' | 'closed'
-type CampaignListItem = {
-  id: string
-  title: string
-  status: CampaignStatus
-  commission_type?: string
-  commission_value?: number
-  budget?: number | null
-  start_at?: string | null
-  end_at?: string | null
-  product?: { id: string; name?: string; landing_url?: string | null } | null
-}
-
-type ApiPaginated<T> = {
-  data: T[]
-  meta?: { current_page?: number; last_page?: number; per_page?: number; total?: number }
-}
-
-type ApplicationItem = {
-  id: string
-  campaign_id: string
-  created_at?: string | null
-}
 
 function fmtDate(iso?: string | null) {
   if (!iso) return '—'
@@ -98,100 +71,21 @@ export default function CampaignsPage() {
     return null
   }, [profile]) as UserRole | null
 
-  const tokenStorage = useMemo(() => new CoreTokenStorage(), [])
-  const httpClient = useMemo(() => new HttpClient(env.BACKEND_BASE_URL, tokenStorage), [tokenStorage])
-
-  const [search, setSearch] = useState('')
-  const [page, setPage] = useState(1)
-  const [size, setSize] = useState(12)
-
-  const [items, setItems] = useState<CampaignListItem[]>([])
-  const [meta, setMeta] = useState<{ current: number; last: number; total: number }>({ current: 1, last: 1, total: 0 })
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-
-  const [appliedMap, setAppliedMap] = useState<Record<string, string>>({})
-
-  useEffect(() => {
-    let mounted = true
-
-    async function loadApplications() {
-      if (role !== UserRole.INFLUENCER) {
-        setAppliedMap({})
-        return
-      }
-
-      try {
-        const res = await httpClient.get<any>(`/api/v1/applications?page=1&size=200`)
-        const payload = (res as any).data ?? res
-        const list = (payload?.data ?? []) as ApplicationItem[]
-        const map: Record<string, string> = {}
-        for (const a of list) {
-          if (a?.campaign_id) map[a.campaign_id] = (a.created_at ?? '') || ''
-        }
-        if (!mounted) return
-        setAppliedMap(map)
-      } catch {
-        if (!mounted) return
-        setAppliedMap({})
-      }
-    }
-
-    void loadApplications()
-    return () => {
-      mounted = false
-    }
-  }, [httpClient, role])
-
-  useEffect(() => {
-    let mounted = true
-
-    async function run() {
-      setLoading(true)
-      setError(null)
-
-      try {
-        const params = new URLSearchParams()
-        params.set('scope', 'all')
-        params.set('status', 'published')
-        params.set('page', String(page))
-        params.set('size', String(size))
-
-        const res = await httpClient.get<ApiPaginated<CampaignListItem>>(`/api/v1/campaigns?${params.toString()}`)
-        const payload = (res as any).data ?? res
-        const data = (payload?.data ?? []) as CampaignListItem[]
-        const m = payload?.meta ?? {}
-
-        if (!mounted) return
-        setItems(data)
-        setMeta({
-          current: Number(m.current_page ?? page) || page,
-          last: Number(m.last_page ?? 1) || 1,
-          total: Number(m.total ?? data.length) || data.length,
-        })
-      } catch (e: any) {
-        if (!mounted) return
-        setError(e?.message ?? 'Failed to load campaigns')
-      } finally {
-        if (!mounted) return
-        setLoading(false)
-      }
-    }
-
-    void run()
-    return () => {
-      mounted = false
-    }
-  }, [httpClient, page, size])
-
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase()
-    if (!q) return items
-    return items.filter((c) => (c.title ?? '').toLowerCase().includes(q) || (c.product?.name ?? '').toLowerCase().includes(q))
-  }, [items, search])
-
-  const canPrev = meta.current > 1
-  const canNext = meta.current < meta.last
+  const {
+    search,
+    setSearch,
+    page,
+    setPage,
+    size,
+    setSize,
+    filtered,
+    meta,
+    loading,
+    error,
+    appliedMap,
+    canPrev,
+    canNext,
+  } = useCampaignsMarketplace(role)
 
   const rightSlot = (
     <div className="flex w-full flex-col gap-2 md:w-auto md:flex-row md:items-center md:justify-end">
@@ -212,6 +106,7 @@ export default function CampaignsPage() {
         <button disabled={!canPrev} onClick={() => setPage((p) => Math.max(1, p - 1))} className="bb-icon-btn h-11 w-11 disabled:opacity-50" aria-label="Previous">
           <ChevronLeftIcon className="h-5 w-5" />
         </button>
+
         <button disabled={!canNext} onClick={() => setPage((p) => p + 1)} className="bb-icon-btn h-11 w-11 disabled:opacity-50" aria-label="Next">
           <ChevronRightIcon className="h-5 w-5" />
         </button>
@@ -225,7 +120,6 @@ export default function CampaignsPage() {
 
   return (
     <div className="bb-page px-4 py-6 md:px-6">
-      {/* TOP SECTION (CLEAN + STYLISH) */}
       <section
         className="bb-pop relative overflow-hidden rounded-3xl border p-5 sm:p-6"
         style={{
@@ -262,7 +156,8 @@ export default function CampaignsPage() {
             </div>
 
             <div className="w-full lg:w-auto">
-              <div className="bb-pop rounded-3xl border p-2"
+              <div
+                className="bb-pop rounded-3xl border p-2"
                 style={{
                   borderColor: 'rgb(var(--bb-border) / 0.10)',
                   backgroundColor: 'rgb(var(--bb-border) / 0.04)',
@@ -285,9 +180,9 @@ export default function CampaignsPage() {
                   </div>
 
                   <div className="flex items-center justify-end gap-2">
-                    <span className="bb-icon-btn h-11 w-11" aria-label="Filters">
+                    <button type="button" className="bb-icon-btn h-11 w-11" aria-label="Filters">
                       <AdjustmentsHorizontalIcon className="h-5 w-5" />
-                    </span>
+                    </button>
                     {rightSlot}
                   </div>
                 </div>
@@ -302,6 +197,22 @@ export default function CampaignsPage() {
           ) : null}
         </div>
       </section>
+
+      {!loading && !error && filtered.length === 0 ? (
+        <div className="bb-empty bb-pop mt-5">
+          <p className="text-sm font-extrabold" style={{ color: 'rgb(var(--bb-text) / 0.92)' }}>
+            No campaigns found
+          </p>
+          <p className="mt-2 text-sm" style={{ color: 'rgb(var(--bb-muted) / 0.90)' }}>
+            Try clearing your search.
+          </p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <button onClick={() => setSearch('')} className="bb-btn-ghost h-11 px-5">
+              Clear search
+            </button>
+          </div>
+        </div>
+      ) : null}
 
       <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {(loading ? Array.from({ length: size }) : filtered).map((c: any, idx: number) =>

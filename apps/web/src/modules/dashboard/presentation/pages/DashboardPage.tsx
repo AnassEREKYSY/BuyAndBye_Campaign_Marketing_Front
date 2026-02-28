@@ -242,7 +242,7 @@ export default function DashboardPage() {
       </section>
 
       {/* BROWSE CAMPAIGNS (REDESIGNED BLOCK) */}
-      <section className="mt-4 bb-pop">
+      {/* <section className="mt-4 bb-pop">
         <div
           className="relative overflow-hidden rounded-3xl border p-5 sm:p-6"
           style={{
@@ -278,10 +278,10 @@ export default function DashboardPage() {
             </div>
           </div>
         </div>
-      </section>
+      </section> */}
 
       {/* MANAGEMENT BUTTONS (REDESIGNED WRAPPER) */}
-      {role === UserRole.BRAND ? (
+      {/* {role === UserRole.BRAND ? (
         <section className="mt-4 bb-pop">
           <div
             className="rounded-3xl border p-3 sm:p-4"
@@ -293,7 +293,7 @@ export default function DashboardPage() {
             <BrandManagementTopButtons />
           </div>
         </section>
-      ) : null}
+      ) : null} */}
 
       {/* STAT CARDS (SAME COMPONENT, CLEAN GRID) */}
       <div className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-4">

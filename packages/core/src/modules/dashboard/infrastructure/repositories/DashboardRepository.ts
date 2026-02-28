@@ -41,12 +41,12 @@ export class DashboardRepository implements IDashboardRepository {
 
   async getInfluencerDashboard(): Promise<InfluencerDashboard> {
     const res = await this.api.getInfluencerDashboard()
-    return InfluencerDashboardMapper.toDomain(res.data.data)
+    return InfluencerDashboardMapper.toDomain(res.data)
   }
 
   async listInfluencerPayouts(): Promise<Payout[]> {
     const res = await this.api.listInfluencerPayouts()
-    return PayoutMapper.toDomainList(res.data.data ?? [])
+    return PayoutMapper.toDomainList(res.data ?? [])
   }
 
   async listCampaigns(params: ListCampaignsParams): Promise<Campaign[]> {
@@ -56,7 +56,7 @@ export class DashboardRepository implements IDashboardRepository {
       status: params.status,
       scope: params.scope ?? 'mine',
     })
-    return CampaignMapper.toDomainList(res.data.data ?? [])
+    return CampaignMapper.toDomainList(res.data ?? [])
   }
 
   async createCampaign(dto: CreateCampaignDTO): Promise<Campaign> {
@@ -70,7 +70,7 @@ export class DashboardRepository implements IDashboardRepository {
       start_at: dto.startAt ?? null,
       end_at: dto.endAt ?? null,
     })
-    return CampaignMapper.toDomain(res.data.data)
+    return CampaignMapper.toDomain(res.data)
   }
 
   async updateCampaign(id: string, dto: UpdateCampaignDTO): Promise<Campaign> {
@@ -84,12 +84,12 @@ export class DashboardRepository implements IDashboardRepository {
       end_at: dto.endAt ?? undefined,
       status: dto.status ?? undefined,
     })
-    return CampaignMapper.toDomain(res.data.data)
+    return CampaignMapper.toDomain(res.data)
   }
 
   async publishCampaign(id: string): Promise<Campaign> {
     const res = await this.api.publishCampaign(id)
-    return CampaignMapper.toDomain(res.data.data)
+    return CampaignMapper.toDomain(res.data)
   }
 
   async deleteCampaign(id: string): Promise<void> {
@@ -101,17 +101,17 @@ export class DashboardRepository implements IDashboardRepository {
       page: params.page ?? 1,
       size: params.size ?? 20,
     })
-    return CollaborationMapper.toDomainList(res.data.data ?? [])
+    return CollaborationMapper.toDomainList(res.data ?? [])
   }
 
   async getCollaboration(id: string): Promise<Collaboration> {
     const res = await this.api.getCollaboration(id)
-    return CollaborationMapper.toDomain(res.data.data as any)
+    return CollaborationMapper.toDomain(res.data as any)
   }
 
   async getBrandCampaignSummary(campaignId: string): Promise<BrandCampaignSummary> {
     const res = await this.api.getBrandCampaignSummary(campaignId)
-    return BrandCampaignSummaryMapper.toDomain(res.data.data)
+    return BrandCampaignSummaryMapper.toDomain(res.data)
   }
 
   async getBrandCampaignTimeline(campaignId: string, params: TimelineParams): Promise<DashboardTimelinePoint[]> {
@@ -120,7 +120,7 @@ export class DashboardRepository implements IDashboardRepository {
       to: params.to,
       group: params.group ?? 'day',
     })
-    return TimelineMapper.toDomain(res.data.data ?? [])
+    return TimelineMapper.toDomain(res.data ?? [])
   }
 
   async getCollaborationTimeline(collaborationId: string, params: TimelineParams): Promise<DashboardTimelinePoint[]> {
@@ -129,7 +129,7 @@ export class DashboardRepository implements IDashboardRepository {
       to: params.to,
       group: params.group ?? 'day',
     })
-    return TimelineMapper.toDomain(res.data.data ?? [])
+    return TimelineMapper.toDomain(res.data ?? [])
   }
 
   async listBrandProducts(params: ListProductsParams): Promise<Product[]> {
@@ -137,7 +137,7 @@ export class DashboardRepository implements IDashboardRepository {
       page: params.page ?? 1,
       size: params.size ?? 20,
     })
-    return ProductMapper.toDomainList(res.data.data ?? [])
+    return ProductMapper.toDomainList(res.data ?? [])
   }
 
   async createProduct(dto: CreateProductDTO): Promise<Product> {
@@ -149,7 +149,7 @@ export class DashboardRepository implements IDashboardRepository {
       landing_url: dto.landingUrl ?? null,
       images: dto.images ?? null,
     })
-    return ProductMapper.toDomain(res.data.data)
+    return ProductMapper.toDomain(res.data)
   }
 
   async updateProduct(id: string, dto: UpdateProductDTO): Promise<Product> {
@@ -162,7 +162,7 @@ export class DashboardRepository implements IDashboardRepository {
       status: dto.status ?? undefined,
       images: dto.images ?? undefined,
     })
-    return ProductMapper.toDomain(res.data.data)
+    return ProductMapper.toDomain(res.data)
   }
 
   async deleteProduct(id: string): Promise<void> {
@@ -171,7 +171,7 @@ export class DashboardRepository implements IDashboardRepository {
 
   async listCampaignTiers(campaignId: string): Promise<CampaignPayoutTier[]> {
     const res = await this.api.listCampaignTiers(campaignId)
-    return CampaignPayoutTierMapper.toDomainList((res.data as any)?.data ?? [])
+    return CampaignPayoutTierMapper.toDomainList((res as any)?.data ?? [])
   }
 
   async createCampaignTier(campaignId: string, dto: CreateCampaignPayoutTierDTO): Promise<CampaignPayoutTier> {
@@ -182,7 +182,7 @@ export class DashboardRepository implements IDashboardRepository {
       payout_amount: dto.payoutAmount,
       currency: dto.currency ?? null,
     })
-    return CampaignPayoutTierMapper.toDomain(res.data.data as any)
+    return CampaignPayoutTierMapper.toDomain((res as any).data as any)
   }
 
   async updateCampaignTier(tierId: string, dto: UpdateCampaignPayoutTierDTO): Promise<CampaignPayoutTier> {
@@ -193,7 +193,7 @@ export class DashboardRepository implements IDashboardRepository {
       payout_amount: dto.payoutAmount ?? undefined,
       currency: dto.currency ?? undefined,
     })
-    return CampaignPayoutTierMapper.toDomain(res.data.data as any)
+    return CampaignPayoutTierMapper.toDomain((res as any).data as any)
   }
 
   async deleteCampaignTier(tierId: string): Promise<void> {
@@ -205,26 +205,26 @@ export class DashboardRepository implements IDashboardRepository {
       page: params.page ?? 1,
       size: params.size ?? 20,
     })
-    return CampaignApplicationMapper.toDomainList(res.data.data ?? [])
+    return CampaignApplicationMapper.toDomainList(res.data ?? [])
   }
 
   async shortlistApplication(applicationId: string): Promise<CampaignApplication> {
     const res = await this.api.shortlistApplication(applicationId)
-    return CampaignApplicationMapper.toDomain(res.data.data as any)
+    return CampaignApplicationMapper.toDomain(res.data as any)
   }
 
   async acceptApplication(applicationId: string): Promise<CampaignApplication> {
     const res = await this.api.acceptApplication(applicationId)
-    return CampaignApplicationMapper.toDomain(res.data.data as any)
+    return CampaignApplicationMapper.toDomain(res.data as any)
   }
 
   async rejectApplication(applicationId: string): Promise<CampaignApplication> {
     const res = await this.api.rejectApplication(applicationId)
-    return CampaignApplicationMapper.toDomain(res.data.data as any)
+    return CampaignApplicationMapper.toDomain(res.data as any)
   }
 
   async getInfluencerPublicProfile(influencerId: string): Promise<InfluencerPublicProfile> {
     const res = await this.api.getInfluencerPublicProfile(influencerId)
-    return InfluencerPublicProfileMapper.toDomain(res.data.data as any)
+    return InfluencerPublicProfileMapper.toDomain((res as any).data?.[0] ?? (res as any).data ?? (res as any))
   }
 }

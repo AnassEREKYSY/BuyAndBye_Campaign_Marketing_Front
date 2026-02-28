@@ -29,10 +29,7 @@ function pillForCampaignStatus(status: Campaign['status']) {
 function StatusPill({ status }: { status: Campaign['status'] }) {
   const p = useMemo(() => pillForCampaignStatus(status), [status])
   return (
-    <span
-      className="inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-extrabold"
-      style={{ borderColor: p.border, backgroundColor: p.bg, color: p.text }}
-    >
+    <span className="inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-extrabold" style={{ borderColor: p.border, backgroundColor: p.bg, color: p.text }}>
       {p.label}
     </span>
   )
@@ -42,16 +39,10 @@ function IconEdit() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
       <path d="M12 20h9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-      <path
-        d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinejoin="round"
-      />
+      <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
     </svg>
   )
 }
-
 function IconTrash() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
@@ -63,31 +54,19 @@ function IconTrash() {
     </svg>
   )
 }
-
 function IconRocket() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-      <path
-        d="M14 9 15 3l6 6-6 1-2 2-3 8-3-3 8-3 2-2Z"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinejoin="round"
-      />
+      <path d="M14 9 15 3l6 6-6 1-2 2-3 8-3-3 8-3 2-2Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
       <path d="M7 17 4 20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
       <path d="M6 12 3 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
     </svg>
   )
 }
-
 function IconEye() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-      <path
-        d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinejoin="round"
-      />
+      <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
       <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" stroke="currentColor" strokeWidth="2" />
     </svg>
   )
@@ -96,28 +75,15 @@ function IconEye() {
 function skelBg() {
   return { backgroundColor: 'rgb(var(--bb-border) / 0.06)' }
 }
-
 function SkeletonRow() {
   return (
     <tr className="bb-tr">
-      <td className="bb-td">
-        <div className="h-4 w-2/3 rounded" style={skelBg()} />
-      </td>
-      <td className="bb-td">
-        <div className="h-4 w-40 rounded" style={skelBg()} />
-      </td>
-      <td className="bb-td">
-        <div className="h-4 w-28 rounded" style={skelBg()} />
-      </td>
-      <td className="bb-td">
-        <div className="h-4 w-12 rounded" style={skelBg()} />
-      </td>
-      <td className="bb-td">
-        <div className="h-6 w-24 rounded-full" style={skelBg()} />
-      </td>
-      <td className="bb-td">
-        <div className="h-4 w-36 rounded" style={skelBg()} />
-      </td>
+      <td className="bb-td"><div className="h-4 w-2/3 rounded" style={skelBg()} /></td>
+      <td className="bb-td"><div className="h-4 w-40 rounded" style={skelBg()} /></td>
+      <td className="bb-td"><div className="h-4 w-28 rounded" style={skelBg()} /></td>
+      <td className="bb-td"><div className="h-4 w-12 rounded" style={skelBg()} /></td>
+      <td className="bb-td"><div className="h-6 w-24 rounded-full" style={skelBg()} /></td>
+      <td className="bb-td"><div className="h-4 w-36 rounded" style={skelBg()} /></td>
       <td className="bb-td text-right">
         <div className="ml-auto flex justify-end gap-2">
           <div className="h-10 w-10 rounded-full" style={skelBg()} />
@@ -130,6 +96,7 @@ function SkeletonRow() {
 }
 
 export default function BrandCampaignsManagementPage() {
+  // ✅ ALWAYS call hooks first (never after a conditional return)
   const nav = useNavigate()
   const { profile } = useProfile() as any
 
@@ -158,18 +125,8 @@ export default function BrandCampaignsManagementPage() {
   const [editingTiers, setEditingTiers] = useState<TierDraft[]>([])
   const [search, setSearch] = useState('')
 
-  if (role !== UserRole.BRAND) {
-    return (
-      <div className="bb-page px-4 py-6 md:px-6">
-        <div className="bb-empty bb-pop" style={{ color: 'rgb(var(--bb-muted) / 0.90)' }}>
-          Forbidden
-        </div>
-      </div>
-    )
-  }
-
-  const items: Campaign[] = (campaignsRes as any)?.items ?? (campaignsRes as any)?.data ?? []
-  const products = (productsRes as any)?.items ?? (productsRes as any)?.data ?? []
+  const items: Campaign[] = useMemo(() => (campaignsRes as any)?.items ?? (campaignsRes as any)?.data ?? [], [campaignsRes])
+  const products = useMemo(() => (productsRes as any)?.items ?? (productsRes as any)?.data ?? [], [productsRes])
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
@@ -212,6 +169,17 @@ export default function BrandCampaignsManagementPage() {
     </div>
   )
 
+  // ✅ NOW it’s safe to early return (hooks already executed)
+  if (role !== UserRole.BRAND) {
+    return (
+      <div className="bb-page px-4 py-6 md:px-6">
+        <div className="bb-empty bb-pop" style={{ color: 'rgb(var(--bb-muted) / 0.90)' }}>
+          Forbidden
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="bb-page px-4 py-6 md:px-6">
       <div className="bb-pop">
@@ -228,11 +196,7 @@ export default function BrandCampaignsManagementPage() {
       {campaignsError ? (
         <div
           className="bb-pop mt-5 rounded-3xl border p-4 text-sm font-semibold"
-          style={{
-            borderColor: 'rgb(244 63 94 / 0.25)',
-            backgroundColor: 'rgb(244 63 94 / 0.10)',
-            color: 'rgb(var(--bb-text) / 0.92)',
-          }}
+          style={{ borderColor: 'rgb(244 63 94 / 0.25)', backgroundColor: 'rgb(244 63 94 / 0.10)', color: 'rgb(var(--bb-text) / 0.92)' }}
         >
           {campaignsError}
         </div>
@@ -273,23 +237,17 @@ export default function BrandCampaignsManagementPage() {
               {filtered.map((c: Campaign) => (
                 <tr key={c.id} className="bb-tr bb-tr-hover">
                   <td className="bb-td font-semibold">{c.title}</td>
-
                   <td className="bb-td bb-muted">{(c as any).product?.name ?? c.productId}</td>
-
                   <td className="bb-td bb-muted">
                     {c.commissionType} • {Number(c.commissionValue).toFixed(2)}
                   </td>
-
                   <td className="bb-td bb-muted">{(c as any).applicationsCount ?? 0}</td>
-
                   <td className="bb-td">
                     <StatusPill status={c.status} />
                   </td>
-
                   <td className="bb-td" style={{ color: 'rgb(var(--bb-muted) / 0.82)' }}>
                     {c.updatedAt ? new Date(c.updatedAt).toLocaleString() : '—'}
                   </td>
-
                   <td className="bb-td">
                     <div className="flex justify-end gap-2">
                       <button title="Details" onClick={() => nav(`/campaigns/${c.id}`)} className="bb-icon-btn">

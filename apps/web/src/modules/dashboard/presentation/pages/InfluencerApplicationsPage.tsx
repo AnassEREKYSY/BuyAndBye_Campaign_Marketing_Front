@@ -1,18 +1,6 @@
-import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { HttpClient } from '@core/shared/services/http/HttpClient'
-import { CoreTokenStorage } from '@/shared/services/storage'
-import { env } from '@/shared'
 import { DashboardHeader } from '@/modules/dashboard/presentation/components/DashboardHeader'
-
-type ApplicationItem = {
-  id: string
-  campaign_id: string
-  message: string | null
-  status: string
-  created_at: string | null
-  campaign?: { id: string; title: string; status: string } | null
-}
+import { useInfluencerApplications } from '@/modules/dashboard/application/hooks/useInfluencerApplications'
 
 function fmtDate(iso?: string | null) {
   if (!iso) return '—'
@@ -27,52 +15,7 @@ function badge(status: string) {
 }
 
 export default function InfluencerApplicationsPage() {
-  const tokenStorage = useMemo(() => new CoreTokenStorage(), [])
-  const httpClient = useMemo(() => new HttpClient(env.BACKEND_BASE_URL, tokenStorage), [tokenStorage])
-
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [items, setItems] = useState<ApplicationItem[]>([])
-  const [search, setSearch] = useState('')
-
-  useEffect(() => {
-    let mounted = true
-
-    async function run() {
-      setLoading(true)
-      setError(null)
-      try {
-        const res = await httpClient.get<any>(`/api/v1/applications?page=1&size=200`)
-        const payload = (res as any).data ?? res
-        const list = (payload?.data ?? []) as ApplicationItem[]
-        if (!mounted) return
-        setItems(list)
-      } catch (e: any) {
-        if (!mounted) return
-        setError(e?.message ?? 'Failed to load applications.')
-      } finally {
-        if (!mounted) return
-        setLoading(false)
-      }
-    }
-
-    void run()
-    return () => {
-      mounted = false
-    }
-  }, [httpClient])
-
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase()
-    if (!q) return items
-    return items.filter((a) => {
-      const title = (a.campaign?.title ?? '').toLowerCase()
-      const st = (a.status ?? '').toLowerCase()
-      const msg = (a.message ?? '').toLowerCase()
-      const id = (a.campaign_id ?? '').toLowerCase()
-      return title.includes(q) || st.includes(q) || msg.includes(q) || id.includes(q)
-    })
-  }, [items, search])
+  const { loading, error, items, search, setSearch } = useInfluencerApplications()
 
   const rightSlot = (
     <div className="flex w-full flex-wrap items-center justify-end gap-2 md:w-auto">
@@ -133,7 +76,7 @@ export default function InfluencerApplicationsPage() {
                 </tr>
               ) : null}
 
-              {!loading && filtered.length === 0 ? (
+              {!loading && items.length === 0 ? (
                 <tr className="bb-tr">
                   <td className="bb-td bb-muted" colSpan={5}>
                     No applications found.
@@ -141,7 +84,7 @@ export default function InfluencerApplicationsPage() {
                 </tr>
               ) : null}
 
-              {filtered.map((a) => (
+              {items.map((a) => (
                 <tr key={a.id} className="bb-tr bb-tr-hover">
                   <td className="bb-td">
                     <p className="text-sm font-extrabold">{a.campaign?.title ?? a.campaign_id}</p>

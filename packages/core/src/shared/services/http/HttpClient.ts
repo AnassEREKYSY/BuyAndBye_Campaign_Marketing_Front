@@ -1,5 +1,4 @@
-// packages/core/src/shared/services/http/HttpClient.ts
-import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios'
+import axios, { AxiosInstance, AxiosRequestConfig } from 'axios'
 import { ITokenStorage } from '../../../modules/auth/infrastructure/repositories/ITokenStorage'
 
 export class HttpClient {
@@ -17,40 +16,38 @@ export class HttpClient {
     this.client.interceptors.request.use(
       async (config) => {
         const token = await this.tokenStorage.getToken()
-
         if (token) {
           config.headers = config.headers ?? {}
-          config.headers.Authorization = `Bearer ${token}`
+          ;(config.headers as any).Authorization = `Bearer ${token}`
         }
-
         return config
       },
       (error) => Promise.reject(error),
     )
-
-    this.client.interceptors.response.use(
-      (response) => response,
-      async (error) => Promise.reject(error),
-    )
   }
 
-  get<T>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
-    return this.client.get<T>(url, config)
+  async get<T>(url: string, config?: AxiosRequestConfig): Promise<T> {
+    const res = await this.client.get<T>(url, config)
+    return res.data
   }
 
-  post<T>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
-    return this.client.post<T>(url, data, config)
+  async post<T>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T> {
+    const res = await this.client.post<T>(url, data, config)
+    return res.data
   }
 
-  put<T>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
-    return this.client.put<T>(url, data, config)
+  async put<T>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T> {
+    const res = await this.client.put<T>(url, data, config)
+    return res.data
   }
 
-  patch<T>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
-    return this.client.patch<T>(url, data, config)
+  async patch<T>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T> {
+    const res = await this.client.patch<T>(url, data, config)
+    return res.data
   }
 
-  delete<T>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
-    return this.client.delete<T>(url, config)
+  async delete<T>(url: string, config?: AxiosRequestConfig): Promise<T> {
+    const res = await this.client.delete<T>(url, config)
+    return res.data
   }
 }

@@ -4,7 +4,8 @@ import { UserRole } from '@core/modules/auth/domain/entities'
 import { useBrandManagement } from '../../application/hooks/useBrandManagement'
 import { BrandProductModal } from '../components/BrandProductModal'
 import { Product } from '@core/modules/dashboard/domain/entities'
-import { DashboardHeader } from '@/modules/dashboard/presentation/components/DashboardHeader'
+import { Squares2X2Icon, MagnifyingGlassIcon, SparklesIcon, CubeIcon, PlusIcon } from '@heroicons/react/24/outline'
+import { Link } from 'react-router-dom'
 
 function pillForProductStatus(status: Product['status']) {
   if (status === 'active') {
@@ -72,6 +73,21 @@ function IconLink() {
         strokeLinejoin="round"
       />
     </svg>
+  )
+}
+
+function TopPill({ children }: { children: React.ReactNode }) {
+  return (
+    <span
+      className="inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[11px] font-extrabold"
+      style={{
+        borderColor: 'rgb(var(--bb-border) / 0.10)',
+        backgroundColor: 'rgb(var(--bb-border) / 0.04)',
+        color: 'rgb(var(--bb-muted) / 0.90)',
+      }}
+    >
+      {children}
+    </span>
   )
 }
 
@@ -146,49 +162,113 @@ export default function BrandProductsPage() {
     )
   }
 
-  const rightSlot = (
-    <div className="flex w-full flex-wrap items-center justify-end gap-2 md:w-auto">
-      <button onClick={() => void refreshProducts()} className="bb-btn-ghost h-11 px-5">
-        Refresh
-      </button>
-      <button
-        onClick={() => {
-          setEditing(null)
-          setOpen(true)
-        }}
-        className="bb-btn-primary h-11 px-5"
-      >
-        New product
-      </button>
-    </div>
-  )
-
   return (
     <div className="bb-page px-4 py-6 md:px-6">
-      <div className="bb-pop">
-        <DashboardHeader
-          title="Products"
-          subtitle="Create and manage your products."
-          search={search}
-          onSearch={setSearch}
-          rightSlot={rightSlot}
-          searchPlaceholder="Search by name, status, currency…"
-        />
-      </div>
+      {/* TOP SECTION (REDESIGNED) */}
+      <section
+        className="bb-pop relative overflow-hidden rounded-3xl border p-5 sm:p-6"
+        style={{
+          borderColor: 'rgb(var(--bb-border) / 0.10)',
+          backgroundColor: 'rgb(var(--bb-surface) / 0.82)',
+          backdropFilter: 'blur(12px)',
+        }}
+      >
+        <div className="pointer-events-none absolute inset-0 bb-spotlight" />
+        <div className="pointer-events-none absolute inset-0 bb-grid" />
+        <div className="pointer-events-none absolute inset-0 bb-noise" />
 
-      {productsError ? (
-        <div
-          className="bb-pop mt-5 rounded-3xl border p-4 text-sm font-semibold"
-          style={{
-            borderColor: 'rgb(244 63 94 / 0.25)',
-            backgroundColor: 'rgb(244 63 94 / 0.10)',
-            color: 'rgb(var(--bb-text) / 0.92)',
-          }}
-        >
-          {productsError}
+        <div className="relative">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <TopPill>
+                  <SparklesIcon className="h-4 w-4" />
+                  Brand workspace
+                </TopPill>
+                <TopPill>
+                  <CubeIcon className="h-4 w-4" />
+                  {products.length} product(s)
+                </TopPill>
+              </div>
+
+              <h1 className="mt-3 text-2xl font-black tracking-tight sm:text-3xl" style={{ color: 'rgb(var(--bb-text) / 0.98)' }}>
+                Products
+              </h1>
+
+              <p className="mt-2 max-w-2xl text-sm font-semibold leading-6" style={{ color: 'rgb(var(--bb-muted) / 0.92)' }}>
+                Create, update, and keep your catalog ready for campaigns.
+              </p>
+            </div>
+
+            <div className="w-full lg:w-auto">
+              <div
+                className="bb-pop rounded-3xl border p-2"
+                style={{
+                  borderColor: 'rgb(var(--bb-border) / 0.10)',
+                  backgroundColor: 'rgb(var(--bb-border) / 0.04)',
+                }}
+              >
+                <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-end">
+                  <div className="relative flex-1">
+                    <span
+                      className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2"
+                      style={{ color: 'rgb(var(--bb-muted) / 0.85)' }}
+                    >
+                      <MagnifyingGlassIcon className="h-5 w-5" />
+                    </span>
+
+                    <input
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                      placeholder="Search by name, status, currency…"
+                      className="bb-input pl-11"
+                    />
+                  </div>
+
+                  <div className="flex flex-wrap items-center justify-end gap-2">
+                    <button onClick={() => void refreshProducts()} className="bb-btn-ghost h-11 px-4" type="button">
+                      Refresh
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setEditing(null)
+                        setOpen(true)
+                      }}
+                      className="bb-btn-primary h-11 px-4"
+                      type="button"
+                    >
+                      <span className="inline-flex items-center gap-2">
+                        <PlusIcon className="h-5 w-5" />
+                        New product
+                      </span>
+                    </button>
+
+                    <Link to="/dashboard" className="bb-icon-btn h-11 w-11" aria-label="Dashboard">
+                      <Squares2X2Icon className="h-5 w-5" />
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {productsError ? (
+            <div
+              className="bb-pop mt-4 rounded-3xl border p-4 text-sm font-semibold"
+              style={{
+                borderColor: 'rgb(244 63 94 / 0.25)',
+                backgroundColor: 'rgb(244 63 94 / 0.10)',
+                color: 'rgb(var(--bb-text) / 0.92)',
+              }}
+            >
+              {productsError}
+            </div>
+          ) : null}
         </div>
-      ) : null}
+      </section>
 
+      {/* TABLE */}
       <div className="bb-pop mt-6 bb-table-wrap">
         <div className="overflow-x-auto">
           <table className="bb-table min-w-[900px]">
@@ -236,7 +316,10 @@ export default function BrandProductsPage() {
                     {p.landingUrl ? (
                       <a
                         className="inline-flex items-center gap-2 underline underline-offset-4"
-                        style={{ textDecorationColor: 'rgb(var(--bb-border) / 0.25)', color: 'rgb(var(--bb-text) / 0.86)' }}
+                        style={{
+                          textDecorationColor: 'rgb(var(--bb-border) / 0.25)',
+                          color: 'rgb(var(--bb-text) / 0.86)',
+                        }}
                         href={p.landingUrl}
                         target="_blank"
                         rel="noreferrer"
@@ -262,11 +345,12 @@ export default function BrandProductsPage() {
                           setOpen(true)
                         }}
                         className="bb-icon-btn"
+                        type="button"
                       >
                         <IconEdit />
                       </button>
 
-                      <button title="Delete" onClick={() => void onDeleteProduct(p.id)} className="bb-icon-btn">
+                      <button title="Delete" onClick={() => void onDeleteProduct(p.id)} className="bb-icon-btn" type="button">
                         <IconTrash />
                       </button>
                     </div>

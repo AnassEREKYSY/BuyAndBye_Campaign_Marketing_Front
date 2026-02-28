@@ -11,6 +11,12 @@ import type { ApiCampaignApplication } from './types/ApiCampaignApplication'
 import type { ApiInfluencerPublicProfile } from './types/ApiInfluencerPublicProfile'
 import { HttpClient } from '@core/shared/services/http/HttpClient'
 
+type ApiPaginated<T> = {
+  data: T[]
+  meta?: any
+  links?: any
+}
+
 export class DashboardApiClient {
   constructor(private readonly http: HttpClient) {}
 
@@ -28,7 +34,7 @@ export class DashboardApiClient {
     q.set('size', String(params.size))
     if (params.status) q.set('status', params.status)
     if (params.scope) q.set('scope', params.scope)
-    return this.http.get<{ data: ApiCampaign[] }>(`/api/v1/campaigns?${q.toString()}`)
+    return this.http.get<ApiPaginated<ApiCampaign>>(`/api/v1/campaigns?${q.toString()}`)
   }
 
   async createCampaign(payload: {
@@ -72,7 +78,7 @@ export class DashboardApiClient {
     const q = new URLSearchParams()
     q.set('page', String(params.page))
     q.set('size', String(params.size))
-    return this.http.get<{ data: ApiCollaboration[] }>(`/api/v1/collaborations?${q.toString()}`)
+    return this.http.get<ApiPaginated<ApiCollaboration>>(`/api/v1/collaborations?${q.toString()}`)
   }
 
   async getCollaboration(id: string) {
@@ -103,7 +109,7 @@ export class DashboardApiClient {
     const q = new URLSearchParams()
     q.set('page', String(params.page))
     q.set('size', String(params.size))
-    return this.http.get<{ data: ApiProduct[] }>(`/api/v1/products?${q.toString()}`)
+    return this.http.get<ApiPaginated<ApiProduct>>(`/api/v1/products?${q.toString()}`)
   }
 
   async createProduct(payload: {
@@ -137,7 +143,7 @@ export class DashboardApiClient {
   }
 
   async listCampaignTiers(campaignId: string) {
-    return this.http.get<{ data: ApiCampaignPayoutTier[] }>(`/api/v1/campaigns/${campaignId}/tiers`)
+    return this.http.get<ApiPaginated<ApiCampaignPayoutTier>>(`/api/v1/campaigns/${campaignId}/tiers`)
   }
 
   async createCampaignTier(
@@ -174,7 +180,7 @@ export class DashboardApiClient {
     const q = new URLSearchParams()
     q.set('page', String(params.page))
     q.set('size', String(params.size))
-    return this.http.get<{ data: ApiCampaignApplication[] }>(`/api/v1/brand/campaigns/${campaignId}/applications?${q.toString()}`)
+    return this.http.get<ApiPaginated<ApiCampaignApplication>>(`/api/v1/brand/campaigns/${campaignId}/applications?${q.toString()}`)
   }
 
   async shortlistApplication(applicationId: string) {
@@ -190,6 +196,6 @@ export class DashboardApiClient {
   }
 
   async getInfluencerPublicProfile(influencerId: string) {
-    return this.http.get<{ data: ApiInfluencerPublicProfile }>(`/api/v1/brand/influencers/${influencerId}`)
+    return this.http.get<ApiPaginated<ApiInfluencerPublicProfile>>(`/api/v1/brand/influencers/${influencerId}`)
   }
 }

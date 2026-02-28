@@ -1,17 +1,22 @@
-import { HttpClient } from '@core/shared/services/http/HttpClient';
-import { ApiAuthResponse } from './types/ApiAuthResponse'
-import { ApiLoginRequest } from './types/ApiLoginRequest'
-import { ApiRegisterRequest } from './types/ApiRegisterRequest'
-import { ApiUserResponse } from './types/ApiUserResponse'
+import { HttpClient } from '@core/shared/services/http/HttpClient'
+import type { ApiAuthResponse } from './types/ApiAuthResponse'
+import type { ApiLoginRequest } from './types/ApiLoginRequest'
+import type { ApiRegisterRequest } from './types/ApiRegisterRequest'
+import type { ApiUserResponse } from './types/ApiUserResponse'
+
+function unwrapAuth(res: ApiAuthResponse) {
+  return (res as any)?.data?.token ? (res as any).data : (res as any)
+}
 
 export class AuthApiClient {
   constructor(private readonly http: HttpClient) {}
 
   async login(data: ApiLoginRequest): Promise<{ token: string; expiresIn?: number | null }> {
     const res = await this.http.post<ApiAuthResponse>('/auth/login', data)
+    const payload = unwrapAuth(res)
     return {
-      token: res.data.data.token,
-      expiresIn: res.data.data.expires_in ?? null,
+      token: payload.token,
+      expiresIn: payload.expires_in ?? null,
     }
   }
 
@@ -27,14 +32,16 @@ export class AuthApiClient {
       headers: { 'Content-Type': 'multipart/form-data' },
     })
 
+    const payload = unwrapAuth(res)
     return {
-      token: res.data.data.token,
-      expiresIn: res.data.data.expires_in ?? null,
+      token: payload.token,
+      expiresIn: payload.expires_in ?? null,
     }
   }
 
   async me(): Promise<ApiUserResponse> {
-    const res = await this.http.get<ApiUserResponse>('/auth/me')
-    return res.data
+    return this.http.get<ApiUserResponse>('/auth/me')
   }
 }
+
+export default AuthApiClient
