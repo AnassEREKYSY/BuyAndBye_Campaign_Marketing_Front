@@ -1,3 +1,4 @@
+import type React from 'react'
 import { Link } from 'react-router-dom'
 import { useInView } from '@/shared/hooks'
 
@@ -52,7 +53,7 @@ export function InfluencerPage() {
             </p>
 
             <div className="mt-8 flex flex-wrap gap-3">
-              <Link to="/register" className="bb-btn-primary">
+              <Link to="/register?role=influencer" className="bb-btn-primary">
                 Join as influencer
               </Link>
               <Link to="/brand" className="bb-btn-ghost">
@@ -80,9 +81,7 @@ export function InfluencerPage() {
         <section className="grid gap-6 lg:grid-cols-12 lg:items-start">
           <div className="bb-card lg:col-span-7">
             <h2 className="bb-h2">How you earn</h2>
-            <p className="bb-p mt-3 max-w-3xl">
-              A simple path from joining a campaign to receiving your payout, without confusion.
-            </p>
+            <p className="bb-p mt-3 max-w-3xl">A simple path from joining a campaign to receiving your payout, without confusion.</p>
 
             <div className="mt-6 grid gap-3 sm:grid-cols-3">
               {[

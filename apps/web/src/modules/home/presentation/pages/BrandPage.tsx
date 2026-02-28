@@ -1,3 +1,4 @@
+import type React from 'react'
 import { Link } from 'react-router-dom'
 import { useInView } from '@/shared/hooks'
 
@@ -53,7 +54,7 @@ export function BrandPage() {
             </p>
 
             <div className="mt-8 flex flex-wrap gap-3">
-              <Link to="/register" className="bb-btn-primary">
+              <Link to="/register?role=brand" className="bb-btn-primary">
                 Create an account
               </Link>
               <Link to="/contact" className="bb-btn-ghost">
@@ -91,9 +92,7 @@ export function BrandPage() {
 
           <div className="bb-card lg:col-span-7">
             <h2 className="bb-h2">What you gain</h2>
-            <p className="bb-p mt-3 max-w-3xl">
-              Stronger outcomes start with clarity. Reduce time spent chasing numbers and focus on growth.
-            </p>
+            <p className="bb-p mt-3 max-w-3xl">Stronger outcomes start with clarity. Reduce time spent chasing numbers and focus on growth.</p>
             <div className="mt-6 grid gap-3 sm:grid-cols-2">
               <Card title="Better decisions" desc="Optimize creators and offers based on conversion data." />
               <Card title="Faster execution" desc="Structured workflows speed up launch cycles." />

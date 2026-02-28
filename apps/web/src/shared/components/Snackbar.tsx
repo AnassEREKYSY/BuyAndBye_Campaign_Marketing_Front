@@ -6,6 +6,7 @@ import {
   ExclamationTriangleIcon,
   InformationCircleIcon,
   XCircleIcon,
+  XMarkIcon,
 } from '@heroicons/react/24/outline'
 
 function tone(type: NotificationType) {
@@ -23,7 +24,7 @@ function tone(type: NotificationType) {
 }
 
 export function Snackbar() {
-  const { current } = useNotification()
+  const { current, clear } = useNotification() as any
   const [visible, setVisible] = useState(false)
   const [progressKey, setProgressKey] = useState(0)
   const timer = useRef<number | null>(null)
@@ -41,6 +42,14 @@ export function Snackbar() {
       if (timer.current) window.clearTimeout(timer.current)
     }
   }, [current, duration])
+
+  useEffect(() => {
+    if (!current) return
+    if (!visible) {
+      const id = window.setTimeout(() => clear?.(), 250)
+      return () => window.clearTimeout(id)
+    }
+  }, [visible, current, clear])
 
   if (!current || !t) return null
   const Icon = t.Icon
@@ -73,6 +82,18 @@ export function Snackbar() {
             </p>
             <p className="mt-0.5 truncate text-sm font-extrabold leading-6">{current.message}</p>
           </div>
+
+          <button
+            type="button"
+            className="bb-nav-btn pointer-events-auto -mr-1 -mt-1"
+            onClick={() => {
+              setVisible(false)
+              clear?.()
+            }}
+            aria-label="Close notification"
+          >
+            <XMarkIcon className="h-5 w-5" />
+          </button>
         </div>
 
         <div className="h-1 w-full" style={{ backgroundColor: 'rgb(var(--bb-border) / 0.06)' }}>

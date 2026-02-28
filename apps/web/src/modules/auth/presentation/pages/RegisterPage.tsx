@@ -1,19 +1,33 @@
-import { Link, useNavigate } from 'react-router-dom'
-import { useMemo, useState } from 'react'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { useEffect, useMemo, useState } from 'react'
 import { useAuth } from '@/modules/auth/application/context'
 import { UserRole } from '@core/modules/auth/domain/entities'
 
 type Role = 'brand' | 'influencer'
 const toUserRole = (role: Role) => (role === 'brand' ? UserRole.BRAND : UserRole.INFLUENCER)
 
+function parseRole(v: string | null): Role | null {
+  if (!v) return null
+  const x = v.toLowerCase()
+  if (x === 'brand') return 'brand'
+  if (x === 'influencer') return 'influencer'
+  return null
+}
+
 export function RegisterPage() {
   const auth = useAuth()
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
 
-  const [role, setRole] = useState<Role>('brand')
+  const [role, setRole] = useState<Role>(() => parseRole(searchParams.get('role')) ?? 'brand')
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+
+  useEffect(() => {
+    const next = parseRole(searchParams.get('role'))
+    if (next && next !== role) setRole(next)
+  }, [searchParams, role])
 
   const roleLabel = useMemo(() => (role === 'brand' ? 'Brand' : 'Influencer'), [role])
 
@@ -21,6 +35,15 @@ export function RegisterPage() {
     e.preventDefault()
     await auth.register({ role: toUserRole(role), email, displayName: fullName, password })
     navigate('/dashboard', { replace: true })
+  }
+
+  function pickRole(next: Role) {
+    setRole(next)
+    setSearchParams((prev) => {
+      const p = new URLSearchParams(prev)
+      p.set('role', next)
+      return p
+    })
   }
 
   const roleBtn = (active: boolean) =>
@@ -48,7 +71,11 @@ export function RegisterPage() {
             <span className="bb-chip">Get started</span>
             <h1 className="bb-title mt-4">Create account</h1>
             <p className="bb-p mt-4 max-w-xl">
-              Choose your profile: <span style={{ color: 'rgb(var(--bb-text) / 0.95)' }} className="font-extrabold">{roleLabel}</span>.
+              Choose your profile:{' '}
+              <span style={{ color: 'rgb(var(--bb-text) / 0.95)' }} className="font-extrabold">
+                {roleLabel}
+              </span>
+              .
             </p>
 
             <div className="mt-8 grid gap-3 sm:grid-cols-2">
@@ -77,7 +104,7 @@ export function RegisterPage() {
               <div className="grid grid-cols-2 gap-3">
                 <button
                   type="button"
-                  onClick={() => setRole('brand')}
+                  onClick={() => pickRole('brand')}
                   className="rounded-2xl border px-4 py-3 text-sm font-extrabold transition"
                   style={roleBtn(role === 'brand')}
                 >
@@ -86,7 +113,7 @@ export function RegisterPage() {
 
                 <button
                   type="button"
-                  onClick={() => setRole('influencer')}
+                  onClick={() => pickRole('influencer')}
                   className="rounded-2xl border px-4 py-3 text-sm font-extrabold transition"
                   style={roleBtn(role === 'influencer')}
                 >

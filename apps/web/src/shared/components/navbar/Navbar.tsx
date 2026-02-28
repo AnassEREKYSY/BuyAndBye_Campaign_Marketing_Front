@@ -2,7 +2,15 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/modules/auth/application/context'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTheme } from '@/shared/context/theme'
-import { UserIcon, Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline'
+import {
+  UserIcon,
+  Bars3Icon,
+  XMarkIcon,
+  ArrowLeftIcon,
+  SunIcon,
+  MoonIcon,
+  ArrowRightOnRectangleIcon,
+} from '@heroicons/react/24/outline'
 import { ProfileApiClient } from '@core/modules/profile/infrastructure/api/ProfileApiClient'
 import type { ApiUserProfileResponse } from '@core/modules/profile/infrastructure/api/types/ApiUserProfileResponse'
 import { httpClient } from '@/shared/api/http'
@@ -53,35 +61,6 @@ function toAbsolute(url: string) {
 }
 
 const AVATAR_CACHE_KEY = 'bb_avatar_url'
-
-function IconSun() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-      <path d="M12 18a6 6 0 1 0 0-12 6 6 0 0 0 0 12Z" stroke="currentColor" strokeWidth="2" />
-      <path d="M12 2v2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-      <path d="M12 20v2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-      <path d="M4 12H2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-      <path d="M22 12h-2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-      <path d="M19.78 4.22 18.36 5.64" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-      <path d="M5.64 18.36 4.22 19.78" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-      <path d="M19.78 19.78 18.36 18.36" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-      <path d="M5.64 5.64 4.22 4.22" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-    </svg>
-  )
-}
-
-function IconMoon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-      <path
-        d="M21 13.2A8.4 8.4 0 0 1 10.8 3 7.5 7.5 0 1 0 21 13.2Z"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinejoin="round"
-      />
-    </svg>
-  )
-}
 
 export function Navbar() {
   const location = useLocation()
@@ -150,7 +129,6 @@ export function Navbar() {
     <header className="sticky top-0 z-50">
       <div className="bb-nav">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
-          {/* Left */}
           <div className="flex items-center gap-3">
             <NavLink to={isLoggedIn ? '/dashboard' : '/'} className="flex items-center gap-2" aria-label="Buy & Bye">
               <span className="bb-logo-dot" />
@@ -173,11 +151,9 @@ export function Navbar() {
             </nav>
           </div>
 
-          {/* Right */}
           <div className="flex items-center gap-2">
             <button type="button" onClick={toggle} className="bb-nav-btn" aria-label="Toggle theme">
-              {mode === 'dark' ? <IconSun /> : <IconMoon />}
-              <span className="hidden sm:inline">{mode === 'dark' ? 'Light' : 'Dark'}</span>
+              {mode === 'dark' ? <SunIcon className="h-5 w-5" /> : <MoonIcon className="h-5 w-5" />}
             </button>
 
             {isLoggedIn && (
@@ -196,12 +172,16 @@ export function Navbar() {
             )}
 
             {isLoggedIn ? (
-              <button type="button" onClick={onLogout} className="bb-nav-btn">
-                Logout
+              <button type="button" onClick={onLogout} className="bb-nav-btn" aria-label="Logout">
+                <ArrowRightOnRectangleIcon className="h-5 w-5" />
               </button>
             ) : (
-              <NavLink to={isAuthRoute ? '/' : '/login'} className={cx(isAuthRoute ? 'bb-nav-btn' : 'bb-nav-cta')}>
-                {isAuthRoute ? 'Back' : 'Login'}
+              <NavLink
+                to={isAuthRoute ? '/' : '/login'}
+                className={cx(isAuthRoute ? 'bb-nav-btn' : 'bb-nav-cta')}
+                aria-label={isAuthRoute ? 'Back' : 'Login'}
+              >
+                {isAuthRoute ? <ArrowLeftIcon className="h-5 w-5" /> : <ArrowRightOnRectangleIcon className="h-5 w-5" />}
               </NavLink>
             )}
 
@@ -216,7 +196,6 @@ export function Navbar() {
           </div>
         </div>
 
-        {/* Mobile panel */}
         <div className={cx('md:hidden', mobileOpen ? 'block' : 'hidden')}>
           <div className="mx-auto max-w-7xl px-4 pb-4 sm:px-6">
             <div className="bb-nav-panel">
