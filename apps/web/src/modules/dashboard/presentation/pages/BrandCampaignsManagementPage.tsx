@@ -1,11 +1,11 @@
 import { useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useProfile } from '@/modules/profile/application/hooks/useProfile'
 import { UserRole } from '@core/modules/auth/domain/entities'
 import { useBrandManagement } from '../../application/hooks/useBrandManagement'
 import { BrandCampaignModal } from '../components/BrandCampaignModal'
 import type { Campaign } from '@core/modules/dashboard'
-import { DashboardHeader } from '@/modules/dashboard/presentation/components/DashboardHeader'
+import { Squares2X2Icon, MagnifyingGlassIcon, SparklesIcon, RocketLaunchIcon, MegaphoneIcon, PlusIcon } from '@heroicons/react/24/outline'
 
 type TierDraft = {
   id?: string
@@ -72,6 +72,21 @@ function IconEye() {
   )
 }
 
+function TopPill({ children }: { children: React.ReactNode }) {
+  return (
+    <span
+      className="inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[11px] font-extrabold"
+      style={{
+        borderColor: 'rgb(var(--bb-border) / 0.10)',
+        backgroundColor: 'rgb(var(--bb-border) / 0.04)',
+        color: 'rgb(var(--bb-muted) / 0.90)',
+      }}
+    >
+      {children}
+    </span>
+  )
+}
+
 function skelBg() {
   return { backgroundColor: 'rgb(var(--bb-border) / 0.06)' }
 }
@@ -96,7 +111,6 @@ function SkeletonRow() {
 }
 
 export default function BrandCampaignsManagementPage() {
-  // ✅ ALWAYS call hooks first (never after a conditional return)
   const nav = useNavigate()
   const { profile } = useProfile() as any
 
@@ -139,6 +153,14 @@ export default function BrandCampaignsManagementPage() {
     })
   }, [items, search])
 
+  const stats = useMemo(() => {
+    const total = items.length
+    const draft = items.filter((c) => c.status === 'draft').length
+    const published = items.filter((c) => c.status === 'published').length
+    const closed = items.filter((c) => c.status === 'closed').length
+    return { total, draft, published, closed }
+  }, [items])
+
   async function openCreate() {
     setEditing(null)
     setEditingTiers([{ metric: 'clicks', fromValue: 0, toValue: null, payoutAmount: 0, currency: 'MAD' }])
@@ -152,24 +174,6 @@ export default function BrandCampaignsManagementPage() {
     setOpen(true)
   }
 
-  const rightSlot = (
-    <div className="flex w-full flex-wrap items-center justify-end gap-2 md:w-auto">
-      <button
-        onClick={() => {
-          void refreshProducts()
-          void refreshCampaigns()
-        }}
-        className="bb-btn-ghost h-11 px-5"
-      >
-        Refresh
-      </button>
-      <button onClick={() => void openCreate()} className="bb-btn-primary h-11 px-5">
-        New campaign
-      </button>
-    </div>
-  )
-
-  // ✅ NOW it’s safe to early return (hooks already executed)
   if (role !== UserRole.BRAND) {
     return (
       <div className="bb-page px-4 py-6 md:px-6">
@@ -182,26 +186,115 @@ export default function BrandCampaignsManagementPage() {
 
   return (
     <div className="bb-page px-4 py-6 md:px-6">
-      <div className="bb-pop">
-        <DashboardHeader
-          title="Campaigns"
-          subtitle="Create, publish, manage campaigns + tiers."
-          search={search}
-          onSearch={setSearch}
-          rightSlot={rightSlot}
-          searchPlaceholder="Search by title, product, status…"
-        />
-      </div>
+      {/* TOP SECTION (REDESIGNED) */}
+      <section
+        className="bb-pop relative overflow-hidden rounded-3xl border p-5 sm:p-6"
+        style={{
+          borderColor: 'rgb(var(--bb-border) / 0.10)',
+          backgroundColor: 'rgb(var(--bb-surface) / 0.82)',
+          backdropFilter: 'blur(12px)',
+        }}
+      >
+        <div className="pointer-events-none absolute inset-0 bb-spotlight" />
+        <div className="pointer-events-none absolute inset-0 bb-grid" />
+        <div className="pointer-events-none absolute inset-0 bb-noise" />
 
-      {campaignsError ? (
-        <div
-          className="bb-pop mt-5 rounded-3xl border p-4 text-sm font-semibold"
-          style={{ borderColor: 'rgb(244 63 94 / 0.25)', backgroundColor: 'rgb(244 63 94 / 0.10)', color: 'rgb(var(--bb-text) / 0.92)' }}
-        >
-          {campaignsError}
+        <div className="relative">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <TopPill>
+                  <SparklesIcon className="h-4 w-4" />
+                  Brand workspace
+                </TopPill>
+                <TopPill>
+                  <MegaphoneIcon className="h-4 w-4" />
+                  {stats.total} campaign(s)
+                </TopPill>
+                <TopPill>
+                  <RocketLaunchIcon className="h-4 w-4" />
+                  {stats.published} published
+                </TopPill>
+              </div>
+
+              <h1 className="mt-3 text-2xl font-black tracking-tight sm:text-3xl" style={{ color: 'rgb(var(--bb-text) / 0.98)' }}>
+                Campaigns
+              </h1>
+
+              <p className="mt-2 max-w-2xl text-sm font-semibold leading-6" style={{ color: 'rgb(var(--bb-muted) / 0.92)' }}>
+                Create, publish, and manage campaigns + tiers.
+              </p>
+            </div>
+
+            <div className="w-full lg:w-auto">
+              <div
+                className="bb-pop rounded-3xl border p-2"
+                style={{
+                  borderColor: 'rgb(var(--bb-border) / 0.10)',
+                  backgroundColor: 'rgb(var(--bb-border) / 0.04)',
+                }}
+              >
+                <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-end">
+                  <div className="relative flex-1">
+                    <span
+                      className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2"
+                      style={{ color: 'rgb(var(--bb-muted) / 0.85)' }}
+                    >
+                      <MagnifyingGlassIcon className="h-5 w-5" />
+                    </span>
+
+                    <input
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                      placeholder="Search by title, product, status…"
+                      className="bb-input pl-11"
+                    />
+                  </div>
+
+                  <div className="flex flex-wrap items-center justify-end gap-2">
+                    <button
+                      onClick={() => {
+                        void refreshProducts()
+                        void refreshCampaigns()
+                      }}
+                      className="bb-btn-ghost h-11 px-4"
+                      type="button"
+                    >
+                      Refresh
+                    </button>
+
+                    <button onClick={() => void openCreate()} className="bb-btn-primary h-11 px-4" type="button">
+                      <span className="inline-flex items-center gap-2">
+                        <PlusIcon className="h-5 w-5" />
+                        New campaign
+                      </span>
+                    </button>
+
+                    <Link to="/dashboard" className="bb-icon-btn h-11 w-11" aria-label="Dashboard">
+                      <Squares2X2Icon className="h-5 w-5" />
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {campaignsError ? (
+            <div
+              className="bb-pop mt-4 rounded-3xl border p-4 text-sm font-semibold"
+              style={{
+                borderColor: 'rgb(244 63 94 / 0.25)',
+                backgroundColor: 'rgb(244 63 94 / 0.10)',
+                color: 'rgb(var(--bb-text) / 0.92)',
+              }}
+            >
+              {campaignsError}
+            </div>
+          ) : null}
         </div>
-      ) : null}
+      </section>
 
+      {/* TABLE */}
       <div className="bb-pop mt-6 bb-table-wrap">
         <div className="overflow-x-auto">
           <table className="bb-table min-w-[1100px]">

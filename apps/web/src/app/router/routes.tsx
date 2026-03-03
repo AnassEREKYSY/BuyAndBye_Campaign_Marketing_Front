@@ -10,14 +10,16 @@ import { BrandPage, ContactPage, InfluencerPage } from '@/modules/home/presentat
 import { ProfilePage } from '@/modules/profile/presentation/pages/ProfilePage'
 
 const DashboardPage = lazy(() => import('@/modules/dashboard/presentation/pages/DashboardPage'))
-const CampaignsPage = lazy(() => import('@/modules').then(m => ({ default: m.CampaignsPage })))
-const CampaignDetailsPage = lazy(() => import('@/modules').then(m => ({ default: m.CampaignDetailsPage })))
+const CampaignsPage = lazy(() => import('@/modules').then((m) => ({ default: m.CampaignsPage })))
+const CampaignDetailsPage = lazy(() => import('@/modules').then((m) => ({ default: m.CampaignDetailsPage })))
 
 const BrandProductsPage = lazy(() => import('@/modules/dashboard/presentation/pages/BrandProductsPage'))
 const BrandCampaignsManagementPage = lazy(() => import('@/modules/dashboard/presentation/pages/BrandCampaignsManagementPage'))
 const InfluencerApplicationsPage = lazy(() => import('@/modules/dashboard/presentation/pages/InfluencerApplicationsPage'))
 const CollaborationsPage = lazy(() => import('@/modules/dashboard/presentation/pages/CollaborationsPage'))
 const CollaborationDetailsPage = lazy(() => import('@/modules/dashboard/presentation/pages/CollaborationDetailsPage'))
+
+const NotificationsPage = lazy(() => import('@/modules/notifications/presentation/pages/NotificationsPage'))
 
 function PageLoader() {
   return (
@@ -40,9 +42,7 @@ function PageLoader() {
   )
 }
 
-const Lazy = ({ children }: { children: React.ReactNode }) => (
-  <Suspense fallback={<PageLoader />}>{children}</Suspense>
-)
+const Lazy = ({ children }: { children: React.ReactNode }) => <Suspense fallback={<PageLoader />}>{children}</Suspense>
 
 export const routes = [
   {
@@ -70,6 +70,8 @@ export const routes = [
           { path: '/dashboard/brand/products', element: <Lazy><BrandProductsPage /></Lazy> },
           { path: '/dashboard/brand/campaigns', element: <Lazy><BrandCampaignsManagementPage /></Lazy> },
           { path: '/profile', element: <ProfilePage /> },
+
+          { path: '/notifications', element: <Lazy><NotificationsPage /></Lazy> },
 
           { path: '/app', element: <Navigate to="/dashboard" replace /> },
         ],

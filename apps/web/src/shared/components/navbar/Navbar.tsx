@@ -1,3 +1,4 @@
+// apps/web/src/shared/components/navbar/Navbar.tsx
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/modules/auth/application/context'
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -10,11 +11,15 @@ import {
   MoonIcon,
   ArrowRightOnRectangleIcon,
   ArrowLeftIcon,
+  BellIcon,
+  CheckIcon,
+  TrashIcon,
 } from '@heroicons/react/24/outline'
 import { ProfileApiClient } from '@core/modules/profile/infrastructure/api/ProfileApiClient'
 import type { ApiUserProfileResponse } from '@core/modules/profile/infrastructure/api/types/ApiUserProfileResponse'
 import { httpClient } from '@/shared/api/http'
 import { env } from '@/shared/config/env'
+import { useInboxNotifications } from '@/shared/context/inboxNotifications'
 
 type NavItem = { to: string; label: string }
 
@@ -108,11 +113,19 @@ function IconPill({
   )
 }
 
+function formatDate(iso?: string | null) {
+  if (!iso) return ''
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return ''
+  return d.toLocaleString()
+}
+
 export function Navbar() {
   const location = useLocation()
   const navigate = useNavigate()
   const auth = useAuth()
   const { mode, toggle } = useTheme()
+  const inbox = useInboxNotifications()
 
   const isLoggedIn = auth.isAuthenticated
   const isAuthRoute = location.pathname === '/login' || location.pathname === '/register'
@@ -121,6 +134,8 @@ export function Navbar() {
   const [profileImageUrl, setProfileImageUrl] = useState<string>(() => localStorage.getItem(AVATAR_CACHE_KEY) ?? '')
   const [role, setRole] = useState<'brand' | 'influencer' | null>(null)
   const fetchingRef = useRef(false)
+
+  const popoverRef = useRef<HTMLDivElement | null>(null)
 
   const navItems = useMemo(() => {
     if (!isLoggedIn) return publicNavItems
@@ -137,6 +152,18 @@ export function Navbar() {
   useEffect(() => {
     setMobileOpen(false)
   }, [location.pathname])
+
+  useEffect(() => {
+    function onDocClick(e: MouseEvent) {
+      if (!inbox.isOpen) return
+      const el = popoverRef.current
+      if (!el) return
+      if (e.target instanceof Node && el.contains(e.target)) return
+      inbox.close()
+    }
+    document.addEventListener('mousedown', onDocClick)
+    return () => document.removeEventListener('mousedown', onDocClick)
+  }, [inbox])
 
   useEffect(() => {
     if (!isLoggedIn) {
@@ -189,6 +216,10 @@ export function Navbar() {
     navigate('/', { replace: true })
   }
 
+  const unread = inbox.unreadCount
+  const visibleLatest = inbox.latest.filter((n) => !inbox.dismissedIds.has(n.id))
+  const hiddenCount = inbox.latest.length - visibleLatest.length
+
   return (
     <header className="sticky top-0 z-50">
       <div className="bb-nav">
@@ -221,6 +252,124 @@ export function Navbar() {
             </button>
 
             {isLoggedIn && (
+              <div className="relative" ref={popoverRef}>
+                <button
+                  type="button"
+                  className="bb-icon-btn relative h-10 w-10"
+                  onClick={() => {
+                    inbox.toggle()
+                    if (!inbox.isOpen) void inbox.refresh()
+                  }}
+                  aria-label="Notifications"
+                >
+                  <BellIcon className="h-5 w-5" />
+                  {unread > 0 ? (
+                    <span className="absolute -right-1 -top-1 grid h-5 min-w-[1.25rem] place-items-center rounded-full bg-rose-500 px-1 text-xs font-extrabold text-white">
+                      {unread > 99 ? '99+' : unread}
+                    </span>
+                  ) : null}
+                </button>
+
+                <div
+                  className={cx(
+                    'absolute right-0 mt-2 w-[360px] max-w-[calc(100vw-2rem)] overflow-hidden rounded-3xl border border-white/10 bg-[rgb(var(--bb-bg)/0.92)] shadow-2xl backdrop-blur',
+                    inbox.isOpen ? 'block' : 'hidden',
+                  )}
+                >
+                  <div className="flex items-center justify-between gap-2 p-3">
+                    <div className="min-w-0">
+                      <p className="text-sm font-extrabold" style={{ color: 'rgb(var(--bb-text) / 0.95)' }}>
+                        Notifications
+                      </p>
+                      <p className="text-xs" style={{ color: 'rgb(var(--bb-text) / 0.60)' }}>
+                        {unread} unread
+                      </p>
+                    </div>
+                    <button type="button" onClick={() => void inbox.markAllRead()} className="bb-nav-btn h-9 px-3 text-xs">
+                      Mark all read
+                    </button>
+                  </div>
+
+                  <div className="max-h-[360px] overflow-auto">
+                    {inbox.isLoading ? (
+                      <div className="p-4 text-sm" style={{ color: 'rgb(var(--bb-text) / 0.65)' }}>
+                        Loading...
+                      </div>
+                    ) : visibleLatest.length === 0 ? (
+                      <div className="p-4 text-sm" style={{ color: 'rgb(var(--bb-text) / 0.65)' }}>
+                        {hiddenCount > 0 ? (
+                          <div className="flex items-center justify-between gap-2">
+                            <span>{hiddenCount} notification(s) hidden.</span>
+                            <button type="button" className="bb-nav-btn h-9 px-3 text-xs" onClick={inbox.clearDismissed}>
+                              Clear hidden
+                            </button>
+                          </div>
+                        ) : (
+                          'No notifications.'
+                        )}
+                      </div>
+                    ) : (
+                      <ul className="divide-y divide-white/10">
+                        {visibleLatest.slice(0, 6).map((n) => {
+                          const isUnread = !n.read_at
+                          return (
+                            <li key={n.id} className="p-3">
+                              <div className="flex items-start justify-between gap-3">
+                                <button type="button" onClick={() => void inbox.markRead(n.id)} className="min-w-0 text-left">
+                                  <div className="flex items-start gap-2">
+                                    <span className={cx('mt-1.5 h-2 w-2 rounded-full', isUnread ? 'bg-emerald-400' : 'bg-white/20')} />
+                                    <div className="min-w-0">
+                                      <p className="truncate text-sm font-extrabold" style={{ color: 'rgb(var(--bb-text) / 0.92)' }}>
+                                        {n.title}
+                                      </p>
+                                      {n.body ? (
+                                        <p className="mt-0.5 line-clamp-2 text-xs" style={{ color: 'rgb(var(--bb-text) / 0.70)' }}>
+                                          {n.body}
+                                        </p>
+                                      ) : null}
+                                      <p className="mt-1 text-[11px]" style={{ color: 'rgb(var(--bb-text) / 0.55)' }}>
+                                        {formatDate(n.created_at)}
+                                      </p>
+                                    </div>
+                                  </div>
+                                </button>
+
+                                <div className="flex items-center gap-1">
+                                  <button type="button" onClick={() => void inbox.markRead(n.id)} className="bb-icon-btn h-9 w-9" aria-label="Mark read">
+                                    <CheckIcon className="h-5 w-5" />
+                                  </button>
+                                  <button type="button" onClick={() => inbox.dismissLocal(n.id)} className="bb-icon-btn h-9 w-9" aria-label="Hide">
+                                    <TrashIcon className="h-5 w-5" />
+                                  </button>
+                                </div>
+                              </div>
+                            </li>
+                          )
+                        })}
+                      </ul>
+                    )}
+                  </div>
+
+                  <div className="flex items-center justify-between gap-2 border-t border-white/10 p-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        inbox.close()
+                        navigate('/notifications')
+                      }}
+                      className="bb-nav-cta h-10 px-4 text-sm"
+                    >
+                      See all
+                    </button>
+                    <button type="button" onClick={() => inbox.close()} className="bb-nav-btn h-10 px-4 text-sm">
+                      Close
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {isLoggedIn && (
               <button type="button" onClick={() => navigate('/profile')} className="bb-avatar" aria-label="Profile">
                 {profileImageUrl ? (
                   <img src={profileImageUrl} alt="Profile" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
@@ -243,19 +392,12 @@ export function Navbar() {
                 label={isAuthRoute ? 'Back' : 'Login'}
                 ariaLabel={isAuthRoute ? 'Back' : 'Login'}
                 to={isAuthRoute ? '/' : '/login'}
-                icon={
-                  isAuthRoute ? <ArrowLeftIcon className="h-5 w-5" /> : <ArrowRightOnRectangleIcon className="h-5 w-5" />
-                }
+                icon={isAuthRoute ? <ArrowLeftIcon className="h-5 w-5" /> : <ArrowRightOnRectangleIcon className="h-5 w-5" />}
                 kind={isAuthRoute ? 'ghost' : 'cta'}
               />
             )}
 
-            <button
-              type="button"
-              className="bb-icon-btn h-10 w-10 md:hidden"
-              onClick={() => setMobileOpen((v) => !v)}
-              aria-label="Open menu"
-            >
+            <button type="button" className="bb-icon-btn h-10 w-10 md:hidden" onClick={() => setMobileOpen((v) => !v)} aria-label="Open menu">
               {mobileOpen ? <XMarkIcon className="h-5 w-5" /> : <Bars3Icon className="h-5 w-5" />}
             </button>
           </div>
@@ -274,6 +416,12 @@ export function Navbar() {
                   {item.label}
                 </NavLink>
               ))}
+
+              {isLoggedIn ? (
+                <button type="button" onClick={() => navigate('/notifications')} className="bb-nav-link block w-full px-3 py-2 text-left">
+                  Notifications {unread > 0 ? `(${unread})` : ''}
+                </button>
+              ) : null}
             </div>
           </div>
         </div>
