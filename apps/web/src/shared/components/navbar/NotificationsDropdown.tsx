@@ -33,12 +33,20 @@ export function NotificationsDropdown() {
 
   return (
     <div className="relative" ref={ref}>
-      <button type="button" className="bb-icon-btn h-10 w-10 relative" onClick={inbox.toggle} aria-label="Notifications">
+      <button
+        type="button"
+        className="bb-icon-btn h-10 w-10 relative"
+        onClick={() => {
+          inbox.toggle()
+          if (!inbox.isOpen) void inbox.refresh()
+        }}
+        aria-label="Notifications"
+      >
         <BellIcon className="h-5 w-5" />
         {inbox.unreadCount > 0 ? (
           <span
-            className="absolute -right-1 -top-1 grid h-5 min-w-[20px] place-items-center rounded-full px-1 text-[11px] font-black"
-            style={{ backgroundColor: 'rgb(244 63 94 / 0.95)', color: 'white' }}
+            className="absolute -right-1 -top-1 grid h-5 min-w-[20px] place-items-center rounded-full px-1 text-[11px] font-black text-white"
+            style={{ backgroundColor: 'rgb(244 63 94 / 0.95)' }}
           >
             {inbox.unreadCount > 99 ? '99+' : inbox.unreadCount}
           </span>
@@ -47,12 +55,12 @@ export function NotificationsDropdown() {
 
       <div
         className={cx(
-          'absolute right-0 mt-2 w-[360px] origin-top-right rounded-3xl border bb-pop overflow-hidden',
+          'absolute right-0 mt-2 w-[360px] max-w-[calc(100vw-2rem)] origin-top-right rounded-3xl border overflow-hidden bb-pop',
           inbox.isOpen ? 'block' : 'hidden',
         )}
         style={{
           borderColor: 'rgb(var(--bb-border) / 0.10)',
-          backgroundColor: 'rgb(var(--bb-surface) / 0.92)',
+          backgroundColor: 'rgb(var(--bb-surface) / 0.86)',
           backdropFilter: 'blur(12px)',
         }}
       >
@@ -63,12 +71,8 @@ export function NotificationsDropdown() {
         <div className="relative p-4">
           <div className="flex items-center justify-between gap-2">
             <div className="min-w-0">
-              <p className="text-sm font-black" style={{ color: 'rgb(var(--bb-text) / 0.96)' }}>
-                Notifications
-              </p>
-              <p className="text-xs font-semibold" style={{ color: 'rgb(var(--bb-muted) / 0.86)' }}>
-                Latest updates
-              </p>
+              <p className="text-sm font-black text-[rgb(var(--bb-text)/0.96)]">Notifications</p>
+              <p className="text-xs font-semibold text-[rgb(var(--bb-muted)/0.86)]">Latest updates</p>
             </div>
 
             <button type="button" onClick={() => void inbox.markAllRead()} className="bb-btn-ghost h-9 px-3">
@@ -81,18 +85,15 @@ export function NotificationsDropdown() {
 
           <div className="mt-3 space-y-2">
             {inbox.isLoading ? (
-              <div className="rounded-2xl border p-3" style={{ borderColor: 'rgb(var(--bb-border) / 0.10)' }}>
-                <div className="h-4 w-2/3 rounded" style={{ backgroundColor: 'rgb(var(--bb-border) / 0.06)' }} />
-                <div className="mt-2 h-3 w-full rounded" style={{ backgroundColor: 'rgb(var(--bb-border) / 0.06)' }} />
-                <div className="mt-2 h-3 w-1/2 rounded" style={{ backgroundColor: 'rgb(var(--bb-border) / 0.06)' }} />
+              <div className="rounded-2xl border border-[rgb(var(--bb-border)/0.10)] bg-[rgb(var(--bb-border)/0.04)] p-3">
+                <div className="h-4 w-2/3 rounded bg-[rgb(var(--bb-border)/0.08)]" />
+                <div className="mt-2 h-3 w-full rounded bg-[rgb(var(--bb-border)/0.08)]" />
+                <div className="mt-2 h-3 w-1/2 rounded bg-[rgb(var(--bb-border)/0.08)]" />
               </div>
             ) : null}
 
             {!inbox.isLoading && inbox.latest.length === 0 ? (
-              <div
-                className="rounded-2xl border p-4 text-sm font-semibold"
-                style={{ borderColor: 'rgb(var(--bb-border) / 0.10)', color: 'rgb(var(--bb-muted) / 0.90)' }}
-              >
+              <div className="rounded-2xl border border-[rgb(var(--bb-border)/0.10)] bg-[rgb(var(--bb-border)/0.04)] p-4 text-sm font-semibold text-[rgb(var(--bb-muted)/0.90)]">
                 No notifications yet.
               </div>
             ) : null}
@@ -100,20 +101,13 @@ export function NotificationsDropdown() {
             {inbox.latest.map((n) => (
               <div
                 key={n.id}
-                className="rounded-2xl border p-3"
-                style={{ borderColor: 'rgb(var(--bb-border) / 0.10)', backgroundColor: 'rgb(var(--bb-border) / 0.04)' }}
+                className="rounded-2xl border border-[rgb(var(--bb-border)/0.10)] bg-[rgb(var(--bb-border)/0.04)] p-3"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="text-sm font-extrabold" style={{ color: 'rgb(var(--bb-text) / 0.94)' }}>
-                      {n.title}
-                    </p>
-                    <p className="mt-1 text-xs font-semibold" style={{ color: 'rgb(var(--bb-muted) / 0.88)' }}>
-                      {n.body}
-                    </p>
-                    <p className="mt-2 text-[11px] font-bold" style={{ color: 'rgb(var(--bb-muted) / 0.78)' }}>
-                      {fmt(n.created_at)}
-                    </p>
+                    <p className="text-sm font-extrabold text-[rgb(var(--bb-text)/0.94)]">{n.title}</p>
+                    {n.body ? <p className="mt-1 text-xs font-semibold text-[rgb(var(--bb-muted)/0.88)]">{n.body}</p> : null}
+                    <p className="mt-2 text-[11px] font-bold text-[rgb(var(--bb-muted)/0.78)]">{fmt(n.created_at)}</p>
                   </div>
 
                   <div className="flex items-center gap-2">

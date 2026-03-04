@@ -13,9 +13,8 @@ export function useNotificationsPage() {
       nextPage: () => setPage((p) => p + 1),
       toggleOnlyUnread: () => setOnlyUnread((v) => !v),
       markAllRead: inbox.markAllRead,
-      clearHidden: inbox.clearDismissed,
       markRead: inbox.markRead,
-      hide: inbox.dismissLocal,
+      remove: inbox.remove,
     }),
     [inbox],
   )
@@ -25,9 +24,8 @@ export function useNotificationsPage() {
       page,
       onlyUnread,
       unreadCount: inbox.unreadCount,
-      dismissedIds: inbox.dismissedIds,
     }),
-    [page, onlyUnread, inbox.unreadCount, inbox.dismissedIds],
+    [page, onlyUnread, inbox.unreadCount],
   )
 
   return { inbox, state, actions }

@@ -6,7 +6,6 @@ type Ctx = {
   latest: InboxNotification[]
   isOpen: boolean
   isLoading: boolean
-  dismissedIds: Set<string>
   open: () => void
   close: () => void
   toggle: () => void
@@ -14,8 +13,6 @@ type Ctx = {
   markRead: (id: string) => Promise<void>
   markAllRead: () => Promise<void>
   remove: (id: string) => Promise<void>
-  dismissLocal: (id: string) => void
-  clearDismissed: () => void
   list: (params?: { page?: number; size?: number; unread?: boolean }) => Promise<Paginated<InboxNotification>>
 }
 

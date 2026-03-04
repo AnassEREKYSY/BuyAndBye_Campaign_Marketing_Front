@@ -4,26 +4,6 @@ import { NotificationApiClient, type InboxNotification, type Paginated } from '@
 import { InboxNotificationsContext } from './InboxNotificationsContext'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
-const DISMISSED_KEY = 'bb_dismissed_notifications_v1'
-
-function loadDismissed(): Set<string> {
-  try {
-    const raw = localStorage.getItem(DISMISSED_KEY)
-    if (!raw) return new Set()
-    const arr = JSON.parse(raw)
-    if (!Array.isArray(arr)) return new Set()
-    return new Set(arr.filter((x) => typeof x === 'string'))
-  } catch {
-    return new Set()
-  }
-}
-
-function saveDismissed(ids: Set<string>) {
-  try {
-    localStorage.setItem(DISMISSED_KEY, JSON.stringify(Array.from(ids)))
-  } catch {}
-}
-
 export function InboxNotificationsProvider({ children }: { children: React.ReactNode }) {
   const auth = useAuth()
   const isLoggedIn = auth.isAuthenticated
@@ -33,7 +13,6 @@ export function InboxNotificationsProvider({ children }: { children: React.React
   const [latest, setLatest] = useState<InboxNotification[]>([])
   const [isOpen, setIsOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
-  const [dismissedIds, setDismissedIds] = useState<Set<string>>(() => loadDismissed())
 
   const pollingRef = useRef<number | null>(null)
 
@@ -81,21 +60,6 @@ export function InboxNotificationsProvider({ children }: { children: React.React
     [api, isLoggedIn, refresh],
   )
 
-  const dismissLocal = useCallback((id: string) => {
-    setDismissedIds((prev) => {
-      const next = new Set(prev)
-      next.add(id)
-      saveDismissed(next)
-      return next
-    })
-  }, [])
-
-  const clearDismissed = useCallback(() => {
-    const next = new Set<string>()
-    setDismissedIds(next)
-    saveDismissed(next)
-  }, [])
-
   const open = useCallback(() => setIsOpen(true), [])
   const close = useCallback(() => setIsOpen(false), [])
   const toggle = useCallback(() => setIsOpen((v) => !v), [])
@@ -130,7 +94,6 @@ export function InboxNotificationsProvider({ children }: { children: React.React
       latest,
       isOpen,
       isLoading,
-      dismissedIds,
       open,
       close,
       toggle,
@@ -138,11 +101,9 @@ export function InboxNotificationsProvider({ children }: { children: React.React
       markRead,
       markAllRead,
       remove,
-      dismissLocal,
-      clearDismissed,
       list,
     }),
-    [unreadCount, latest, isOpen, isLoading, dismissedIds, open, close, toggle, refresh, markRead, markAllRead, remove, dismissLocal, clearDismissed, list],
+    [unreadCount, latest, isOpen, isLoading, open, close, toggle, refresh, markRead, markAllRead, remove, list],
   )
 
   return <InboxNotificationsContext.Provider value={value}>{children}</InboxNotificationsContext.Provider>

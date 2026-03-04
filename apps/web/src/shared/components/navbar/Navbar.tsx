@@ -1,4 +1,3 @@
-// apps/web/src/shared/components/navbar/Navbar.tsx
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/modules/auth/application/context'
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -217,8 +216,6 @@ export function Navbar() {
   }
 
   const unread = inbox.unreadCount
-  const visibleLatest = inbox.latest.filter((n) => !inbox.dismissedIds.has(n.id))
-  const hiddenCount = inbox.latest.length - visibleLatest.length
 
   return (
     <header className="sticky top-0 z-50">
@@ -295,22 +292,13 @@ export function Navbar() {
                       <div className="p-4 text-sm" style={{ color: 'rgb(var(--bb-text) / 0.65)' }}>
                         Loading...
                       </div>
-                    ) : visibleLatest.length === 0 ? (
+                    ) : inbox.latest.length === 0 ? (
                       <div className="p-4 text-sm" style={{ color: 'rgb(var(--bb-text) / 0.65)' }}>
-                        {hiddenCount > 0 ? (
-                          <div className="flex items-center justify-between gap-2">
-                            <span>{hiddenCount} notification(s) hidden.</span>
-                            <button type="button" className="bb-nav-btn h-9 px-3 text-xs" onClick={inbox.clearDismissed}>
-                              Clear hidden
-                            </button>
-                          </div>
-                        ) : (
-                          'No notifications.'
-                        )}
+                        No notifications.
                       </div>
                     ) : (
                       <ul className="divide-y divide-white/10">
-                        {visibleLatest.slice(0, 6).map((n) => {
+                        {inbox.latest.slice(0, 6).map((n) => {
                           const isUnread = !n.read_at
                           return (
                             <li key={n.id} className="p-3">
@@ -338,7 +326,7 @@ export function Navbar() {
                                   <button type="button" onClick={() => void inbox.markRead(n.id)} className="bb-icon-btn h-9 w-9" aria-label="Mark read">
                                     <CheckIcon className="h-5 w-5" />
                                   </button>
-                                  <button type="button" onClick={() => inbox.dismissLocal(n.id)} className="bb-icon-btn h-9 w-9" aria-label="Hide">
+                                  <button type="button" onClick={() => void inbox.remove(n.id)} className="bb-icon-btn h-9 w-9" aria-label="Delete">
                                     <TrashIcon className="h-5 w-5" />
                                   </button>
                                 </div>
@@ -380,13 +368,7 @@ export function Navbar() {
             )}
 
             {isLoggedIn ? (
-              <IconPill
-                label="Logout"
-                ariaLabel="Logout"
-                onClick={onLogout}
-                icon={<ArrowRightOnRectangleIcon className="h-5 w-5" />}
-                kind="ghost"
-              />
+              <IconPill label="Logout" ariaLabel="Logout" onClick={onLogout} icon={<ArrowRightOnRectangleIcon className="h-5 w-5" />} kind="ghost" />
             ) : (
               <IconPill
                 label={isAuthRoute ? 'Back' : 'Login'}
