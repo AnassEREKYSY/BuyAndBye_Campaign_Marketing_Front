@@ -60,7 +60,7 @@ export default function MessagesPage() {
           className="overflow-hidden rounded-3xl border"
           style={{
             borderColor: 'rgb(var(--bb-border) / 0.12)',
-            backgroundColor: 'rgb(var(--bb-bg) / 0.30)',
+            backgroundColor: 'rgb(var(--bb-card) / 0.55)',
           }}
         >
           <div className="border-b p-3" style={{ borderColor: 'rgb(var(--bb-border) / 0.10)' }}>
@@ -79,16 +79,12 @@ export default function MessagesPage() {
                 onChange={(e) => setQ(e.target.value)}
                 type="text"
                 placeholder="Search conversations..."
-                className="h-10 w-full rounded-2xl border bg-transparent px-3 text-sm outline-none"
-                style={{
-                  borderColor: 'rgb(var(--bb-border) / 0.12)',
-                  color: 'rgb(var(--bb-text) / 0.90)',
-                }}
+                className="bb-input"
               />
             </div>
           </div>
 
-          <ul className="max-h-[72vh] overflow-auto p-2">
+          <ul className="bb-soft-scroll max-h-[72vh] overflow-auto p-2">
             {error ? (
               <li className="p-4 text-sm" style={{ color: 'rgb(var(--bb-text) / 0.70)' }}>
                 {error}
@@ -115,11 +111,12 @@ export default function MessagesPage() {
                       to={`/messages/${c.id}`}
                       className={cx(
                         'group flex items-start gap-3 rounded-3xl border p-3 transition',
-                        'hover:-translate-y-[1px] hover:bg-white/5',
-                        isActive && 'bg-white/5',
+                        'hover:-translate-y-[1px]',
+                        isActive ? 'bg-white/5' : '',
                       )}
                       style={{
                         borderColor: isActive ? 'rgb(var(--bb-border) / 0.18)' : 'rgb(var(--bb-border) / 0.10)',
+                        backgroundColor: isActive ? 'rgb(var(--bb-border) / 0.05)' : 'transparent',
                       }}
                     >
                       <Avatar seed={title} />
@@ -164,13 +161,15 @@ export default function MessagesPage() {
           className="min-h-[72vh] overflow-hidden rounded-3xl border"
           style={{
             borderColor: 'rgb(var(--bb-border) / 0.12)',
-            backgroundColor: 'rgb(var(--bb-bg) / 0.30)',
+            backgroundColor: 'rgb(var(--bb-card) / 0.55)',
           }}
         >
-          <Outlet />
+          <div className="h-[72vh]">
+            <Outlet />
+          </div>
 
           {location.pathname === '/messages' ? (
-            <div className="grid h-full place-items-center p-10">
+            <div className="grid h-[72vh] place-items-center p-10">
               <div className="max-w-md text-center">
                 <div
                   className="mx-auto grid h-12 w-12 place-items-center rounded-3xl border"

@@ -15,6 +15,7 @@ export function InboxNotificationsProvider({ children }: { children: React.React
   const [isLoading, setIsLoading] = useState(false)
 
   const pollingRef = useRef<number | null>(null)
+  const inFlightRef = useRef(false)
 
   const list = useCallback(
     async (params?: { page?: number; size?: number; unread?: boolean }): Promise<Paginated<InboxNotification>> => {
@@ -23,39 +24,72 @@ export function InboxNotificationsProvider({ children }: { children: React.React
     [api],
   )
 
-  const refresh = useCallback(async () => {
-    if (!isLoggedIn) return
-    setIsLoading(true)
-    try {
-      const [count, page] = await Promise.all([api.unreadCount(), api.list({ page: 1, size: 7, unread: false })])
-      setUnreadCount(count)
-      setLatest(page.data ?? [])
-    } finally {
-      setIsLoading(false)
-    }
-  }, [api, isLoggedIn])
+  const refresh = useCallback(
+    async (opts?: { silent?: boolean }) => {
+      if (!isLoggedIn) return
+      if (inFlightRef.current) return
+      inFlightRef.current = true
+
+      const silent = !!opts?.silent
+
+      if (!silent) setIsLoading(true)
+
+      try {
+        const [count, page] = await Promise.all([api.unreadCount(), api.list({ page: 1, size: 7, unread: false })])
+        setUnreadCount(count)
+        setLatest(page.data ?? [])
+      } finally {
+        if (!silent) setIsLoading(false)
+        inFlightRef.current = false
+      }
+    },
+    [api, isLoggedIn],
+  )
 
   const markRead = useCallback(
     async (id: string) => {
       if (!isLoggedIn) return
-      await api.markRead(id)
-      await refresh()
+
+      setLatest((prev) => prev.map((n) => (n.id === id ? { ...n, read_at: n.read_at ?? new Date().toISOString() } : n)))
+      setUnreadCount((c) => Math.max(0, c - 1))
+
+      try {
+        await api.markRead(id)
+      } finally {
+        void refresh({ silent: true })
+      }
     },
     [api, isLoggedIn, refresh],
   )
 
   const markAllRead = useCallback(async () => {
     if (!isLoggedIn) return
-    await api.markAllRead()
-    await refresh()
+
+    setLatest((prev) => prev.map((n) => ({ ...n, read_at: n.read_at ?? new Date().toISOString() })))
+    setUnreadCount(0)
+
+    try {
+      await api.markAllRead()
+    } finally {
+      void refresh({ silent: true })
+    }
   }, [api, isLoggedIn, refresh])
 
   const remove = useCallback(
     async (id: string) => {
       if (!isLoggedIn) return
-      await api.remove(id)
-      setLatest((prev) => prev.filter((n) => n.id !== id))
-      await refresh()
+
+      setLatest((prev) => {
+        const removed = prev.find((x) => x.id === id)
+        if (removed && !removed.read_at) setUnreadCount((c) => Math.max(0, c - 1))
+        return prev.filter((n) => n.id !== id)
+      })
+
+      try {
+        await api.remove(id)
+      } finally {
+        void refresh({ silent: true })
+      }
     },
     [api, isLoggedIn, refresh],
   )
@@ -69,9 +103,10 @@ export function InboxNotificationsProvider({ children }: { children: React.React
       setUnreadCount(0)
       setLatest([])
       setIsOpen(false)
+      setIsLoading(false)
       return
     }
-    void refresh()
+    void refresh({ silent: false })
   }, [isLoggedIn, refresh])
 
   useEffect(() => {
@@ -79,7 +114,7 @@ export function InboxNotificationsProvider({ children }: { children: React.React
     if (pollingRef.current) window.clearInterval(pollingRef.current)
 
     pollingRef.current = window.setInterval(() => {
-      void refresh()
+      void refresh({ silent: true })
     }, 25000)
 
     return () => {

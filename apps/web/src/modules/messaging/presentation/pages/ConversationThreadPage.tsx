@@ -21,9 +21,10 @@ function bubbleStyle(kind: 'me' | 'them') {
       background: 'linear-gradient(180deg, rgb(16 185 129 / 0.22), rgb(16 185 129 / 0.12))',
     }
   }
+
   return {
-    border: '1px solid rgb(255 255 255 / 0.14)',
-    background: 'linear-gradient(180deg, rgb(255 255 255 / 0.08), rgb(255 255 255 / 0.05))',
+    border: '1px solid rgb(var(--bb-border) / 0.10)',
+    background: 'rgb(var(--bb-surface) / 0.92)',
   }
 }
 
@@ -62,16 +63,12 @@ export default function ConversationThreadPage() {
     const raw = messages?.data ?? []
     return raw
       .slice()
-      .sort((a, b) => {
-        const ta = new Date(a.created_at).getTime()
-        const tb = new Date(b.created_at).getTime()
-        return ta - tb
-      })
+      .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
   }, [messages])
 
   return (
-    <div className="flex h-full flex-col">
-      <div className="border-b p-4" style={{ borderColor: 'rgb(var(--bb-border) / 0.10)' }}>
+    <div className="flex h-full flex-col overflow-hidden">
+      <div className="shrink-0 border-b p-4" style={{ borderColor: 'rgb(var(--bb-border) / 0.10)' }}>
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <p className="truncate text-sm font-extrabold" style={{ color: 'rgb(var(--bb-text) / 0.92)' }}>
@@ -103,25 +100,19 @@ export default function ConversationThreadPage() {
 
       <div
         ref={listRef}
-        className="flex-1 overflow-auto p-4"
+        className="bb-soft-scroll flex-1 overflow-auto p-4"
         style={{
           background:
-            'radial-gradient(1200px 700px at 50% 10%, rgb(16 185 129 / 0.06), transparent 55%), radial-gradient(1200px 700px at 40% 40%, rgb(99 102 241 / 0.05), transparent 60%)',
+            'radial-gradient(1200px 700px at 50% 10%, rgb(var(--bb-primary) / 0.10), transparent 55%), radial-gradient(1200px 700px at 40% 40%, rgb(var(--bb-accent) / 0.08), transparent 60%)',
         }}
       >
         <div className="mx-auto flex w-full max-w-3xl flex-col gap-2">
           {error ? (
-            <div
-              className="rounded-3xl border p-4 text-sm"
-              style={{ borderColor: 'rgb(var(--bb-border) / 0.12)', color: 'rgb(var(--bb-text) / 0.75)' }}
-            >
+            <div className="rounded-3xl border p-4 text-sm" style={{ borderColor: 'rgb(var(--bb-border) / 0.12)', color: 'rgb(var(--bb-text) / 0.75)' }}>
               {error}
             </div>
           ) : loading ? (
-            <div
-              className="rounded-3xl border p-4 text-sm"
-              style={{ borderColor: 'rgb(var(--bb-border) / 0.12)', color: 'rgb(var(--bb-text) / 0.75)' }}
-            >
+            <div className="rounded-3xl border p-4 text-sm" style={{ borderColor: 'rgb(var(--bb-border) / 0.12)', color: 'rgb(var(--bb-text) / 0.75)' }}>
               Loading messages...
             </div>
           ) : items.length === 0 ? (
@@ -157,7 +148,7 @@ export default function ConversationThreadPage() {
         </div>
       </div>
 
-      <div className="border-t p-4" style={{ borderColor: 'rgb(var(--bb-border) / 0.10)' }}>
+      <div className="shrink-0 border-t p-4" style={{ borderColor: 'rgb(var(--bb-border) / 0.10)' }}>
         <div className="mx-auto flex w-full max-w-3xl items-end gap-2">
           <div className="flex-1">
             <textarea
