@@ -13,12 +13,14 @@ import {
   BellIcon,
   CheckIcon,
   TrashIcon,
+  ChatBubbleLeftRightIcon,
 } from '@heroicons/react/24/outline'
 import { ProfileApiClient } from '@core/modules/profile/infrastructure/api/ProfileApiClient'
 import type { ApiUserProfileResponse } from '@core/modules/profile/infrastructure/api/types/ApiUserProfileResponse'
 import { httpClient } from '@/shared/api/http'
 import { env } from '@/shared/config/env'
 import { useInboxNotifications } from '@/shared/context/inboxNotifications'
+import { useUnreadMessagesCount } from '@/modules/messaging/application/hooks'
 
 type NavItem = { to: string; label: string }
 
@@ -65,6 +67,8 @@ function toAbsolute(url: string) {
 }
 
 const AVATAR_CACHE_KEY = 'bb_avatar_url'
+const USER_ID_CACHE_KEY = 'bb_user_id'
+const USER_ROLE_CACHE_KEY = 'bb_user_role'
 
 function IconPill({
   label,
@@ -129,9 +133,11 @@ export function Navbar() {
   const isLoggedIn = auth.isAuthenticated
   const isAuthRoute = location.pathname === '/login' || location.pathname === '/register'
 
+  const { unread: unreadMessages, refresh: refreshUnreadMessages } = useUnreadMessagesCount(isLoggedIn)
+
   const [mobileOpen, setMobileOpen] = useState(false)
   const [profileImageUrl, setProfileImageUrl] = useState<string>(() => localStorage.getItem(AVATAR_CACHE_KEY) ?? '')
-  const [role, setRole] = useState<'brand' | 'influencer' | null>(null)
+  const [role, setRole] = useState<'brand' | 'influencer' | null>(() => (localStorage.getItem(USER_ROLE_CACHE_KEY) as any) ?? null)
   const fetchingRef = useRef(false)
 
   const popoverRef = useRef<HTMLDivElement | null>(null)
@@ -170,6 +176,8 @@ export function Navbar() {
       setRole(null)
       try {
         localStorage.removeItem(AVATAR_CACHE_KEY)
+        localStorage.removeItem(USER_ID_CACHE_KEY)
+        localStorage.removeItem(USER_ROLE_CACHE_KEY)
       } catch {}
       return
     }
@@ -194,6 +202,8 @@ export function Navbar() {
 
         try {
           localStorage.setItem(AVATAR_CACHE_KEY, finalUrl)
+          localStorage.setItem(USER_ID_CACHE_KEY, String(u.id))
+          localStorage.setItem(USER_ROLE_CACHE_KEY, String(u.role ?? ''))
         } catch {}
       } catch {
         if (!cancelled) {
@@ -209,6 +219,11 @@ export function Navbar() {
       cancelled = true
     }
   }, [isLoggedIn])
+
+  useEffect(() => {
+    if (!isLoggedIn) return
+    void refreshUnreadMessages()
+  }, [isLoggedIn, refreshUnreadMessages])
 
   async function onLogout() {
     await auth.logout()
@@ -247,6 +262,22 @@ export function Navbar() {
             <button type="button" onClick={toggle} className="bb-icon-btn h-10 w-10" aria-label="Toggle theme">
               {mode === 'dark' ? <SunIcon className="h-5 w-5" /> : <MoonIcon className="h-5 w-5" />}
             </button>
+
+            {isLoggedIn && (
+              <button
+                type="button"
+                className="bb-icon-btn relative h-10 w-10"
+                onClick={() => navigate('/messages')}
+                aria-label="Messages"
+              >
+                <ChatBubbleLeftRightIcon className="h-5 w-5" />
+                {unreadMessages > 0 ? (
+                  <span className="absolute -right-1 -top-1 grid h-5 min-w-[1.25rem] place-items-center rounded-full bg-emerald-500 px-1 text-xs font-extrabold text-white">
+                    {unreadMessages > 99 ? '99+' : unreadMessages}
+                  </span>
+                ) : null}
+              </button>
+            )}
 
             {isLoggedIn && (
               <div className="relative" ref={popoverRef}>
@@ -400,9 +431,14 @@ export function Navbar() {
               ))}
 
               {isLoggedIn ? (
-                <button type="button" onClick={() => navigate('/notifications')} className="bb-nav-link block w-full px-3 py-2 text-left">
-                  Notifications {unread > 0 ? `(${unread})` : ''}
-                </button>
+                <>
+                  <button type="button" onClick={() => navigate('/messages')} className="bb-nav-link block w-full px-3 py-2 text-left">
+                    Messages {unreadMessages > 0 ? `(${unreadMessages})` : ''}
+                  </button>
+                  <button type="button" onClick={() => navigate('/notifications')} className="bb-nav-link block w-full px-3 py-2 text-left">
+                    Notifications {unread > 0 ? `(${unread})` : ''}
+                  </button>
+                </>
               ) : null}
             </div>
           </div>

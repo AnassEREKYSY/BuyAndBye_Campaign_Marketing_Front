@@ -21,6 +21,9 @@ const CollaborationDetailsPage = lazy(() => import('@/modules/dashboard/presenta
 
 const NotificationsPage = lazy(() => import('@/modules/notifications/presentation/pages/NotificationsPage'))
 
+const MessagesPage = lazy(() => import('@/modules/messaging/presentation/pages/MessagesPage'))
+const ConversationThreadPage = lazy(() => import('@/modules/messaging/presentation/pages/ConversationThreadPage'))
+
 function PageLoader() {
   return (
     <div className="bb-page">
@@ -72,6 +75,14 @@ export const routes = [
           { path: '/profile', element: <ProfilePage /> },
 
           { path: '/notifications', element: <Lazy><NotificationsPage /></Lazy> },
+
+          {
+            path: '/messages',
+            element: <Lazy><MessagesPage /></Lazy>,
+            children: [
+              { path: ':id', element: <Lazy><ConversationThreadPage /></Lazy> },
+            ],
+          },
 
           { path: '/app', element: <Navigate to="/dashboard" replace /> },
         ],
