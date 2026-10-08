@@ -1,16 +1,17 @@
-import { useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
+import { CubeIcon, MegaphoneIcon } from '@heroicons/react/24/outline'
 
 export function BrandManagementTopButtons() {
-  const nav = useNavigate()
-
   return (
-    <div className="mt-4 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
-      <button onClick={() => nav('/dashboard/brand/products')} className="bb-btn-ghost h-11 w-full px-5 sm:w-auto">
+    <div className="flex flex-wrap items-center gap-2">
+      <Link to="/dashboard/brand/products" className="bb-btn-ghost">
+        <CubeIcon className="h-[18px] w-[18px]" />
         Manage products
-      </button>
-      <button onClick={() => nav('/dashboard/brand/campaigns')} className="bb-btn-ghost h-11 w-full px-5 sm:w-auto">
+      </Link>
+      <Link to="/dashboard/brand/campaigns" className="bb-btn-ghost">
+        <MegaphoneIcon className="h-[18px] w-[18px]" />
         Manage campaigns
-      </button>
+      </Link>
     </div>
   )
 }

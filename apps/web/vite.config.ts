@@ -14,6 +14,6 @@ export default defineConfig({
     include: ['axios'],
   },
   server: {
-    fs: { allow: ['..'] },
+    fs: { allow: ['../..'] },
   },
 })

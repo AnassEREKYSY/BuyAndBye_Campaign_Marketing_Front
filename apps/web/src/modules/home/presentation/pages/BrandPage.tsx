@@ -1,107 +1,108 @@
-import type React from 'react'
 import { Link } from 'react-router-dom'
-import { useInView } from '@/shared/hooks'
+import {
+  AdjustmentsHorizontalIcon,
+  BanknotesIcon,
+  ChartBarIcon,
+  ChatBubbleLeftRightIcon,
+  CheckIcon,
+  LinkIcon,
+  UserGroupIcon,
+} from '@heroicons/react/24/outline'
 
-function Reveal({ children, delayMs = 0 }: { children: React.ReactNode; delayMs?: number }) {
-  const { ref, inView } = useInView<HTMLDivElement>()
-  return (
-    <div ref={ref} className={`bb-fade-up ${inView ? 'bb-fade-up-in' : ''}`} style={{ transitionDelay: `${delayMs}ms` }}>
-      {children}
-    </div>
-  )
-}
+const steps = [
+  { n: '1', title: 'Create a campaign', text: 'Describe the product, set the commission and the payout tiers. Publish when it is ready.' },
+  { n: '2', title: 'Choose your creators', text: 'Creators apply with their profile and audience numbers. Shortlist, accept or decline.' },
+  { n: '3', title: 'Track and pay', text: 'Each accepted creator gets a tracked link and a promo code. Payouts follow the tiers you set.' },
+]
 
-function Card({ title, desc }: { title: string; desc: string }) {
-  return (
-    <div className="bb-card">
-      <p className="text-base font-extrabold tracking-tight bb-title-text">{title}</p>
-      <p className="mt-2 text-sm leading-6 bb-subtle-text">{desc}</p>
-    </div>
-  )
-}
-
-function TinyStat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="bb-soft-box p-4">
-      <p className="text-xs font-semibold bb-muted-text">{label}</p>
-      <p className="mt-2 text-sm font-extrabold bb-title-text">{value}</p>
-    </div>
-  )
-}
+const features = [
+  { icon: AdjustmentsHorizontalIcon, title: 'Your rules', text: 'Commission, payout tiers, dates and guidelines are set once per campaign and apply to everyone.' },
+  { icon: UserGroupIcon, title: 'You decide who joins', text: 'Every creator applies first. You see their niche, platforms and follower counts before you accept.' },
+  { icon: LinkIcon, title: 'Links and codes', text: 'A short link, a promo code and a QR code are generated for each collaboration.' },
+  { icon: ChartBarIcon, title: 'Clear numbers', text: 'Clicks and unique visitors per creator and per campaign, over the period you pick.' },
+  { icon: BanknotesIcon, title: 'Payouts you can check', text: 'Each payout period shows the clicks counted and the tier reached. Pending, approved, paid.' },
+  { icon: ChatBubbleLeftRightIcon, title: 'Messages in one place', text: 'One conversation per collaboration, next to the numbers it is about.' },
+]
 
 export function BrandPage() {
   return (
-    <div className="bb-page flex flex-col gap-10 px-4 py-6 md:px-6">
-      <section className="bb-surface bb-surface-pad">
-        <div className="pointer-events-none absolute inset-0 bb-spotlight" />
-        <div className="pointer-events-none absolute inset-0 bb-grid" />
-        <div className="pointer-events-none absolute inset-0 bb-noise" />
-        <div
-          className="pointer-events-none absolute -inset-24 bb-float opacity-60 blur-3xl"
-          style={{
-            background:
-              'conic-gradient(from 180deg at 50% 50%, rgba(99,102,241,0.16), rgba(56,189,248,0.12), rgba(255,255,255,0.05), rgba(99,102,241,0.16))',
-          }}
-        />
-
-        <div className="relative grid gap-10 lg:grid-cols-2 lg:items-center">
-          <div>
-            <span className="bb-chip">For Brands</span>
-            <h1 className="bb-title mt-4">Run creator campaigns with clean tracking and premium execution.</h1>
-            <p className="bb-p mt-4 max-w-2xl">
-              Control ROI with clearer attribution, reduce manual operations, and keep the collaboration experience professional
-              for your brand.
-            </p>
-
-            <div className="mt-8 flex flex-wrap gap-3">
-              <Link to="/register?role=brand" className="bb-btn-primary">
-                Create an account
-              </Link>
-              <Link to="/contact" className="bb-btn-ghost">
-                Contact
-              </Link>
-            </div>
-
-            <div className="mt-8 grid gap-3 sm:grid-cols-3">
-              <TinyStat label="Reporting" value="Realtime" />
-              <TinyStat label="Attribution" value="Links + codes" />
-              <TinyStat label="Operations" value="Less manual" />
-            </div>
+    <div>
+      <section className="mx-auto max-w-6xl px-4 pb-16 pt-14 sm:px-6 lg:pt-20">
+        <div className="bb-pop max-w-2xl">
+          <p className="bb-eyebrow">For brands</p>
+          <h1 className="mt-4 text-4xl font-semibold leading-[1.1] tracking-tight sm:text-5xl">Know which creators actually send you traffic.</h1>
+          <p className="mt-5 text-[17px] leading-7 text-bb-muted">
+            Kickback gives each creator you work with a tracked link and a promo code. You see the clicks they bring, and you pay them on the tiers you agreed on.
+          </p>
+          <div className="mt-8 flex flex-wrap gap-3">
+            <Link to="/register?role=brand" className="bb-btn-primary h-11 px-5">
+              Create a brand account
+            </Link>
+            <Link to="/contact" className="bb-btn-ghost h-11 px-5">
+              Ask a question
+            </Link>
           </div>
+          <ul className="mt-8 grid gap-2 text-sm text-bb-muted">
+            {['No setup fees', 'You approve every creator', 'Payouts based on counted clicks'].map((t) => (
+              <li key={t} className="flex items-center gap-2">
+                <CheckIcon className="h-4 w-4 text-bb-primary" />
+                {t}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
 
-          <div className="bb-pop grid gap-3 sm:grid-cols-2">
-            <Card title="Campaign setup" desc="Define products, rules, assets, and collaboration flow." />
-            <Card title="Creator matching" desc="Invite and select creators aligned with your goals." />
-            <Card title="Attribution" desc="Track conversions with consistent signals across channels." />
-            <Card title="Commissions" desc="Transparent earnings and payout-ready reporting." />
+      <section className="border-y border-bb-border/10 bg-bb-subtle">
+        <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
+          <h2 className="bb-h2">How a campaign runs</h2>
+          <div className="mt-8 grid gap-6 md:grid-cols-3">
+            {steps.map((s) => (
+              <div key={s.n}>
+                <span className="grid h-8 w-8 place-items-center rounded-full bg-bb-primary text-sm font-semibold text-white dark:text-bb-bg">{s.n}</span>
+                <h3 className="mt-4 font-semibold">{s.title}</h3>
+                <p className="mt-2 text-sm leading-6 text-bb-muted">{s.text}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
-      <Reveal>
-        <section className="grid gap-6 lg:grid-cols-12 lg:items-start">
-          <div className="bb-card lg:col-span-5">
-            <h2 className="bb-h2">What you control</h2>
-            <p className="bb-p mt-3">Keep campaigns consistent while giving creators a clean workflow that improves performance.</p>
-            <div className="mt-6 grid gap-3">
-              <Card title="Commission rules" desc="Rates and conditions stay clear and consistent." />
-              <Card title="Approvals" desc="Choose who joins and keep quality high." />
-              <Card title="Assets" desc="Provide brand messaging and content guidelines." />
-            </div>
-          </div>
+      <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
+        <h2 className="bb-h2">What you get</h2>
+        <p className="bb-p mt-2 max-w-xl">Everything you need to run creator campaigns without a spreadsheet on the side.</p>
+        <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {features.map((f) => {
+            const Icon = f.icon
+            return (
+              <div key={f.title} className="bb-card">
+                <span className="bb-stat-icon">
+                  <Icon className="h-5 w-5" />
+                </span>
+                <h3 className="mt-4 font-semibold">{f.title}</h3>
+                <p className="mt-1.5 text-sm leading-6 text-bb-muted">{f.text}</p>
+              </div>
+            )
+          })}
+        </div>
+      </section>
 
-          <div className="bb-card lg:col-span-7">
-            <h2 className="bb-h2">What you gain</h2>
-            <p className="bb-p mt-3 max-w-3xl">Stronger outcomes start with clarity. Reduce time spent chasing numbers and focus on growth.</p>
-            <div className="mt-6 grid gap-3 sm:grid-cols-2">
-              <Card title="Better decisions" desc="Optimize creators and offers based on conversion data." />
-              <Card title="Faster execution" desc="Structured workflows speed up launch cycles." />
-              <Card title="Less friction" desc="Reduce confusion and manual coordination." />
-              <Card title="Premium brand image" desc="A clean product experience that matches your brand." />
-            </div>
+      <section className="mx-auto max-w-6xl px-4 pb-20 sm:px-6">
+        <div className="flex flex-col items-start justify-between gap-6 rounded-[14px] bg-bb-primary-soft px-8 py-10 md:flex-row md:items-center">
+          <div>
+            <h2 className="text-2xl font-semibold tracking-tight">Start your first campaign</h2>
+            <p className="mt-2 text-bb-muted">Create an account and publish a campaign in a few minutes.</p>
           </div>
-        </section>
-      </Reveal>
+          <div className="flex gap-3">
+            <Link to="/register?role=brand" className="bb-btn-primary h-11 px-5">
+              Get started
+            </Link>
+            <Link to="/influencer" className="bb-btn-ghost h-11 px-5">
+              I'm a creator
+            </Link>
+          </div>
+        </div>
+      </section>
     </div>
   )
 }

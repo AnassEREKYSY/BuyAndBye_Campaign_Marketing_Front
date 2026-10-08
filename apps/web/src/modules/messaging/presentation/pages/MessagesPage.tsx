@@ -1,32 +1,15 @@
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { useMemo, useState } from 'react'
+import { ChatBubbleLeftRightIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline'
 import { useConversations } from '@/modules/messaging/application/hooks'
-
-function cx(...classes: Array<string | false | undefined | null>) {
-  return classes.filter(Boolean).join(' ')
-}
+import { PageHeader, Skeleton } from '@/shared/components/ui'
 
 function formatTime(iso?: string | null) {
   if (!iso) return ''
   const d = new Date(iso)
   if (Number.isNaN(d.getTime())) return ''
-  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-}
-
-function Avatar({ seed }: { seed: string }) {
-  const initial = (seed ?? '').trim().slice(0, 1).toUpperCase() || 'B'
-  return (
-    <div
-      className="grid h-10 w-10 place-items-center rounded-2xl border"
-      style={{
-        borderColor: 'rgb(var(--bb-border) / 0.12)',
-        backgroundColor: 'rgb(var(--bb-border) / 0.06)',
-        color: 'rgb(var(--bb-text) / 0.92)',
-      }}
-    >
-      <span className="text-sm font-extrabold">{initial}</span>
-    </div>
-  )
+  const sameDay = d.toDateString() === new Date().toDateString()
+  return sameDay ? d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
 }
 
 export default function MessagesPage() {
@@ -35,6 +18,7 @@ export default function MessagesPage() {
   const [q, setQ] = useState('')
 
   const conversations = data?.data ?? []
+  const inThread = location.pathname !== '/messages' && location.pathname !== '/messages/'
 
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase()
@@ -43,60 +27,35 @@ export default function MessagesPage() {
   }, [conversations, q])
 
   return (
-    <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-      <div className="mb-5 flex items-end justify-between gap-3">
-        <div className="min-w-0">
-          <h1 className="text-xl font-extrabold tracking-tight" style={{ color: 'rgb(var(--bb-text) / 0.95)' }}>
-            Messages
-          </h1>
-          <p className="mt-1 text-sm" style={{ color: 'rgb(var(--bb-text) / 0.60)' }}>
-            Conversations with brands and influencers
-          </p>
-        </div>
-      </div>
+    <div>
+      <PageHeader title="Messages" description="Conversations between brands and creators, one per collaboration." />
 
-      <div className="grid gap-4 lg:grid-cols-[380px_1fr]">
-        <aside
-          className="overflow-hidden rounded-3xl border"
-          style={{
-            borderColor: 'rgb(var(--bb-border) / 0.12)',
-            backgroundColor: 'rgb(var(--bb-card) / 0.55)',
-          }}
-        >
-          <div className="border-b p-3" style={{ borderColor: 'rgb(var(--bb-border) / 0.10)' }}>
-            <div className="flex items-center justify-between gap-2">
-              <p className="text-sm font-extrabold" style={{ color: 'rgb(var(--bb-text) / 0.92)' }}>
-                Inbox
-              </p>
-              <span className="text-xs" style={{ color: 'rgb(var(--bb-text) / 0.55)' }}>
-                {loading ? 'Loading…' : `${conversations.length} conversations`}
-              </span>
+      <div className="bb-card grid h-[calc(100vh-13rem)] min-h-[480px] grid-cols-1 overflow-hidden p-0 lg:grid-cols-[320px_1fr]">
+        {/* Conversation list */}
+        <aside className={`min-h-0 flex-col border-bb-border/10 lg:flex lg:border-r ${inThread ? 'hidden' : 'flex'}`}>
+          <div className="border-b border-bb-border/10 p-3">
+            <div className="relative">
+              <MagnifyingGlassIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-bb-muted" />
+              <input value={q} onChange={(e) => setQ(e.target.value)} type="search" placeholder="Search conversations" className="bb-input h-9 pl-9" aria-label="Search conversations" />
             </div>
-
-            <div className="mt-2">
-              <input
-                value={q}
-                onChange={(e) => setQ(e.target.value)}
-                type="text"
-                placeholder="Search conversations..."
-                className="bb-input"
-              />
-            </div>
+            <p className="mt-2 px-1 text-xs text-bb-muted">{loading ? 'Loading…' : `${conversations.length} conversation${conversations.length === 1 ? '' : 's'}`}</p>
           </div>
 
-          <ul className="bb-soft-scroll max-h-[72vh] overflow-auto p-2">
+          <ul className="bb-soft-scroll min-h-0 flex-1 overflow-auto p-2">
             {error ? (
-              <li className="p-4 text-sm" style={{ color: 'rgb(var(--bb-text) / 0.70)' }}>
-                {error}
-              </li>
+              <li className="m-1 rounded-[10px] bg-bb-accent-soft p-3 text-sm text-bb-accent-strong">{error}</li>
             ) : loading ? (
-              <li className="p-4 text-sm" style={{ color: 'rgb(var(--bb-text) / 0.70)' }}>
-                Loading conversations...
-              </li>
+              [0, 1, 2, 3].map((i) => (
+                <li key={i} className="flex gap-3 p-2.5">
+                  <Skeleton className="h-9 w-9 rounded-full" />
+                  <div className="flex-1 space-y-2">
+                    <Skeleton className="h-3.5 w-2/3" />
+                    <Skeleton className="h-3 w-full" />
+                  </div>
+                </li>
+              ))
             ) : filtered.length === 0 ? (
-              <li className="p-4 text-sm" style={{ color: 'rgb(var(--bb-text) / 0.70)' }}>
-                No conversations.
-              </li>
+              <li className="p-4 text-center text-sm text-bb-muted">{q ? 'No conversation matches your search.' : 'No conversations yet.'}</li>
             ) : (
               filtered.map((c) => {
                 const title = c.campaign?.title ?? 'Conversation'
@@ -104,51 +63,27 @@ export default function MessagesPage() {
                 const time = formatTime((c as any).last_message_at ?? c.updated_at ?? null)
                 const unread = Number((c as any).unread_count ?? 0)
                 const preview = ((c as any).last_message_body ?? '').trim()
+                const closed = c.status === 'closed'
 
                 return (
-                  <li key={c.id} className="p-1">
+                  <li key={c.id}>
                     <NavLink
                       to={`/messages/${c.id}`}
-                      className={cx(
-                        'group flex items-start gap-3 rounded-3xl border p-3 transition',
-                        'hover:-translate-y-[1px]',
-                        isActive ? 'bg-white/5' : '',
-                      )}
-                      style={{
-                        borderColor: isActive ? 'rgb(var(--bb-border) / 0.18)' : 'rgb(var(--bb-border) / 0.10)',
-                        backgroundColor: isActive ? 'rgb(var(--bb-border) / 0.05)' : 'transparent',
-                      }}
+                      className={`flex items-start gap-3 rounded-[10px] p-2.5 transition-colors ${isActive ? 'bg-bb-primary-soft' : 'hover:bg-bb-subtle'}`}
                     >
-                      <Avatar seed={title} />
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="min-w-0">
-                            <p className="truncate text-sm font-extrabold" style={{ color: 'rgb(var(--bb-text) / 0.92)' }}>
-                              {title}
-                            </p>
-                            <p className="mt-0.5 truncate text-xs" style={{ color: 'rgb(var(--bb-text) / 0.55)' }}>
-                              {c.status === 'closed' ? 'Closed conversation' : 'Active conversation'}
-                            </p>
-                          </div>
-
-                          <div className="flex flex-col items-end gap-1">
-                            <span className="text-[11px]" style={{ color: 'rgb(var(--bb-text) / 0.55)' }}>
-                              {time}
-                            </span>
-                            {unread > 0 ? (
-                              <span className="grid h-5 min-w-[1.25rem] place-items-center rounded-full bg-emerald-500 px-1 text-[11px] font-extrabold text-white">
-                                {unread > 99 ? '99+' : unread}
-                              </span>
-                            ) : (
-                              <span className="h-5" />
-                            )}
-                          </div>
-                        </div>
-
-                        <p className="mt-2 line-clamp-2 text-xs" style={{ color: 'rgb(var(--bb-text) / 0.70)' }}>
-                          {preview || (c.status === 'closed' ? 'This conversation is archived.' : 'No messages yet.')}
-                        </p>
-                      </div>
+                      <span className="bb-avatar h-9 w-9 text-sm">{title.trim().slice(0, 1).toUpperCase() || 'C'}</span>
+                      <span className="min-w-0 flex-1">
+                        <span className="flex items-baseline justify-between gap-2">
+                          <span className={`truncate text-sm ${unread > 0 ? 'font-semibold' : 'font-medium'}`}>{title}</span>
+                          <span className="shrink-0 text-[11px] text-bb-muted">{time}</span>
+                        </span>
+                        <span className="mt-0.5 flex items-center justify-between gap-2">
+                          <span className={`truncate text-xs ${unread > 0 ? 'text-bb-text' : 'text-bb-muted'}`}>
+                            {preview || (closed ? 'This conversation is closed.' : 'No messages yet.')}
+                          </span>
+                          {unread > 0 ? <span className="bb-count shrink-0">{unread > 99 ? '99+' : unread}</span> : closed ? <span className="bb-badge shrink-0 text-[10px]">Closed</span> : null}
+                        </span>
+                      </span>
                     </NavLink>
                   </li>
                 )
@@ -157,40 +92,22 @@ export default function MessagesPage() {
           </ul>
         </aside>
 
-        <main
-          className="min-h-[72vh] overflow-hidden rounded-3xl border"
-          style={{
-            borderColor: 'rgb(var(--bb-border) / 0.12)',
-            backgroundColor: 'rgb(var(--bb-card) / 0.55)',
-          }}
-        >
-          <div className="h-[72vh]">
+        {/* Thread */}
+        <section className={`min-h-0 min-w-0 flex-col lg:flex ${inThread ? 'flex' : 'hidden'}`}>
+          {inThread ? (
             <Outlet />
-          </div>
-
-          {location.pathname === '/messages' ? (
-            <div className="grid h-[72vh] place-items-center p-10">
-              <div className="max-w-md text-center">
-                <div
-                  className="mx-auto grid h-12 w-12 place-items-center rounded-3xl border"
-                  style={{
-                    borderColor: 'rgb(var(--bb-border) / 0.12)',
-                    backgroundColor: 'rgb(var(--bb-border) / 0.06)',
-                    color: 'rgb(var(--bb-text) / 0.90)',
-                  }}
-                >
-                  <span className="text-lg font-extrabold">✦</span>
-                </div>
-                <h2 className="mt-4 text-lg font-extrabold" style={{ color: 'rgb(var(--bb-text) / 0.92)' }}>
-                  Select a conversation
-                </h2>
-                <p className="mt-2 text-sm" style={{ color: 'rgb(var(--bb-text) / 0.65)' }}>
-                  Open a thread on the left to view messages and reply.
-                </p>
+          ) : (
+            <div className="grid h-full place-items-center p-10 text-center">
+              <div className="flex max-w-xs flex-col items-center">
+                <span className="bb-stat-icon">
+                  <ChatBubbleLeftRightIcon className="h-5 w-5" />
+                </span>
+                <p className="mt-3 font-medium">Select a conversation</p>
+                <p className="mt-1 text-sm text-bb-muted">Pick a thread on the left to read it and reply.</p>
               </div>
             </div>
-          ) : null}
-        </main>
+          )}
+        </section>
       </div>
     </div>
   )

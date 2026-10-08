@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
-import { XMarkIcon, PhotoIcon, LinkIcon, CurrencyDollarIcon, TagIcon } from '@heroicons/react/24/outline'
-import { Product } from '@core/modules/dashboard/domain/entities'
-import { CreateProductDTO, UpdateProductDTO } from '@core/modules/dashboard/domain/dtos'
+import type { Product } from '@core/modules/dashboard/domain/entities'
+import type { CreateProductDTO, UpdateProductDTO } from '@core/modules/dashboard/domain/dtos'
+import { Modal } from '@/shared/components/ui'
 
 type Props = {
   open: boolean
@@ -14,32 +14,6 @@ type Props = {
 function toNumberOrNull(v: string) {
   const n = Number(v)
   return Number.isFinite(n) ? n : null
-}
-
-function cx(...classes: Array<string | false | undefined | null>) {
-  return classes.filter(Boolean).join(' ')
-}
-
-function FieldLabel({ icon, children }: { icon?: React.ReactNode; children: React.ReactNode }) {
-  return (
-    <div className="flex items-center gap-2">
-      {icon ? (
-        <span
-          className="grid h-8 w-8 place-items-center rounded-full border"
-          style={{
-            borderColor: 'rgb(var(--bb-border) / 0.10)',
-            backgroundColor: 'rgb(var(--bb-border) / 0.04)',
-            color: 'rgb(var(--bb-text) / 0.85)',
-          }}
-        >
-          {icon}
-        </span>
-      ) : null}
-      <span className="text-xs font-extrabold" style={{ color: 'rgb(var(--bb-muted) / 0.85)' }}>
-        {children}
-      </span>
-    </div>
-  )
 }
 
 export function BrandProductModal({ open, onClose, initial, onCreate, onUpdate }: Props) {
@@ -105,121 +79,65 @@ export function BrandProductModal({ open, onClose, initial, onCreate, onUpdate }
     }
   }
 
+  const footer = (
+    <>
+      <button onClick={onClose} className="bb-btn-ghost" type="button">
+        Cancel
+      </button>
+      <button onClick={() => void submit()} disabled={saving} className="bb-btn-primary" type="button">
+        {saving ? 'Saving…' : isEdit ? 'Save changes' : 'Create product'}
+      </button>
+    </>
+  )
+
   return (
-    <div
-      className="fixed inset-0 z-50 grid place-items-center bg-black/70 p-4"
-      onMouseDown={(e) => {
-        if (e.target === e.currentTarget) onClose()
-      }}
-    >
-      {/* ✅ Reduced height: max-h + internal scroll */}
-      <div className="bb-pop relative w-full max-w-2xl overflow-hidden rounded-[26px] border"
-           style={{ borderColor: 'rgb(var(--bb-border) / 0.10)', backgroundColor: 'rgb(var(--bb-surface) / 0.88)' }}
-      >
-        <div className="pointer-events-none absolute inset-0 bb-noise" />
-        <div className="pointer-events-none absolute inset-0 bb-spotlight opacity-70" />
+    <Modal open={open} onClose={onClose} title={isEdit ? 'Edit product' : 'New product'} footer={footer} width="max-w-xl">
+      {error ? <div className="bb-soft-box mb-4 border-bb-accent/30 bg-bb-accent-soft p-3 text-sm text-bb-accent-strong">{error}</div> : null}
 
-        {/* Header */}
-        <div className="relative flex items-start justify-between gap-3 border-b px-4 py-4 sm:px-5"
-             style={{ borderColor: 'rgb(var(--bb-border) / 0.10)' }}
-        >
-          <div className="min-w-0">
-            <p className="truncate text-sm font-extrabold tracking-tight" style={{ color: 'rgb(var(--bb-text) / 0.95)' }}>
-              {isEdit ? 'Edit product' : 'Create product'}
-            </p>
-            <p className="mt-1 text-xs font-semibold" style={{ color: 'rgb(var(--bb-muted) / 0.85)' }}>
-              Keep it clean, add only what’s needed.
-            </p>
-          </div>
-
-          <button type="button" onClick={onClose} className="bb-icon-btn h-11 w-11" aria-label="Close">
-            <XMarkIcon className="h-5 w-5" />
-          </button>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="sm:col-span-2">
+          <label className="bb-label" htmlFor="pm-name">
+            Name
+          </label>
+          <input id="pm-name" className="bb-input" value={name} onChange={(e) => setName(e.target.value)} placeholder="Rose & Argan Face Serum" />
         </div>
 
-        {/* Body (scrollable, shorter) */}
-        <div className="relative max-h-[70vh] overflow-y-auto px-4 py-4 sm:px-5 bb-soft-scroll">
-          {error ? (
-            <div
-              className="mb-4 rounded-2xl border p-3 text-sm font-semibold"
-              style={{
-                borderColor: 'rgb(244 63 94 / 0.25)',
-                backgroundColor: 'rgb(244 63 94 / 0.10)',
-                color: 'rgb(var(--bb-text) / 0.92)',
-              }}
-            >
-              {error}
-            </div>
-          ) : null}
-
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <div className="md:col-span-2">
-              <FieldLabel icon={<TagIcon className="h-4 w-4" />}>Name</FieldLabel>
-              <input className="bb-input mt-2" value={name} onChange={(e) => setName(e.target.value)} placeholder="Product name" />
-            </div>
-
-            <div className="md:col-span-2">
-              <FieldLabel> Description</FieldLabel>
-              <textarea
-                className={cx('mt-2 w-full rounded-2xl border px-4 py-3 text-sm font-semibold outline-none transition')}
-                style={{
-                  minHeight: 80, // ✅ reduced
-                  borderColor: 'rgb(var(--bb-border) / 0.10)',
-                  backgroundColor: 'rgb(var(--bb-card) / 0.80)',
-                  color: 'rgb(var(--bb-text) / 0.95)',
-                }}
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Description (optional)"
-              />
-            </div>
-
-            <div>
-              <FieldLabel icon={<CurrencyDollarIcon className="h-4 w-4" />}>Price</FieldLabel>
-              <input className="bb-input mt-2" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="199.99" />
-            </div>
-
-            <div>
-              <FieldLabel>Currency</FieldLabel>
-              <input className="bb-input mt-2" value={currency} onChange={(e) => setCurrency(e.target.value)} placeholder="MAD" />
-            </div>
-
-            <div className="md:col-span-2">
-              <FieldLabel icon={<LinkIcon className="h-4 w-4" />}>Landing URL</FieldLabel>
-              <input className="bb-input mt-2" value={landingUrl} onChange={(e) => setLandingUrl(e.target.value)} placeholder="https://brand.com/product" />
-            </div>
-
-            <div className="md:col-span-2">
-              <FieldLabel icon={<PhotoIcon className="h-4 w-4" />}>Images (one URL per line)</FieldLabel>
-              <textarea
-                className="mt-2 w-full rounded-2xl border px-4 py-3 text-sm font-semibold outline-none transition"
-                style={{
-                  minHeight: 96, // ✅ reduced
-                  borderColor: 'rgb(var(--bb-border) / 0.10)',
-                  backgroundColor: 'rgb(var(--bb-card) / 0.80)',
-                  color: 'rgb(var(--bb-text) / 0.95)',
-                }}
-                value={imagesText}
-                onChange={(e) => setImagesText(e.target.value)}
-                placeholder={'https://...\nhttps://...'}
-              />
-            </div>
-          </div>
+        <div className="sm:col-span-2">
+          <label className="bb-label" htmlFor="pm-desc">
+            Description <span className="font-normal text-bb-muted">(optional)</span>
+          </label>
+          <textarea id="pm-desc" rows={3} className="bb-input" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="A short description creators can reuse" />
         </div>
 
-        {/* Footer */}
-        <div
-          className="relative flex items-center justify-end gap-3 border-t px-4 py-4 sm:px-5"
-          style={{ borderColor: 'rgb(var(--bb-border) / 0.10)', backgroundColor: 'rgb(var(--bb-surface) / 0.55)' }}
-        >
-          <button onClick={onClose} className="bb-btn-ghost h-11 px-5" type="button">
-            Cancel
-          </button>
-          <button onClick={() => void submit()} disabled={saving} className="bb-btn-primary h-11 px-5 disabled:opacity-60" type="button">
-            {saving ? 'Saving…' : 'Save'}
-          </button>
+        <div>
+          <label className="bb-label" htmlFor="pm-price">
+            Price
+          </label>
+          <input id="pm-price" className="bb-input" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="199.99" inputMode="decimal" />
+        </div>
+
+        <div>
+          <label className="bb-label" htmlFor="pm-currency">
+            Currency
+          </label>
+          <input id="pm-currency" className="bb-input" value={currency} onChange={(e) => setCurrency(e.target.value)} placeholder="MAD" />
+        </div>
+
+        <div className="sm:col-span-2">
+          <label className="bb-label" htmlFor="pm-landing">
+            Landing page URL
+          </label>
+          <input id="pm-landing" className="bb-input" value={landingUrl} onChange={(e) => setLandingUrl(e.target.value)} placeholder="https://yourbrand.com/product" />
+          <p className="mt-1.5 text-xs text-bb-muted">Tracked links send visitors here.</p>
+        </div>
+
+        <div className="sm:col-span-2">
+          <label className="bb-label" htmlFor="pm-images">
+            Images <span className="font-normal text-bb-muted">(one URL per line)</span>
+          </label>
+          <textarea id="pm-images" rows={3} className="bb-input" value={imagesText} onChange={(e) => setImagesText(e.target.value)} placeholder={'https://…\nhttps://…'} />
         </div>
       </div>
-    </div>
+    </Modal>
   )
 }

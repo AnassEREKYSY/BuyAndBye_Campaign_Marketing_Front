@@ -6,190 +6,25 @@ import { useCampaignDetails } from '@/modules/dashboard/application/hooks/useCam
 import { useCampaignApplications } from '@/modules/dashboard/application/hooks/useCampaignApplications'
 import { ApplicantProfileModal } from '@/modules/dashboard/presentation/components/ApplicantProfileModal'
 import type { CampaignPayoutTier } from '@core/modules/dashboard/domain/entities'
-import {
-  ArrowLeftIcon,
-  Squares2X2Icon,
-  PaperAirplaneIcon,
-  CheckCircleIcon,
-  ClockIcon,
-  CalendarDaysIcon,
-  BanknotesIcon,
-  TagIcon,
-  SparklesIcon,
-  BuildingStorefrontIcon,
-  LinkIcon,
-  CurrencyDollarIcon,
-  UserGroupIcon,
-  ShieldCheckIcon,
-  ChevronRightIcon,
-} from '@heroicons/react/24/outline'
+import { ArrowLeftIcon, ArrowTopRightOnSquareIcon, CheckCircleIcon, UserGroupIcon } from '@heroicons/react/24/outline'
+import { EmptyState, PageHeader, Section, Skeleton, StatusBadge, formatDate, formatMoney } from '@/shared/components/ui'
 
-function fmtDate(iso?: string | null) {
-  if (!iso) return '—'
-  return iso.slice(0, 10)
-}
-
-function money(v?: number | null, currency = 'MAD') {
-  if (v === null || v === undefined || !Number.isFinite(Number(v))) return '—'
-  return `${Number(v).toFixed(2)} ${currency}`
-}
-
-function statusPill(status?: string) {
-  const s = (status ?? '').toLowerCase()
-  if (s === 'published') return { border: 'rgb(16 185 129 / 0.25)', bg: 'rgb(16 185 129 / 0.10)', text: 'rgb(110 231 183 / 0.95)', dot: 'bg-emerald-300/90' }
-  if (s === 'draft') return { border: 'rgb(245 158 11 / 0.25)', bg: 'rgb(245 158 11 / 0.10)', text: 'rgb(253 230 138 / 0.95)', dot: 'bg-amber-300/90' }
-  if (s === 'closed') return { border: 'rgb(244 63 94 / 0.25)', bg: 'rgb(244 63 94 / 0.10)', text: 'rgb(253 164 175 / 0.95)', dot: 'bg-rose-300/90' }
-  return { border: 'rgb(var(--bb-border) / 0.10)', bg: 'rgb(var(--bb-border) / 0.04)', text: 'rgb(var(--bb-muted) / 0.90)', dot: 'bg-white/35' }
-}
-
-function appPill(status?: string) {
-  const s = (status ?? '').toLowerCase()
-  if (s === 'shortlisted') return statusPill('draft')
-  if (s === 'accepted') return statusPill('published')
-  if (s === 'rejected') return statusPill('closed')
-  return statusPill('unknown')
+function commissionLabel(type?: string | null, value?: number | null) {
+  if (!type) return '—'
+  const v = Number(value ?? 0)
+  return type === 'percent' ? `${v}% per sale` : `${formatMoney(v)} per sale`
 }
 
 function Alert({ kind, children }: { kind: 'error' | 'success'; children: React.ReactNode }) {
-  const styles =
-    kind === 'success'
-      ? { borderColor: 'rgb(16 185 129 / 0.25)', backgroundColor: 'rgb(16 185 129 / 0.10)', color: 'rgb(var(--bb-text) / 0.92)' }
-      : { borderColor: 'rgb(244 63 94 / 0.25)', backgroundColor: 'rgb(244 63 94 / 0.10)', color: 'rgb(var(--bb-text) / 0.92)' }
-
-  return (
-    <div className="bb-pop rounded-3xl border p-4 text-sm font-semibold" style={styles}>
-      {children}
-    </div>
-  )
+  const cls = kind === 'success' ? 'border-bb-success/30 bg-bb-success/10 text-bb-success' : 'border-bb-accent/30 bg-bb-accent-soft text-bb-accent-strong'
+  return <div className={`bb-soft-box p-4 text-sm ${cls}`}>{children}</div>
 }
 
-function TopPill({ children }: { children: React.ReactNode }) {
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <span
-      className="inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[11px] font-extrabold"
-      style={{
-        borderColor: 'rgb(var(--bb-border) / 0.10)',
-        backgroundColor: 'rgb(var(--bb-border) / 0.04)',
-        color: 'rgb(var(--bb-muted) / 0.90)',
-      }}
-    >
-      {children}
-    </span>
-  )
-}
-
-function ActionPill({
-  to,
-  icon,
-  label,
-  kind = 'ghost',
-}: {
-  to?: string
-  icon: React.ReactNode
-  label: string
-  kind?: 'ghost' | 'primary'
-}) {
-  const cls = kind === 'primary' ? 'bb-btn-primary h-11 px-4' : 'bb-btn-ghost h-11 px-4'
-  const content = (
-    <span className="inline-flex items-center gap-2">
-      <span
-        className="grid h-9 w-9 place-items-center rounded-full border"
-        style={{
-          borderColor: kind === 'primary' ? 'rgb(255 255 255 / 0.18)' : 'rgb(var(--bb-border) / 0.10)',
-          backgroundColor: kind === 'primary' ? 'rgb(255 255 255 / 0.10)' : 'rgb(var(--bb-border) / 0.04)',
-        }}
-      >
-        {icon}
-      </span>
-      <span className="hidden sm:inline text-sm font-extrabold">{label}</span>
-    </span>
-  )
-
-  if (to) {
-    return (
-      <Link to={to} className={cls} aria-label={label}>
-        {content}
-      </Link>
-    )
-  }
-
-  return (
-    <button type="button" className={cls} aria-label={label}>
-      {content}
-    </button>
-  )
-}
-
-function StatChip({
-  icon,
-  label,
-  value,
-}: {
-  icon: React.ReactNode
-  label: string
-  value: string
-}) {
-  return (
-    <div
-      className="flex items-center gap-3 rounded-2xl border px-4 py-3"
-      style={{
-        borderColor: 'rgb(var(--bb-border) / 0.10)',
-        backgroundColor: 'rgb(var(--bb-border) / 0.04)',
-      }}
-    >
-      <span
-        className="grid h-10 w-10 place-items-center rounded-2xl border"
-        style={{
-          borderColor: 'rgb(var(--bb-border) / 0.10)',
-          backgroundColor: 'rgb(var(--bb-border) / 0.04)',
-          color: 'rgb(var(--bb-text) / 0.90)',
-        }}
-      >
-        {icon}
-      </span>
-
-      <div className="min-w-0">
-        <p className="text-[11px] font-extrabold tracking-wide" style={{ color: 'rgb(var(--bb-muted) / 0.82)' }}>
-          {label}
-        </p>
-        <p className="mt-0.5 truncate text-sm font-extrabold" style={{ color: 'rgb(var(--bb-text) / 0.92)' }}>
-          {value}
-        </p>
-      </div>
-    </div>
-  )
-}
-
-function SoftBox({
-  title,
-  icon,
-  children,
-  right,
-}: {
-  title: string
-  icon?: React.ReactNode
-  children: React.ReactNode
-  right?: React.ReactNode
-}) {
-  return (
-    <div
-      className="rounded-[22px] border p-4"
-      style={{
-        borderColor: 'rgb(var(--bb-border) / 0.10)',
-        backgroundColor: 'rgb(var(--bb-border) / 0.04)',
-      }}
-    >
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex items-center gap-2">
-          {icon ? <span className="bb-stat-icon h-9 w-9">{icon}</span> : null}
-          <p className="text-xs font-extrabold uppercase tracking-wider" style={{ color: 'rgb(var(--bb-muted) / 0.82)' }}>
-            {title}
-          </p>
-        </div>
-        {right ? <div className="shrink-0">{right}</div> : null}
-      </div>
-
-      <div className="mt-3">{children}</div>
+    <div>
+      <dt className="text-xs text-bb-muted">{label}</dt>
+      <dd className="mt-1 text-sm font-medium">{children}</dd>
     </div>
   )
 }
@@ -222,393 +57,107 @@ export default function CampaignDetailsPage() {
     setProfileInfluencerId(null)
   }
 
-  const st = statusPill(vm.item?.status)
-  const landingUrl = vm.item?.product?.landing_url ?? null
+  const item = vm.item
+  const landingUrl = item?.product?.landing_url ?? null
+  const backTo = role === UserRole.BRAND ? '/dashboard/brand/campaigns' : '/campaigns'
+
+  const actions = (
+    <>
+      <Link to={backTo} className="bb-btn-ghost">
+        <ArrowLeftIcon className="h-4 w-4" />
+        Back
+      </Link>
+      {role === UserRole.INFLUENCER && vm.appliedAt ? (
+        <span className="inline-flex h-10 items-center gap-2 rounded-[10px] bg-bb-subtle px-3 text-sm">
+          <CheckCircleIcon className="h-[18px] w-[18px] text-bb-success" />
+          Applied {formatDate(vm.appliedAt)}
+        </span>
+      ) : null}
+      {vm.canApply ? (
+        <button disabled={vm.applyLoading} onClick={vm.onApply} className="bb-btn-primary" type="button">
+          {vm.applyLoading ? 'Applying…' : 'Apply to campaign'}
+        </button>
+      ) : null}
+    </>
+  )
 
   return (
-    <div className="bb-page px-4 py-6 md:px-6">
-      {/* TOP (REDESIGNED) */}
-      <section
-        className="bb-pop relative overflow-hidden rounded-3xl border p-5 sm:p-6"
-        style={{
-          borderColor: 'rgb(var(--bb-border) / 0.10)',
-          backgroundColor: 'rgb(var(--bb-surface) / 0.84)',
-          backdropFilter: 'blur(12px)',
-        }}
-      >
-        <div className="pointer-events-none absolute inset-0 bb-spotlight" />
-        <div className="pointer-events-none absolute inset-0 bb-grid" />
-        <div className="pointer-events-none absolute inset-0 bb-noise" />
+    <div className="bb-page">
+      {vm.loading && !item ? (
+        <div className="mb-6">
+          <Skeleton className="h-7 w-72" />
+          <Skeleton className="mt-2 h-4 w-96 max-w-full" />
+        </div>
+      ) : (
+        <PageHeader
+          title={item?.title ?? 'Campaign'}
+          description={
+            <span className="inline-flex flex-wrap items-center gap-2">
+              <StatusBadge status={item?.status} />
+              {item?.brand?.display_name ? <span>{item.brand.display_name}</span> : null}
+              {item?.product?.name ? <span>· {item.product.name}</span> : null}
+            </span>
+          }
+          actions={actions}
+        />
+      )}
 
-        <div className="relative">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <TopPill>
-                  <span className={`h-2 w-2 rounded-full ${st.dot}`} style={{ boxShadow: '0 0 18px rgb(255 255 255 / 0.12)' }} />
-                  {vm.item?.status ?? '—'}
-                </TopPill>
+      {vm.error || vm.applyError || vm.applySuccess ? (
+        <div className="mb-6 grid gap-3">
+          {vm.error ? <Alert kind="error">{vm.error}</Alert> : null}
+          {vm.applyError ? <Alert kind="error">{vm.applyError}</Alert> : null}
+          {vm.applySuccess ? <Alert kind="success">{vm.applySuccess}</Alert> : null}
+        </div>
+      ) : null}
 
-                <TopPill>
-                  <SparklesIcon className="h-4 w-4" />
-                  Campaign details
-                </TopPill>
-
-                {vm.item?.product?.name ? (
-                  <TopPill>
-                    <BuildingStorefrontIcon className="h-4 w-4" />
-                    {vm.item.product.name}
-                  </TopPill>
-                ) : null}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+        <div className="space-y-6 lg:col-span-8">
+          <Section title="Overview">
+            {vm.loading && !item ? (
+              <div className="grid gap-3">
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-2/3" />
               </div>
+            ) : (
+              <>
+                <p className="text-sm leading-6 text-bb-text">{item?.objective || 'No objective written yet.'}</p>
+                <dl className="mt-5 grid grid-cols-2 gap-4 border-t border-bb-border/10 pt-5 sm:grid-cols-4">
+                  <Field label="Commission">{commissionLabel(item?.commission_type, item?.commission_value)}</Field>
+                  <Field label="Budget">{item?.budget != null ? formatMoney(item.budget) : '—'}</Field>
+                  <Field label="Starts">{formatDate(item?.start_at)}</Field>
+                  <Field label="Ends">{formatDate(item?.end_at)}</Field>
+                </dl>
+              </>
+            )}
+          </Section>
 
-              <h1 className="mt-3 text-2xl font-black tracking-tight sm:text-3xl" style={{ color: 'rgb(var(--bb-text) / 0.98)' }}>
-                {vm.loading ? 'Loading…' : vm.item?.title ?? 'Campaign'}
-              </h1>
+        </div>
 
-              <p className="mt-2 max-w-3xl text-sm font-semibold leading-6" style={{ color: 'rgb(var(--bb-muted) / 0.92)' }}>
-                {vm.loading ? '—' : vm.item?.objective ?? 'Campaign overview, product info, payout tiers and applications.'}
-              </p>
-            </div>
-
-            <div className="flex flex-wrap items-center justify-start gap-2 lg:justify-end">
-              <ActionPill to="/campaigns" label="Back" icon={<ArrowLeftIcon className="h-5 w-5" />} />
-              <ActionPill to="/dashboard" label="Dashboard" icon={<Squares2X2Icon className="h-5 w-5" />} />
-
-              {role === UserRole.INFLUENCER && vm.appliedAt ? (
-                <div
-                  className="inline-flex h-11 items-center gap-2 rounded-full border px-4 text-sm font-extrabold"
-                  style={{
-                    borderColor: 'rgb(var(--bb-border) / 0.10)',
-                    backgroundColor: 'rgb(var(--bb-border) / 0.04)',
-                    color: 'rgb(var(--bb-text) / 0.92)',
-                  }}
-                >
-                  <CheckCircleIcon className="h-5 w-5" style={{ color: 'rgb(16 185 129 / 0.9)' }} />
-                  <span className="hidden sm:inline">Applied</span>
-                  <span className="text-xs font-semibold" style={{ color: 'rgb(var(--bb-muted) / 0.85)' }}>
-                    {fmtDate(vm.appliedAt)}
-                  </span>
-                </div>
-              ) : null}
-
-              {vm.canApply ? (
-                <button disabled={vm.applyLoading} onClick={vm.onApply} className="bb-btn-primary h-11 px-4" type="button">
-                  <span className="inline-flex items-center gap-2">
-                    <span
-                      className="grid h-9 w-9 place-items-center rounded-full border"
-                      style={{
-                        borderColor: 'rgb(255 255 255 / 0.18)',
-                        backgroundColor: 'rgb(255 255 255 / 0.10)',
-                      }}
-                    >
-                      {vm.applyLoading ? <ClockIcon className="h-5 w-5" /> : <PaperAirplaneIcon className="h-5 w-5" />}
+        <div className="space-y-6 lg:col-span-4">
+          <Section title={item?.brand?.display_name ? 'Product and brand' : 'Product'}>
+            <dl className="grid gap-4">
+              <Field label="Product">{item?.product?.name ?? '—'}</Field>
+              {item?.brand?.display_name ? (
+                <Field label="Brand">
+                  <span className="flex items-center gap-2">
+                    <span className="bb-avatar h-7 w-7 text-[11px]">
+                      {item.brand.photo_url ? <img src={item.brand.photo_url} alt="" className="h-full w-full object-cover" /> : item.brand.display_name.charAt(0).toUpperCase()}
                     </span>
-                    <span className="hidden sm:inline">{vm.applyLoading ? 'Applying…' : 'Apply'}</span>
+                    {item.brand.display_name}
                   </span>
-                </button>
+                </Field>
               ) : null}
-            </div>
-          </div>
-
-          <div className="mt-5 grid gap-3 sm:grid-cols-3">
-            <StatChip icon={<BanknotesIcon className="h-5 w-5" />} label="Budget" value={money(vm.item?.budget, 'MAD')} />
-            <StatChip icon={<CalendarDaysIcon className="h-5 w-5" />} label="Dates" value={`${fmtDate(vm.item?.start_at)} → ${fmtDate(vm.item?.end_at)}`} />
-            <StatChip
-              icon={<TagIcon className="h-5 w-5" />}
-              label="Commission"
-              value={vm.item?.commission_type ? `${vm.item.commission_type} • ${Number(vm.item.commission_value ?? 0)}` : '—'}
-            />
-          </div>
-        </div>
-      </section>
-
-      {/* Alerts */}
-      {vm.error ? (
-        <div className="mt-5">
-          <Alert kind="error">{vm.error}</Alert>
-        </div>
-      ) : null}
-      {vm.applyError ? (
-        <div className="mt-4">
-          <Alert kind="error">{vm.applyError}</Alert>
-        </div>
-      ) : null}
-      {vm.applySuccess ? (
-        <div className="mt-4">
-          <Alert kind="success">{vm.applySuccess}</Alert>
-        </div>
-      ) : null}
-
-      <div className="mt-5 grid grid-cols-1 gap-4 lg:grid-cols-12">
-        {/* LEFT */}
-        <div className="lg:col-span-7 space-y-4">
-          <div className="bb-card bb-pop rounded-[26px] p-5">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="text-sm font-extrabold" style={{ color: 'rgb(var(--bb-text) / 0.96)' }}>
-                  Overview
-                </p>
-                <p className="mt-1 text-xs font-semibold" style={{ color: 'rgb(var(--bb-muted) / 0.82)' }}>
-                  Key info, objective and context.
-                </p>
-              </div>
-
-              <span
-                className="rounded-full border px-3 py-1 text-[11px] font-extrabold"
-                style={{ borderColor: st.border, backgroundColor: st.bg, color: st.text }}
-              >
-                {vm.item?.status ?? '—'}
-              </span>
-            </div>
-
-            <div className="mt-4 grid gap-3">
-              <SoftBox title="Objective" icon={<SparklesIcon className="h-5 w-5" />}>
-                <p className="text-sm font-semibold leading-6" style={{ color: 'rgb(var(--bb-text) / 0.90)' }}>
-                  {vm.loading ? '—' : vm.item?.objective ?? '—'}
-                </p>
-              </SoftBox>
-
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <SoftBox title="Commission" icon={<CurrencyDollarIcon className="h-5 w-5" />}>
-                  <p className="text-sm font-extrabold" style={{ color: 'rgb(var(--bb-text) / 0.92)' }}>
-                    {vm.item?.commission_type ? `${vm.item.commission_type} • ${Number(vm.item.commission_value ?? 0)}` : '—'}
-                  </p>
-                </SoftBox>
-
-                <SoftBox title="Budget" icon={<BanknotesIcon className="h-5 w-5" />}>
-                  <p className="text-sm font-extrabold" style={{ color: 'rgb(var(--bb-text) / 0.92)' }}>
-                    {money(vm.item?.budget, 'MAD')}
-                  </p>
-                </SoftBox>
-              </div>
-
               {landingUrl ? (
-                <SoftBox
-                  title="Landing link"
-                  icon={<LinkIcon className="h-5 w-5" />}
-                  right={
-                    <a href={landingUrl} target="_blank" rel="noreferrer" className="bb-btn-ghost h-9 px-3">
-                      Open <ChevronRightIcon className="ml-2 h-4 w-4" />
-                    </a>
-                  }
-                >
-                  <a
-                    href={landingUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="block break-all text-sm font-extrabold underline underline-offset-4"
-                    style={{ color: 'rgb(var(--bb-text) / 0.86)', textDecorationColor: 'rgb(var(--bb-border) / 0.25)' }}
-                  >
-                    {landingUrl}
+                <Field label="Landing page">
+                  <a href={landingUrl} target="_blank" rel="noreferrer" className="bb-link inline-flex items-center gap-1 break-all">
+                    {landingUrl.replace(/^https?:\/\//, '')}
+                    <ArrowTopRightOnSquareIcon className="h-4 w-4 shrink-0" />
                   </a>
-                </SoftBox>
+                </Field>
               ) : null}
-            </div>
-          </div>
+            </dl>
+          </Section>
 
-          {/* Applications (brand) */}
-          {role === UserRole.BRAND ? (
-            <div className="bb-card bb-pop rounded-[26px] p-5">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-sm font-extrabold" style={{ color: 'rgb(var(--bb-text) / 0.96)' }}>
-                    Applications
-                  </p>
-                  <p className="mt-1 text-xs font-semibold" style={{ color: 'rgb(var(--bb-muted) / 0.82)' }}>
-                    Click an applicant to open the full profile.
-                  </p>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-2">
-                  <button disabled={apps.loading} onClick={apps.refresh} className="bb-btn-ghost h-10 px-4" type="button">
-                    Refresh
-                  </button>
-                  <button disabled={apps.loading || !apps.hasMore} onClick={apps.loadMore} className="bb-btn-ghost h-10 px-4" type="button">
-                    Load more
-                  </button>
-                </div>
-              </div>
-
-              <div className="mt-4 bb-table-wrap">
-                <div className="overflow-x-auto">
-                  <table className="bb-table min-w-[760px]">
-                    <thead className="bb-thead">
-                      <tr>
-                        <th className="bb-th">Applicant</th>
-                        <th className="bb-th">Status</th>
-                        <th className="bb-th">Message</th>
-                        <th className="bb-th">Applied</th>
-                        <th className="bb-th text-right">Actions</th>
-                      </tr>
-                    </thead>
-
-                    <tbody>
-                      {apps.loading && apps.items.length === 0 ? (
-                        <tr className="bb-tr">
-                          <td className="bb-td bb-muted" colSpan={5}>
-                            Loading…
-                          </td>
-                        </tr>
-                      ) : null}
-
-                      {!apps.loading && apps.items.length === 0 ? (
-                        <tr className="bb-tr">
-                          <td className="bb-td bb-muted" colSpan={5}>
-                            No applications yet.
-                          </td>
-                        </tr>
-                      ) : null}
-
-                      {apps.items.map((a) => {
-                        const name = a.influencer?.displayName ?? 'Unknown'
-                        const photo = a.influencer?.photoUrl ?? null
-                        const isMutating = apps.mutatingId === a.id
-                        const canShortlist = a.status === 'pending'
-                        const canFinalize = a.status === 'pending' || a.status === 'shortlisted'
-                        const canReject = a.status === 'pending' || a.status === 'shortlisted'
-                        const ap = appPill(a.status)
-
-                        return (
-                          <tr key={a.id} className="bb-tr bb-tr-hover">
-                            <td className="bb-td">
-                              <button onClick={() => openApplicantProfile(a.influencerId)} className="flex items-center gap-3 text-left" type="button">
-                                <div
-                                  className="h-10 w-10 overflow-hidden rounded-2xl border"
-                                  style={{
-                                    borderColor: 'rgb(var(--bb-border) / 0.10)',
-                                    backgroundColor: 'rgb(var(--bb-border) / 0.04)',
-                                  }}
-                                >
-                                  {photo ? <img src={photo} alt="" className="h-full w-full object-cover" /> : null}
-                                </div>
-                                <div className="min-w-0">
-                                  <p className="truncate text-sm font-extrabold">{name}</p>
-                                  <p className="mt-1 truncate text-xs font-semibold" style={{ color: 'rgb(var(--bb-muted) / 0.82)' }}>
-                                    {a.influencerId}
-                                  </p>
-                                </div>
-                              </button>
-                            </td>
-
-                            <td className="bb-td">
-                              <span
-                                className="rounded-full border px-3 py-1 text-[11px] font-extrabold"
-                                style={{ borderColor: ap.border, backgroundColor: ap.bg, color: ap.text }}
-                              >
-                                {a.status}
-                              </span>
-                            </td>
-
-                            <td className="bb-td bb-muted">
-                              {(a.message ?? '').trim() ? <span className="line-clamp-1">{a.message}</span> : '—'}
-                            </td>
-
-                            <td className="bb-td bb-muted">{fmtDate(a.createdAt)}</td>
-
-                            <td className="bb-td">
-                              <div className="flex items-center justify-end gap-2">
-                                <button
-                                  disabled={!canShortlist || isMutating}
-                                  onClick={() => apps.shortlist(a.id)}
-                                  className="bb-btn-ghost h-10 px-4 disabled:opacity-60"
-                                  type="button"
-                                >
-                                  Shortlist
-                                </button>
-
-                                <button
-                                  disabled={!canFinalize || isMutating}
-                                  onClick={() => apps.accept(a.id)}
-                                  className="bb-btn-primary h-10 px-4 disabled:opacity-60"
-                                  type="button"
-                                >
-                                  Finalize
-                                </button>
-
-                                <button
-                                  disabled={!canReject || isMutating}
-                                  onClick={() => apps.reject(a.id)}
-                                  className="bb-btn-ghost h-10 px-4 disabled:opacity-60"
-                                  type="button"
-                                >
-                                  Reject
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        )
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          ) : null}
-        </div>
-
-        {/* RIGHT */}
-        <div className="lg:col-span-5 space-y-4 lg:sticky lg:top-24 lg:self-start">
-          {/* PRODUCT + BRAND */}
-          <div className="bb-card bb-pop rounded-[26px] p-5">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="text-sm font-extrabold" style={{ color: 'rgb(var(--bb-text) / 0.96)' }}>
-                  Product & brand
-                </p>
-                <p className="mt-1 text-xs font-semibold" style={{ color: 'rgb(var(--bb-muted) / 0.82)' }}>
-                  Context for this campaign.
-                </p>
-              </div>
-
-              <span
-                className="rounded-full border px-3 py-1 text-[11px] font-extrabold"
-                style={{
-                  borderColor: 'rgb(var(--bb-border) / 0.10)',
-                  backgroundColor: 'rgb(var(--bb-border) / 0.04)',
-                  color: 'rgb(var(--bb-muted) / 0.90)',
-                }}
-              >
-                <span className="inline-flex items-center gap-2">
-                  <ShieldCheckIcon className="h-4 w-4" />
-                  Verified
-                </span>
-              </span>
-            </div>
-
-            <div className="mt-4 grid gap-3">
-              <SoftBox title="Product" icon={<BuildingStorefrontIcon className="h-5 w-5" />}>
-                <p className="text-sm font-extrabold" style={{ color: 'rgb(var(--bb-text) / 0.92)' }}>
-                  {vm.loading ? '—' : vm.item?.product?.name ?? '—'}
-                </p>
-              </SoftBox>
-
-              <SoftBox title="Brand" icon={<UserGroupIcon className="h-5 w-5" />}>
-                <div className="flex items-center gap-3">
-                  <div
-                    className="h-10 w-10 overflow-hidden rounded-2xl border"
-                    style={{
-                      borderColor: 'rgb(var(--bb-border) / 0.10)',
-                      backgroundColor: 'rgb(var(--bb-border) / 0.04)',
-                    }}
-                  >
-                    {vm.item?.brand?.photo_url ? <img src={vm.item.brand.photo_url} alt="" className="h-full w-full object-cover" /> : null}
-                  </div>
-
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-extrabold" style={{ color: 'rgb(var(--bb-text) / 0.92)' }}>
-                      {vm.item?.brand?.display_name ?? '—'}
-                    </p>
-                    <p className="mt-1 truncate text-xs font-semibold" style={{ color: 'rgb(var(--bb-muted) / 0.82)' }}>
-                      {vm.item?.brand?.id ?? ''}
-                    </p>
-                  </div>
-                </div>
-              </SoftBox>
-            </div>
-          </div>
-
-          {/* TIERS */}
           <TiersCard
             tiersSorted={vm.tiersSorted}
             tiersLoading={vm.tiersLoading}
@@ -617,10 +166,103 @@ export default function CampaignDetailsPage() {
             canApply={vm.canApply}
             applyLoading={vm.applyLoading}
             onApply={vm.onApply}
-            landingUrl={landingUrl}
           />
         </div>
       </div>
+
+      {role === UserRole.BRAND ? (
+        <Section
+          className="mt-6"
+          title="Applications"
+          description="Open an applicant to see the full profile."
+          actions={
+            <button disabled={apps.loading} onClick={apps.refresh} className="bb-btn-ghost h-9" type="button">
+              Refresh
+            </button>
+          }
+          bodyClassName="px-0 pb-0"
+        >
+          {apps.loading && apps.items.length === 0 ? (
+            <div className="grid gap-2 px-5 pb-5">
+              <Skeleton className="h-10" />
+              <Skeleton className="h-10" />
+            </div>
+          ) : !apps.loading && apps.items.length === 0 ? (
+            <div className="px-5 pb-5">
+              <EmptyState icon={<UserGroupIcon className="h-5 w-5" />} title="No applications yet" text="Creators who apply to this campaign will appear here." />
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="bb-table min-w-[720px]">
+                <thead className="bb-thead">
+                  <tr>
+                    <th className="bb-th">Applicant</th>
+                    <th className="bb-th">Status</th>
+                    <th className="bb-th">Message</th>
+                    <th className="bb-th">Applied</th>
+                    <th className="bb-th text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {apps.items.map((a) => {
+                    const name = a.influencer?.displayName ?? 'Unknown'
+                    const photo = a.influencer?.photoUrl ?? null
+                    const isMutating = apps.mutatingId === a.id
+                    const canShortlist = a.status === 'pending'
+                    const canFinalize = a.status === 'pending' || a.status === 'shortlisted'
+                    const canReject = a.status === 'pending' || a.status === 'shortlisted'
+
+                    return (
+                      <tr key={a.id} className="bb-tr bb-tr-hover">
+                        <td className="bb-td">
+                          <button onClick={() => openApplicantProfile(a.influencerId)} className="flex items-center gap-3 text-left hover:text-bb-primary-strong" type="button">
+                            <span className="bb-avatar">{photo ? <img src={photo} alt="" className="h-full w-full object-cover" /> : name.charAt(0).toUpperCase()}</span>
+                            <span className="truncate font-medium">{name}</span>
+                          </button>
+                        </td>
+                        <td className="bb-td">
+                          <StatusBadge status={a.status} />
+                        </td>
+                        <td className="bb-td max-w-[220px] text-bb-muted">
+                          {(a.message ?? '').trim() ? <span className="line-clamp-1">{a.message}</span> : '—'}
+                        </td>
+                        <td className="bb-td whitespace-nowrap text-bb-muted">{formatDate(a.createdAt)}</td>
+                        <td className="bb-td">
+                          <div className="flex items-center justify-end gap-2">
+                            {canShortlist ? (
+                              <button disabled={isMutating} onClick={() => apps.shortlist(a.id)} className="bb-btn-ghost h-9 px-3" type="button">
+                                Shortlist
+                              </button>
+                            ) : null}
+                            {canFinalize ? (
+                              <button disabled={isMutating} onClick={() => apps.accept(a.id)} className="bb-btn-primary h-9 px-3" type="button">
+                                Accept
+                              </button>
+                            ) : null}
+                            {canReject ? (
+                              <button disabled={isMutating} onClick={() => apps.reject(a.id)} className="bb-btn-ghost h-9 px-3" type="button">
+                                Reject
+                              </button>
+                            ) : null}
+                            {!canShortlist && !canFinalize && !canReject ? <span className="text-xs text-bb-muted">No actions</span> : null}
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+          {apps.hasMore ? (
+            <div className="border-t border-bb-border/10 px-5 py-3 text-center">
+              <button disabled={apps.loading} onClick={apps.loadMore} className="bb-btn-ghost h-9" type="button">
+                {apps.loading ? 'Loading…' : 'Load more'}
+              </button>
+            </div>
+          ) : null}
+        </Section>
+      ) : null}
 
       <ApplicantProfileModal open={profileOpen} influencerId={profileInfluencerId} onClose={closeApplicantProfile} />
     </div>
@@ -635,7 +277,6 @@ function TiersCard({
   canApply,
   applyLoading,
   onApply,
-  landingUrl,
 }: {
   tiersSorted: CampaignPayoutTier[]
   tiersLoading: boolean
@@ -644,95 +285,50 @@ function TiersCard({
   canApply: boolean
   applyLoading: boolean
   onApply: () => Promise<void> | void
-  landingUrl: string | null
 }) {
   return (
-    <div className="bb-card bb-pop rounded-[26px] p-5">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-sm font-extrabold" style={{ color: 'rgb(var(--bb-text) / 0.96)' }}>
-            Payout tiers
-          </p>
-          <p className="mt-1 text-xs font-semibold" style={{ color: 'rgb(var(--bb-muted) / 0.82)' }}>
-            Read-only here.
-          </p>
-        </div>
-
-        <span
-          className="rounded-full border px-3 py-1 text-[11px] font-extrabold"
-          style={{
-            borderColor: 'rgb(var(--bb-border) / 0.10)',
-            backgroundColor: 'rgb(var(--bb-border) / 0.04)',
-            color: 'rgb(var(--bb-muted) / 0.90)',
-          }}
-        >
-          {tiersSorted.length} tiers
-        </span>
-      </div>
-
+    <Section title="Payout tiers" description="Payout per creator, based on clicks in a period." bodyClassName="px-0 pb-0">
       {tiersError ? (
-        <div className="mt-4">
+        <div className="px-5 pb-4">
           <Alert kind="error">{tiersError}</Alert>
         </div>
       ) : null}
 
-      <div className="mt-4 bb-table-wrap">
-        <div className="overflow-x-auto">
-          <table className="bb-table min-w-[520px]">
-            <thead className="bb-thead">
-              <tr>
-                <th className="bb-th">From</th>
-                <th className="bb-th">To</th>
-                <th className="bb-th">Payout</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {tiersLoading && tiersSorted.length === 0 ? (
-                <tr className="bb-tr">
-                  <td className="bb-td bb-muted" colSpan={3}>
-                    Loading…
-                  </td>
-                </tr>
-              ) : null}
-
-              {!tiersLoading && tiersSorted.length === 0 ? (
-                <tr className="bb-tr">
-                  <td className="bb-td bb-muted" colSpan={3}>
-                    No tiers defined yet.
-                  </td>
-                </tr>
-              ) : null}
-
-              {tiersSorted.map((t) => (
-                <tr key={t.id} className="bb-tr">
-                  <td className="bb-td font-semibold">{t.fromValue}</td>
-                  <td className="bb-td bb-muted">{t.toValue ?? '∞'}</td>
-                  <td className="bb-td bb-muted">
-                    {Number(t.payoutAmount).toFixed(2)} {t.currency ?? 'MAD'}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {tiersLoading && tiersSorted.length === 0 ? (
+        <div className="grid gap-2 px-5 pb-5">
+          <Skeleton className="h-8" />
+          <Skeleton className="h-8" />
         </div>
-      </div>
+      ) : tiersSorted.length === 0 ? (
+        <p className="px-5 pb-5 text-sm text-bb-muted">No tiers defined yet.</p>
+      ) : (
+        <table className="bb-table">
+          <thead className="bb-thead">
+            <tr>
+              <th className="bb-th">Clicks</th>
+              <th className="bb-th text-right">Payout</th>
+            </tr>
+          </thead>
+          <tbody>
+            {tiersSorted.map((t) => (
+              <tr key={t.id} className="bb-tr">
+                <td className="bb-td tabular-nums">
+                  {t.toValue != null ? `${t.fromValue} – ${t.toValue}` : `${t.fromValue}+`}
+                </td>
+                <td className="bb-td text-right font-medium tabular-nums">{formatMoney(Number(t.payoutAmount), t.currency ?? 'MAD')}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
 
-      {role === UserRole.INFLUENCER ? (
-        <div className="mt-4 flex flex-wrap items-center gap-2">
-          {landingUrl ? (
-            <a href={landingUrl} target="_blank" rel="noreferrer" className="bb-btn-ghost h-11 px-5">
-              Open landing <ChevronRightIcon className="ml-2 h-4 w-4" />
-            </a>
-          ) : null}
-
-          {canApply ? (
-            <button disabled={applyLoading} onClick={() => void onApply()} className="bb-btn-primary h-11 px-5" type="button">
-              {applyLoading ? 'Applying…' : 'Apply now'}
-            </button>
-          ) : null}
+      {role === UserRole.INFLUENCER && canApply ? (
+        <div className="border-t border-bb-border/10 px-5 py-4">
+          <button disabled={applyLoading} onClick={() => void onApply()} className="bb-btn-primary w-full" type="button">
+            {applyLoading ? 'Applying…' : 'Apply to campaign'}
+          </button>
         </div>
       ) : null}
-    </div>
+    </Section>
   )
 }

@@ -40,7 +40,8 @@ export class AuthApiClient {
   }
 
   async me(): Promise<ApiUserResponse> {
-    return this.http.get<ApiUserResponse>('/auth/me')
+    const res = await this.http.get<ApiUserResponse | { data: ApiUserResponse }>('/auth/me')
+    return (res as any)?.data?.id ? (res as { data: ApiUserResponse }).data : (res as ApiUserResponse)
   }
 }
 

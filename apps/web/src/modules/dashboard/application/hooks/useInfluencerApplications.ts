@@ -30,7 +30,8 @@ export function useInfluencerApplications() {
 
     try {
       const res = await httpClient.get<any>(`/api/v1/applications?page=1&size=200`)
-      const payload = (res as any).data ?? res
+      const body = res as any
+      const payload = { data: Array.isArray(body?.data) ? body.data : Array.isArray(body?.data?.data) ? body.data.data : Array.isArray(body) ? body : [] }
       const list = (payload?.data ?? []) as InfluencerApplicationItem[]
 
       if (!mountedRef.current) return
