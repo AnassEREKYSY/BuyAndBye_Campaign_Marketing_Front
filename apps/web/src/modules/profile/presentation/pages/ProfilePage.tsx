@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { ProfileProvider } from '../../application/context'
 import {
   AccountSettingsSection,
@@ -18,73 +18,21 @@ import {
 
 type TabKey = 'personal' | 'settings' | 'socials' | 'payments' | 'logout'
 
-function IconWrap({ children }: { children: React.ReactNode }) {
-  return <span className="grid h-5 w-5 place-items-center" style={{ color: 'rgb(var(--bb-text) / 0.88)' }}>{children}</span>
-}
+const items = [
+  { key: 'personal', label: 'Personal information', icon: <UserCircleIcon className="h-[18px] w-[18px]" /> },
+  { key: 'settings', label: 'Account settings', icon: <Cog6ToothIcon className="h-[18px] w-[18px]" /> },
+  { key: 'socials', label: 'Social media', icon: <ShareIcon className="h-[18px] w-[18px]" /> },
+  { key: 'payments', label: 'Payment methods', icon: <CreditCardIcon className="h-[18px] w-[18px]" /> },
+  { key: 'logout', label: 'Log out', icon: <ArrowRightOnRectangleIcon className="h-[18px] w-[18px]" /> },
+]
 
 function ProfilePageInner() {
   const [active, setActive] = useState<TabKey>('personal')
 
-  const items = useMemo(
-    () => [
-      {
-        key: 'personal',
-        label: 'Personal information',
-        description: 'Identity, brand/influencer profile and details.',
-        icon: (
-          <IconWrap>
-            <UserCircleIcon className="h-5 w-5" />
-          </IconWrap>
-        ),
-      },
-      {
-        key: 'settings',
-        label: 'Account settings',
-        description: 'Security, preferences, and notifications.',
-        icon: (
-          <IconWrap>
-            <Cog6ToothIcon className="h-5 w-5" />
-          </IconWrap>
-        ),
-      },
-      {
-        key: 'socials',
-        label: 'Social media',
-        description: 'Connect TikTok, Instagram, YouTube and more.',
-        icon: (
-          <IconWrap>
-            <ShareIcon className="h-5 w-5" />
-          </IconWrap>
-        ),
-      },
-      {
-        key: 'payments',
-        label: 'Payment methods',
-        description: 'Cash, bank transfer, PayPal (payout preferences).',
-        icon: (
-          <IconWrap>
-            <CreditCardIcon className="h-5 w-5" />
-          </IconWrap>
-        ),
-      },
-      {
-        key: 'logout',
-        label: 'Logout',
-        description: 'End your session on this device.',
-        icon: (
-          <IconWrap>
-            <ArrowRightOnRectangleIcon className="h-5 w-5" />
-          </IconWrap>
-        ),
-      },
-    ],
-    [],
-  )
-
   return (
     <ProfileShell
-      title="Your Profile"
-      subtitle="Manage identity, socials, and account preferences."
+      title="Profile"
+      subtitle="Your details, social links and account preferences."
       items={items}
       activeKey={active}
       onSelect={(k) => setActive(k as TabKey)}

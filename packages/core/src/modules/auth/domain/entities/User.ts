@@ -9,5 +9,8 @@ export interface User {
   profileStatus: ProfileStatus
   createdAt: string
   updatedAt: string
-  profileUrl: string
+  profileUrl?: string
+  avatarUrl?: string
+  profile?: Record<string, unknown> | null
+  sellerProfile?: Record<string, unknown> | null
 }

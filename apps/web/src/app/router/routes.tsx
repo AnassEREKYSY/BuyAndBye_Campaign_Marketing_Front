@@ -1,6 +1,7 @@
 import { Navigate } from 'react-router-dom'
 import { Suspense, lazy } from 'react'
 import { MainLayout } from './MainLayout'
+import { AppShell } from '@/shared/components/layout/AppShell'
 import { AuthGuard } from './guards'
 import { HomeRedirect } from './HomeRedirect'
 
@@ -19,6 +20,10 @@ const InfluencerApplicationsPage = lazy(() => import('@/modules/dashboard/presen
 const CollaborationsPage = lazy(() => import('@/modules/dashboard/presentation/pages/CollaborationsPage'))
 const CollaborationDetailsPage = lazy(() => import('@/modules/dashboard/presentation/pages/CollaborationDetailsPage'))
 
+const AnalyticsPage = lazy(() => import('@/modules/analytics/presentation/pages/AnalyticsPage'))
+const EarningsPage = lazy(() => import('@/modules/earnings/presentation/pages/EarningsPage'))
+const LinksPage = lazy(() => import('@/modules/earnings/presentation/pages/LinksPage'))
+
 const NotificationsPage = lazy(() => import('@/modules/notifications/presentation/pages/NotificationsPage'))
 
 const MessagesPage = lazy(() => import('@/modules/messaging/presentation/pages/MessagesPage'))
@@ -26,21 +31,14 @@ const ConversationThreadPage = lazy(() => import('@/modules/messaging/presentati
 
 function PageLoader() {
   return (
-    <div className="bb-page">
-      <div className="bb-surface bb-surface-pad">
-        <div className="pointer-events-none absolute inset-0 bb-spotlight" />
-        <div className="pointer-events-none absolute inset-0 bb-grid" />
-        <div className="pointer-events-none absolute inset-0 bb-noise" />
-        <div className="relative grid gap-4">
-          <div className="h-6 w-44 rounded-full bg-white/10 dark:bg-white/10" />
-          <div className="h-10 w-2/3 rounded-2xl bg-white/10 dark:bg-white/10" />
-          <div className="mt-4 grid gap-3 sm:grid-cols-3">
-            <div className="h-28 rounded-3xl bg-white/10" />
-            <div className="h-28 rounded-3xl bg-white/10" />
-            <div className="h-28 rounded-3xl bg-white/10" />
-          </div>
-        </div>
+    <div className="grid gap-4">
+      <div className="bb-skeleton h-7 w-48" />
+      <div className="grid gap-3 sm:grid-cols-3">
+        <div className="bb-skeleton h-24" />
+        <div className="bb-skeleton h-24" />
+        <div className="bb-skeleton h-24" />
       </div>
+      <div className="bb-skeleton h-64" />
     </div>
   )
 }
@@ -57,15 +55,22 @@ export const routes = [
       { path: '/contact', element: <ContactPage /> },
       { path: '/login', element: <LoginPage /> },
       { path: '/register', element: <RegisterPage /> },
-
+    ],
+  },
+  {
+    element: <AuthGuard />,
+    children: [
       {
-        element: <AuthGuard />,
+        element: <AppShell />,
         children: [
           { path: '/dashboard', element: <Lazy><DashboardPage /></Lazy> },
+          { path: '/analytics', element: <Lazy><AnalyticsPage /></Lazy> },
           { path: '/campaigns', element: <Lazy><CampaignsPage /></Lazy> },
           { path: '/campaigns/:id', element: <Lazy><CampaignDetailsPage /></Lazy> },
 
           { path: '/applications', element: <Lazy><InfluencerApplicationsPage /></Lazy> },
+          { path: '/earnings', element: <Lazy><EarningsPage /></Lazy> },
+          { path: '/links', element: <Lazy><LinksPage /></Lazy> },
 
           { path: '/collaborations', element: <Lazy><CollaborationsPage /></Lazy> },
           { path: '/collaborations/:id', element: <Lazy><CollaborationDetailsPage /></Lazy> },
@@ -79,16 +84,13 @@ export const routes = [
           {
             path: '/messages',
             element: <Lazy><MessagesPage /></Lazy>,
-            children: [
-              { path: ':id', element: <Lazy><ConversationThreadPage /></Lazy> },
-            ],
+            children: [{ path: ':id', element: <Lazy><ConversationThreadPage /></Lazy> }],
           },
 
           { path: '/app', element: <Navigate to="/dashboard" replace /> },
         ],
       },
-
-      { path: '*', element: <Navigate to="/" replace /> },
     ],
   },
+  { path: '*', element: <Navigate to="/" replace /> },
 ]

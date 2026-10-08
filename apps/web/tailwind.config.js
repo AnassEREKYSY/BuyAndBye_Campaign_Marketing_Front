@@ -1,22 +1,32 @@
+const token = (name) => `rgb(var(--bb-${name}) / <alpha-value>)`
+
 export default {
   darkMode: 'class',
   content: ['./index.html', './src/**/*.{ts,tsx}'],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['"Figtree Variable"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+      },
       colors: {
         bb: {
-          bg: 'rgb(var(--bb-bg) / <alpha-value>)',
-          surface: 'rgb(var(--bb-surface) / <alpha-value>)',
-          card: 'rgb(var(--bb-card) / <alpha-value>)',
-          text: 'rgb(var(--bb-text) / <alpha-value>)',
-          muted: 'rgb(var(--bb-muted) / <alpha-value>)',
-          border: 'rgb(var(--bb-border) / <alpha-value>)',
-          ring: 'rgb(var(--bb-ring) / <alpha-value>)',
+          bg: token('bg'),
+          surface: token('surface'),
+          card: token('card'),
+          subtle: token('subtle'),
+          text: token('text'),
+          muted: token('muted'),
+          border: token('border'),
+          ring: token('primary'),
+          primary: token('primary'),
+          'primary-strong': token('primary-strong'),
+          'primary-soft': token('primary-soft'),
+          accent: token('accent'),
+          'accent-strong': token('accent-strong'),
+          'accent-soft': token('accent-soft'),
+          success: token('success'),
+          warning: token('warning'),
         },
-      },
-      boxShadow: {
-        bb: '0 24px 80px rgba(0,0,0,.45)',
-        'bb-light': '0 24px 70px rgba(15,23,42,.10)',
       },
     },
   },

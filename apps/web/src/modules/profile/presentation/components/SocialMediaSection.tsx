@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
-import { Field, Input, PrimaryButton, SectionTitle, SubtleCard } from './ui'
+import { EmptyState, Skeleton } from '@/shared/components/ui'
+import { FormFooter, Input, PrimaryButton, SectionTitle } from './ui'
 import { GlobeAltIcon } from '@heroicons/react/24/outline'
 import { useSocialLinksForm } from '../../application/hooks/useSocialLinksForm'
 
@@ -60,6 +61,7 @@ function SocialRow({
   onChange,
   preview,
   icon,
+  readOnly,
 }: {
   label: string
   placeholder: string
@@ -67,44 +69,19 @@ function SocialRow({
   onChange: (v: string) => void
   preview?: string
   icon: React.ReactNode
+  readOnly?: boolean
 }) {
   return (
-    <div
-      className="rounded-3xl border p-4 transition"
-      style={{
-        borderColor: 'rgb(var(--bb-border) / 0.10)',
-        backgroundColor: 'rgb(var(--bb-border) / 0.04)',
-      }}
-    >
-      <div className="flex items-start justify-between gap-4">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <span className="bb-stat-icon h-9 w-9">{icon}</span>
-            <div className="min-w-0">
-              <p className="text-sm font-extrabold bb-title-text">{label}</p>
-              {preview ? <p className="mt-0.5 truncate text-xs bb-muted-text">{preview}</p> : null}
-            </div>
-          </div>
-        </div>
-
-        <span
-          className="rounded-full border px-2.5 py-1 text-[11px] font-extrabold"
-          style={{
-            borderColor: 'rgb(var(--bb-border) / 0.10)',
-            backgroundColor: 'rgb(var(--bb-border) / 0.04)',
-            color: 'rgb(var(--bb-muted) / 0.90)',
-          }}
-        >
-          Link
+    <label className="grid gap-3 py-4 sm:grid-cols-[200px_1fr] sm:items-center">
+      <span className="flex items-center gap-3">
+        <span className="bb-stat-icon h-8 w-8">{icon}</span>
+        <span className="min-w-0">
+          <span className="block text-sm font-medium">{label}</span>
+          <span className="block truncate text-xs text-bb-muted">{preview || 'Not set'}</span>
         </span>
-      </div>
-
-      <div className="mt-3">
-        <Field label={`${label} URL`} hint="https://">
-          <Input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} />
-        </Field>
-      </div>
-    </div>
+      </span>
+      <Input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} readOnly={readOnly} />
+    </label>
   )
 }
 
@@ -125,24 +102,28 @@ export function SocialMediaSection() {
 
   const websiteValue = useMemo(() => ((vm.profile as any)?.influencerProfile as any)?.website_url ?? '', [vm.profile])
 
-  if (!vm.profile) return <div className="bb-subtle-text">Loading…</div>
+  if (!vm.profile)
+    return (
+      <div className="space-y-3">
+        <Skeleton className="h-6 w-40" />
+        <Skeleton className="h-32 w-full" />
+      </div>
+    )
 
   if (role !== 'influencer') {
     return (
-      <div className="space-y-3">
-        <SectionTitle title="Social media" subtitle="Social links are part of the influencer profile." />
-        <SubtleCard>
-          <p className="text-sm bb-subtle-text">
-            Add brand social fields later in the backend: <span className="font-mono">brand_profiles</span>.
-          </p>
-        </SubtleCard>
+      <div className="space-y-5">
+        <SectionTitle title="Social media" subtitle="Social links are part of creator profiles." />
+        <EmptyState title="Nothing to set up here" text="Brand accounts don't have social links yet. Your website and contact details are under Personal information." />
       </div>
     )
   }
 
+  const scoreTone = vm.score.label === 'Strong' ? 'bb-badge-green' : vm.score.label === 'Good start' ? 'bb-badge-brown' : ''
+
   return (
     <form
-      className="space-y-6"
+      className="space-y-5"
       onSubmit={async (e) => {
         e.preventDefault()
         await vm.submit()
@@ -150,32 +131,18 @@ export function SocialMediaSection() {
     >
       <SectionTitle
         title="Social media"
-        subtitle="Add official profile links to boost trust and approvals."
-        right={
-          <span
-            className={`rounded-full border px-3 py-2 text-xs font-extrabold ${vm.score.cls}`}
-            style={{ borderColor: 'rgb(var(--bb-border) / 0.10)', backgroundColor: 'rgb(var(--bb-border) / 0.04)' }}
-          >
-            {vm.score.label}
-          </span>
-        }
+        subtitle="Links brands see when you apply. Use the clean profile URL, without tracking parameters."
+        right={<span className={`bb-badge ${scoreTone}`}>{vm.score.label}</span>}
       />
 
-      <SubtleCard>
-        <div className="flex flex-col gap-1">
-          <p className="text-sm font-extrabold bb-title-text">Best practice</p>
-          <p className="text-sm bb-subtle-text">Use clean links (no tracking params). Keep usernames consistent.</p>
-        </div>
-      </SubtleCard>
-
-      <div className="grid grid-cols-1 gap-3">
+      <div className="divide-y divide-bb-border/10">
         <SocialRow
           label="Instagram"
           placeholder="https://instagram.com/username"
           value={vm.instagram}
           onChange={vm.setInstagram}
           preview={normalizeHost(vm.instagram)}
-          icon={<InstagramIcon className="h-5 w-5" />}
+          icon={<InstagramIcon className="h-[18px] w-[18px]" />}
         />
         <SocialRow
           label="TikTok"
@@ -183,7 +150,7 @@ export function SocialMediaSection() {
           value={vm.tiktok}
           onChange={vm.setTiktok}
           preview={normalizeHost(vm.tiktok)}
-          icon={<TikTokIcon className="h-5 w-5" />}
+          icon={<TikTokIcon className="h-[18px] w-[18px]" />}
         />
         <SocialRow
           label="YouTube"
@@ -191,7 +158,7 @@ export function SocialMediaSection() {
           value={vm.youtube}
           onChange={vm.setYoutube}
           preview={normalizeHost(vm.youtube)}
-          icon={<YouTubeIcon className="h-5 w-5" />}
+          icon={<YouTubeIcon className="h-[18px] w-[18px]" />}
         />
         <SocialRow
           label="Media kit"
@@ -199,27 +166,24 @@ export function SocialMediaSection() {
           value={vm.mediaKit}
           onChange={vm.setMediaKit}
           preview={normalizeHost(vm.mediaKit)}
-          icon={<MediaKitIcon className="h-5 w-5" />}
+          icon={<MediaKitIcon className="h-[18px] w-[18px]" />}
         />
         <SocialRow
-          label="Website (optional)"
+          label="Website"
           placeholder="https://your-site.com"
           value={websiteValue}
           onChange={() => {}}
+          readOnly
           preview={normalizeHost(websiteValue)}
-          icon={<GlobeAltIcon className="h-5 w-5" />}
+          icon={<GlobeAltIcon className="h-[18px] w-[18px]" />}
         />
       </div>
 
-      <div
-        className="flex flex-col gap-3 rounded-3xl border p-4 sm:flex-row sm:items-center sm:justify-between"
-        style={{ borderColor: 'rgb(var(--bb-border) / 0.10)', backgroundColor: 'rgb(var(--bb-border) / 0.04)' }}
-      >
-        <div className="text-sm bb-subtle-text">Keep links accurate to improve approvals.</div>
+      <FormFooter>
         <PrimaryButton type="submit" disabled={vm.isLoading}>
-          Save social links
+          Save links
         </PrimaryButton>
-      </div>
+      </FormFooter>
     </form>
   )
 }

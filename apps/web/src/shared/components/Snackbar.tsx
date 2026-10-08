@@ -12,21 +12,20 @@ import {
 function tone(type: NotificationType) {
   switch (type) {
     case 'success':
-      return { wrap: 'bb-snack-success', label: 'Success', Icon: CheckCircleIcon }
+      return { wrap: 'bb-snack-success', icon: 'text-bb-success', Icon: CheckCircleIcon }
     case 'error':
-      return { wrap: 'bb-snack-error', label: 'Error', Icon: XCircleIcon }
+      return { wrap: 'bb-snack-error', icon: 'text-bb-accent-strong', Icon: XCircleIcon }
     case 'warning':
-      return { wrap: 'bb-snack-warning', label: 'Warning', Icon: ExclamationTriangleIcon }
+      return { wrap: 'bb-snack-warning', icon: 'text-bb-warning', Icon: ExclamationTriangleIcon }
     case 'info':
     default:
-      return { wrap: 'bb-snack-info', label: 'Info', Icon: InformationCircleIcon }
+      return { wrap: 'bb-snack-info', icon: 'text-bb-primary-strong', Icon: InformationCircleIcon }
   }
 }
 
 export function Snackbar() {
   const { current, clear } = useNotification() as any
   const [visible, setVisible] = useState(false)
-  const [progressKey, setProgressKey] = useState(0)
   const timer = useRef<number | null>(null)
 
   const duration = current?.options?.duration ?? 1800
@@ -35,7 +34,6 @@ export function Snackbar() {
   useEffect(() => {
     if (!current) return
     setVisible(true)
-    setProgressKey((k) => k + 1)
     if (timer.current) window.clearTimeout(timer.current)
     timer.current = window.setTimeout(() => setVisible(false), Math.max(450, duration - 180))
     return () => {
@@ -55,66 +53,25 @@ export function Snackbar() {
   const Icon = t.Icon
 
   return (
-    <div className="pointer-events-none fixed inset-x-0 top-4 z-[60] flex justify-center px-4">
+    <div className="pointer-events-none fixed inset-x-0 top-4 z-[70] flex justify-center px-4">
       <div
-        className={['pointer-events-auto w-full max-w-xl', 'bb-snack', t.wrap, visible ? 'bb-snack-in' : 'bb-snack-out'].join(' ')}
+        className={`bb-snack ${t.wrap} ${visible ? 'bb-snack-in' : 'bb-snack-out'} pointer-events-auto w-full max-w-md items-center`}
         role="status"
         aria-live="polite"
-        style={{
-          backgroundColor: 'rgb(var(--bb-surface) / 0.92)',
-          color: 'rgb(var(--bb-text) / 0.95)',
-        }}
       >
-        <div className="flex items-start gap-3 px-4 py-3">
-          <span
-            className="mt-0.5 rounded-xl border p-2"
-            style={{
-              borderColor: 'rgb(var(--bb-border) / 0.10)',
-              backgroundColor: 'rgb(var(--bb-border) / 0.04)',
-            }}
-          >
-            <Icon className="h-5 w-5" />
-          </span>
-
-          <div className="min-w-0 flex-1">
-            <p className="text-xs font-extrabold tracking-wide" style={{ color: 'rgb(var(--bb-muted) / 0.85)' }}>
-              {t.label}
-            </p>
-            <p className="mt-0.5 truncate text-sm font-extrabold leading-6">{current.message}</p>
-          </div>
-
-          <button
-            type="button"
-            className="bb-nav-btn pointer-events-auto -mr-1 -mt-1"
-            onClick={() => {
-              setVisible(false)
-              clear?.()
-            }}
-            aria-label="Close notification"
-          >
-            <XMarkIcon className="h-5 w-5" />
-          </button>
-        </div>
-
-        <div className="h-1 w-full" style={{ backgroundColor: 'rgb(var(--bb-border) / 0.06)' }}>
-          <div
-            key={progressKey}
-            className="h-full"
-            style={{
-              width: '100%',
-              transformOrigin: 'left',
-              backgroundColor: 'rgb(var(--bb-accent) / 0.55)',
-              animation: `bb-snack-progress ${duration}ms linear forwards`,
-            }}
-          />
-        </div>
-
-        <style>{`
-          @keyframes bb-snack-progress {
-            from { transform: scaleX(1); opacity: 0.9; }
-            to { transform: scaleX(0); opacity: 0.55; }
-          }
-        `}</style>
+        <Icon className={`h-5 w-5 shrink-0 ${t.icon}`} />
+        <p className="min-w-0 flex-1 font-medium">{current.message}</p>
+        <button
+          type="button"
+          className="bb-icon-btn -my-1 -mr-2 h-8 w-8 shrink-0"
+          onClick={() => {
+            setVisible(false)
+            clear?.()
+          }}
+          aria-label="Dismiss"
+        >
+          <XMarkIcon className="h-4 w-4" />
+        </button>
       </div>
     </div>
   )

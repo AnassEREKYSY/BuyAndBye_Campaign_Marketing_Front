@@ -1,140 +1,43 @@
-# Buy & Bye
+# Kickback (web)
 
-A monorepo marketplace application with a React web app, React Native mobile app, and a shared core business logic package.
+Kickback is an influencer campaign platform: brands publish campaigns, creators apply, and every
+accepted creator gets a tracked link, a promo code and a QR code. Clicks turn into tiered payouts.
 
-## Project Structure
-
-```
-BuyAndBye/
-├── apps/
-│   ├── web/                  # React + Vite web application
-│   └── mobile/               # React Native + Expo mobile app
-├── packages/
-│   └── core/                 # Shared business logic (framework-agnostic)
-├── docker-compose.yml
-├── tsconfig.base.json        # Shared TypeScript config
-└── package.json              # Bun workspace root
-```
-
-### `packages/core`
-
-Framework-agnostic business logic shared between web and mobile. Built with Clean Architecture:
+This is the front-end monorepo. The API lives in `BuyAndBye_Campaign_Marketing_Back`.
 
 ```
-core/src/
-├── modules/
-│   ├── auth/
-│   │   ├── domain/           # Entities, DTOs, repository interfaces
-│   │   ├── application/      # Use cases (Login, Register, Logout)
-│   │   └── infrastructure/   # API client, mappers, repositories, DI container
-│   └── users/
-│       ├── domain/           # DTOs, repository interfaces, use cases
-│       ├── application/      # Use cases (BecomeSeller)
-│       └── infrastructure/   # API client, mappers, repositories, DI container
-└── shared/
-    ├── services/http/        # HttpClient (axios-based)
-    ├── types/                # ApiError, ApiException, notification types
-    └── config/               # EnvConfig interface
+apps/
+  web/        React 18 + Vite + Tailwind web app (the one deployed)
+  mobile/     React Native + Expo app (not updated in this redesign)
+packages/
+  core/       Shared business logic (Clean Architecture: domain, use cases, API clients)
 ```
 
-Platform-specific concerns (token storage, environment config) are abstracted via interfaces — each app provides its own implementation.
+## Features
 
-### `apps/web`
+- Brands: campaigns with payout tiers, products, applications (shortlist / accept / reject), collaborations, **analytics** across all campaigns (clicks over time, top creators, sources, devices, payouts)
+- Creators: find campaigns and apply, **earnings** (paid / approved / pending, monthly chart, payout history), **links & QR codes** (copy link or promo code, download a QR code as PNG or SVG)
+- Messages per collaboration, notifications, profile
+- Light and dark mode (follows the system, toggle in the sidebar)
 
-React 18 SPA built with Vite and TailwindCSS.
+Design rules: `apps/web/DESIGN.md`. Shared UI kit: `apps/web/src/shared/components/ui`.
 
-```
-web/src/
-├── app/                      # Entry point, providers, router
-├── modules/
-│   ├── auth/                 # Login, Register pages + auth context
-│   ├── users/                # Profile, Become Seller pages
-│   ├── products/             # Product catalog (domain + presentation)
-│   └── home/                 # Landing page
-└── shared/                   # Navbar, Snackbar, token storage, env config
-```
-
-### `apps/mobile`
-
-React Native app using Expo SDK 54 and Expo Router for file-based navigation.
-
-```
-mobile/
-├── app/                      # Expo Router screens
-│   ├── (auth)/               # Login, Register screens
-│   └── (main)/               # Home, Profile, Become Seller (tab navigator)
-└── src/
-    ├── components/           # React Native UI components
-    ├── providers/            # AuthProvider (uses SecureStore for tokens)
-    └── infrastructure/       # SecureTokenStorage, env config
-```
-
-## Prerequisites
-
-- [Bun](https://bun.sh) (v1.0+)
-- [Docker](https://www.docker.com/) (for containerized web deployment)
-- [Expo CLI](https://docs.expo.dev/) (for mobile development)
-
-## Getting Started
-
-### Install dependencies
+## Run locally
 
 ```bash
 bun install
+cp apps/web/.env.example apps/web/.env.local   # VITE_BACKEND_BASE_URL=http://127.0.0.1:8000
+cd apps/web && bun run dev                      # http://127.0.0.1:5173
 ```
 
-### Web
+Start the API first (see the back-end README). Demo accounts use the password `password`:
+`brand@kickback.demo`, `creator@kickback.demo`. The sign-in page has one-click demo buttons.
 
-```bash
-# Development
-cd apps/web
-bun run dev
+Checks: `bun run typecheck` and `bun run build` from `apps/web`.
 
-# Type check
-bun run typecheck
+## Deploy on Vercel
 
-# Production build
-bun run build
-```
-
-### Mobile
-
-```bash
-cd apps/mobile
-bun run start          # Expo dev server
-bun run ios            # iOS simulator
-bun run android        # Android emulator
-```
-
-### Docker
-
-```bash
-# Build and run the web app
-docker compose up web
-
-# With custom environment variables
-VITE_API_BASE_URL=https://api.example.com/v1 \
-VITE_BACKEND_BASE_URL=https://api.example.com \
-docker compose up web --build
-```
-
-The web app will be available at `http://localhost:3000`.
-
-## Environment Variables
-
-| Variable | Default | Description |
-|---|---|---|
-| `VITE_API_BASE_URL` | `http://localhost:8000/api/v1` | Backend API endpoint |
-| `VITE_BACKEND_BASE_URL` | `http://localhost:8000` | Backend base URL (for assets) |
-| `VITE_APP_NAME` | `Buy & Bye` | Application display name |
-| `VITE_APP_ENV` | `production` | Environment (`development` / `production`) |
-
-## Tech Stack
-
-| Layer | Technology |
-|---|---|
-| Shared core | TypeScript, Axios |
-| Web | React 18, Vite, TailwindCSS, React Router |
-| Mobile | React Native, Expo 54, Expo Router |
-| Deployment | Docker, nginx |
-| Package manager | Bun (workspaces) |
+1. Deploy the API first and note its URL.
+2. **Add New → Project**, import this repository, set **Root Directory** to `apps/web`. The rest comes from `apps/web/vercel.json` (bun install at the repo root, Vite build, SPA fallback).
+3. Environment variable: `VITE_BACKEND_BASE_URL` = the API URL, e.g. `https://kickback-api.vercel.app` (no trailing slash).
+4. Deploy, then add the web URL to `CORS_ALLOWED_ORIGINS` on the API project and redeploy the API.

@@ -1,85 +1,107 @@
-import { useMemo } from 'react'
+import { useId, useMemo } from 'react'
+import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+import { ChartBarIcon } from '@heroicons/react/24/outline'
 import type { DashboardTimelinePoint } from '@core/modules/dashboard'
+import { Section, Skeleton, EmptyState, formatNumber, formatDate } from '@/shared/components/ui'
 
 type Props = {
   title: string
   subtitle: string
   data: DashboardTimelinePoint[]
   height?: number
+  loading?: boolean
 }
 
-function clamp(n: number, min: number, max: number) {
-  return Math.max(min, Math.min(max, n))
+const PRIMARY = 'rgb(var(--bb-primary))'
+const GRID = 'rgb(var(--bb-border) / 0.08)'
+const AXIS = 'rgb(var(--bb-muted))'
+
+function shortDate(d: string) {
+  return formatDate(d, { day: 'numeric', month: 'short' })
 }
 
-export function LineChartCard({ title, subtitle, data, height = 220 }: Props) {
-  const { path, max, min, last, trendUp } = useMemo(() => {
-    const points = data.slice(-14)
-    const values = points.map((p) => p.total)
-    const minV = values.length ? Math.min(...values) : 0
-    const maxV = values.length ? Math.max(...values) : 0
+function ChartTooltip({ active, payload }: { active?: boolean; payload?: Array<{ payload: DashboardTimelinePoint }> }) {
+  if (!active || !payload?.length) return null
+  const p = payload[0].payload
+  return (
+    <div className="bb-popover px-3 py-2 text-xs">
+      <p className="text-bb-muted">{formatDate(p.date)}</p>
+      <p className="mt-0.5 font-medium text-bb-text">{formatNumber(p.total)} clicks</p>
+    </div>
+  )
+}
 
-    const w = 900
-    const h = 300
-    const pad = 18
+export function LineChartCard({ title, subtitle, data, height = 220, loading = false }: Props) {
+  const gradientId = `bb-area-${useId().replace(/:/g, '')}`
 
-    const dx = points.length > 1 ? (w - pad * 2) / (points.length - 1) : 0
-    const norm = (v: number) => {
-      if (maxV === minV) return h / 2
-      const t = (v - minV) / (maxV - minV)
-      return pad + (1 - t) * (h - pad * 2)
-    }
-
-    const d = points
-      .map((p, i) => {
-        const x = pad + i * dx
-        const y = norm(p.total)
-        return `${i === 0 ? 'M' : 'L'} ${x} ${y}`
-      })
-      .join(' ')
-
-    const lastV = points.at(-1)?.total ?? 0
-    const prevV = points.length > 1 ? points.at(-2)?.total ?? lastV : lastV
-
-    return { path: d, min: minV, max: maxV, last: lastV, trendUp: lastV >= prevV }
+  const { points, total, hasData } = useMemo(() => {
+    const pts = (Array.isArray(data) ? data : [])
+      .slice(-14)
+      .map((p) => ({ ...p, total: Number.isFinite(Number(p.total)) ? Number(p.total) : 0 }))
+    const sum = pts.reduce((acc, p) => acc + p.total, 0)
+    return { points: pts, total: sum, hasData: pts.length > 0 && sum > 0 }
   }, [data])
 
   return (
-    <div className="bb-card bb-pop relative overflow-hidden rounded-[26px] p-4">
-      <div className="pointer-events-none absolute inset-0 bb-spotlight opacity-60" />
-      <div className="pointer-events-none absolute inset-0 bb-noise" />
-
-      <div className="relative flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-sm font-extrabold tracking-tight" style={{ color: 'rgb(var(--bb-text) / 0.96)' }}>
-            {title}
-          </p>
-          <p className="mt-0.5 text-xs font-semibold bb-muted-weak">{subtitle}</p>
+    <Section
+      title={title}
+      description={subtitle}
+      actions={hasData && !loading ? <span className="text-sm font-medium tabular-nums">{formatNumber(total)} total</span> : null}
+    >
+      {loading ? (
+        <div style={{ height }}>
+          <Skeleton className="h-full w-full" />
         </div>
-
-        <div
-          className="rounded-full border px-3 py-1 text-xs font-extrabold"
-          style={{
-            borderColor: trendUp ? 'rgb(16 185 129 / 0.25)' : 'rgb(244 63 94 / 0.25)',
-            backgroundColor: trendUp ? 'rgb(16 185 129 / 0.10)' : 'rgb(244 63 94 / 0.10)',
-            color: trendUp ? 'rgb(110 231 183 / 0.95)' : 'rgb(253 164 175 / 0.95)',
-          }}
-        >
-          {last}
+      ) : !hasData ? (
+        <div style={{ height }} className="grid place-items-center">
+          <EmptyState
+            icon={<ChartBarIcon className="h-5 w-5" />}
+            title="No clicks yet"
+            text="Clicks will show up here as soon as people use the tracked links."
+          />
         </div>
-      </div>
-
-      <div className="bb-soft-box relative mt-3 overflow-hidden">
-        <svg viewBox="0 0 900 300" className="w-full" style={{ height, color: 'rgb(var(--bb-text) / 0.90)' }}>
-          <path d={path} fill="none" stroke="currentColor" strokeWidth="3" opacity={0.9} />
-          <path d={`${path} L 882 282 L 18 282 Z`} fill="currentColor" opacity={0.08} />
-        </svg>
-      </div>
-
-      <div className="mt-3 flex items-center justify-between text-xs font-semibold bb-muted-weak">
-        <span>Min: {clamp(min, 0, Number.MAX_SAFE_INTEGER)}</span>
-        <span>Max: {clamp(max, 0, Number.MAX_SAFE_INTEGER)}</span>
-      </div>
-    </div>
+      ) : (
+        <div style={{ height }} className="-ml-2">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={points} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
+              <defs>
+                <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={PRIMARY} stopOpacity={0.22} />
+                  <stop offset="100%" stopColor={PRIMARY} stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid stroke={GRID} vertical={false} />
+              <XAxis
+                dataKey="date"
+                tickFormatter={shortDate}
+                tick={{ fill: AXIS, fontSize: 12 }}
+                tickLine={false}
+                axisLine={false}
+                minTickGap={24}
+                tickMargin={8}
+              />
+              <YAxis
+                allowDecimals={false}
+                tick={{ fill: AXIS, fontSize: 12 }}
+                tickLine={false}
+                axisLine={false}
+                width={40}
+              />
+              <Tooltip content={<ChartTooltip />} cursor={{ stroke: GRID, strokeWidth: 1 }} />
+              <Area
+                type="monotone"
+                dataKey="total"
+                stroke={PRIMARY}
+                strokeWidth={2}
+                fill={`url(#${gradientId})`}
+                dot={false}
+                activeDot={{ r: 4, fill: PRIMARY, stroke: 'rgb(var(--bb-card))', strokeWidth: 2 }}
+                isAnimationActive={false}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      )}
+    </Section>
   )
 }

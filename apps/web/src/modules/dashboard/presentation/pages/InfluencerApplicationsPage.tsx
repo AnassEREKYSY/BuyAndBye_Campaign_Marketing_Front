@@ -1,115 +1,99 @@
 import { Link } from 'react-router-dom'
-import { DashboardHeader } from '@/modules/dashboard/presentation/components/DashboardHeader'
+import { DocumentTextIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline'
 import { useInfluencerApplications } from '@/modules/dashboard/application/hooks/useInfluencerApplications'
-
-function fmtDate(iso?: string | null) {
-  if (!iso) return '—'
-  return iso.slice(0, 10)
-}
-
-function badge(status: string) {
-  if (status === 'accepted') return 'border-emerald-500/25 bg-emerald-500/10 text-emerald-200'
-  if (status === 'shortlisted') return 'border-amber-500/25 bg-amber-500/10 text-amber-200'
-  if (status === 'rejected') return 'border-rose-500/25 bg-rose-500/10 text-rose-200'
-  return 'border-slate-400/25 bg-slate-500/10 text-slate-200'
-}
+import { EmptyState, PageHeader, Skeleton, StatusBadge, formatDate } from '@/shared/components/ui'
 
 export default function InfluencerApplicationsPage() {
   const { loading, error, items, search, setSearch } = useInfluencerApplications()
 
-  const rightSlot = (
-    <div className="flex w-full flex-wrap items-center justify-end gap-2 md:w-auto">
-      <Link to="/campaigns" className="bb-btn-primary h-11 px-5">
-        Browse campaigns
-      </Link>
-      <Link to="/dashboard" className="bb-btn-ghost h-11 px-5">
-        Dashboard
-      </Link>
-    </div>
+  const browse = (
+    <Link to="/campaigns" className="bb-btn-primary">
+      Find campaigns
+    </Link>
   )
 
   return (
-    <div className="bb-page px-4 py-6 md:px-6">
-      <div className="bb-pop">
-        <DashboardHeader
-          title="My applications"
-          subtitle="Status, message and campaign access."
-          search={search}
-          onSearch={setSearch}
-          rightSlot={rightSlot}
-          searchPlaceholder="Search by campaign, status, message…"
-        />
+    <div className="bb-page">
+      <PageHeader title="Applications" description="Campaigns you applied to and where each one stands." actions={browse} />
+
+      <div className="mb-4">
+        <div className="relative w-full sm:max-w-xs">
+          <MagnifyingGlassIcon className="pointer-events-none absolute left-3 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-bb-muted" />
+          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search applications" className="bb-input pl-9" />
+        </div>
       </div>
 
-      {error ? (
-        <div
-          className="bb-pop mt-5 rounded-3xl border p-4 text-sm font-semibold"
-          style={{
-            borderColor: 'rgb(244 63 94 / 0.25)',
-            backgroundColor: 'rgb(244 63 94 / 0.10)',
-            color: 'rgb(var(--bb-text) / 0.92)',
-          }}
-        >
-          {error}
-        </div>
-      ) : null}
+      {error ? <div className="bb-soft-box mb-4 border-bb-accent/30 bg-bb-accent-soft p-4 text-sm text-bb-accent-strong">{error}</div> : null}
 
-      <div className="bb-pop mt-6 bb-table-wrap">
-        <div className="overflow-x-auto">
-          <table className="bb-table min-w-[900px]">
+      {!loading && items.length === 0 ? (
+        search ? (
+          <EmptyState title="No applications match" text="Try another search." />
+        ) : (
+          <EmptyState
+            icon={<DocumentTextIcon className="h-5 w-5" />}
+            title="No applications yet"
+            text="Apply to a campaign and you will follow its status here."
+            action={browse}
+          />
+        )
+      ) : (
+        <div className="bb-table-wrap">
+          <table className="bb-table min-w-[680px]">
             <thead className="bb-thead">
               <tr>
                 <th className="bb-th">Campaign</th>
                 <th className="bb-th">Status</th>
                 <th className="bb-th">Message</th>
                 <th className="bb-th">Applied</th>
-                <th className="bb-th text-right">Open</th>
+                <th className="bb-th">
+                  <span className="sr-only">Open</span>
+                </th>
               </tr>
             </thead>
-
             <tbody>
-              {loading ? (
-                <tr className="bb-tr">
-                  <td className="bb-td bb-muted" colSpan={5}>
-                    Loading…
-                  </td>
-                </tr>
-              ) : null}
-
-              {!loading && items.length === 0 ? (
-                <tr className="bb-tr">
-                  <td className="bb-td bb-muted" colSpan={5}>
-                    No applications found.
-                  </td>
-                </tr>
-              ) : null}
-
-              {items.map((a) => (
-                <tr key={a.id} className="bb-tr bb-tr-hover">
-                  <td className="bb-td">
-                    <p className="text-sm font-extrabold">{a.campaign?.title ?? a.campaign_id}</p>
-                    <p className="mt-1 text-xs font-semibold bb-muted-weak">{a.campaign_id}</p>
-                  </td>
-
-                  <td className="bb-td">
-                    <span className={`rounded-full border px-3 py-1 text-[11px] font-extrabold ${badge(a.status)}`}>{a.status}</span>
-                  </td>
-
-                  <td className="bb-td bb-muted">{(a.message ?? '').trim() ? a.message : '—'}</td>
-
-                  <td className="bb-td bb-muted">{fmtDate(a.created_at)}</td>
-
-                  <td className="bb-td text-right">
-                    <Link to={`/campaigns/${a.campaign_id}`} className="bb-btn-ghost h-10 px-4">
-                      Campaign
-                    </Link>
-                  </td>
-                </tr>
-              ))}
+              {loading
+                ? Array.from({ length: 4 }).map((_, i) => (
+                    <tr key={i} className="bb-tr">
+                      <td className="bb-td">
+                        <Skeleton className="h-4 w-48" />
+                      </td>
+                      <td className="bb-td">
+                        <Skeleton className="h-5 w-20" />
+                      </td>
+                      <td className="bb-td">
+                        <Skeleton className="h-4 w-40" />
+                      </td>
+                      <td className="bb-td">
+                        <Skeleton className="h-4 w-24" />
+                      </td>
+                      <td className="bb-td" />
+                    </tr>
+                  ))
+                : items.map((a) => (
+                    <tr key={a.id} className="bb-tr bb-tr-hover">
+                      <td className="bb-td">
+                        <Link to={`/campaigns/${a.campaign_id}`} className="font-medium hover:text-bb-primary-strong">
+                          {a.campaign?.title ?? 'Untitled campaign'}
+                        </Link>
+                      </td>
+                      <td className="bb-td">
+                        <StatusBadge status={a.status} />
+                      </td>
+                      <td className="bb-td max-w-[280px] text-bb-muted">
+                        {(a.message ?? '').trim() ? <span className="line-clamp-1">{a.message}</span> : '—'}
+                      </td>
+                      <td className="bb-td whitespace-nowrap text-bb-muted">{formatDate(a.created_at)}</td>
+                      <td className="bb-td text-right">
+                        <Link to={`/campaigns/${a.campaign_id}`} className="bb-btn-ghost h-8 px-3">
+                          View campaign
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
             </tbody>
           </table>
         </div>
-      </div>
+      )}
     </div>
   )
 }

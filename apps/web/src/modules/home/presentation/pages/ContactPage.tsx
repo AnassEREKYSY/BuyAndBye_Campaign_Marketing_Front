@@ -1,82 +1,92 @@
-import { useInView } from '@/shared/hooks'
+import { useState } from 'react'
+import { EnvelopeIcon } from '@heroicons/react/24/outline'
 
-function Reveal({ children, delayMs = 0 }: { children: React.ReactNode; delayMs?: number }) {
-  const { ref, inView } = useInView<HTMLDivElement>()
-  return (
-    <div ref={ref} className={`bb-fade-up ${inView ? 'bb-fade-up-in' : ''}`} style={{ transitionDelay: `${delayMs}ms` }}>
-      {children}
-    </div>
-  )
-}
+/** Public contact address. There is no contact API yet, so the form opens the visitor's email app. */
+const CONTACT_EMAIL = 'hello@kickback.app'
 
-function Card({ title, desc }: { title: string; desc: string }) {
-  return (
-    <div className="bb-card">
-      <p className="text-base font-extrabold tracking-tight bb-title-text">{title}</p>
-      <p className="mt-2 text-sm leading-6 bb-subtle-text">{desc}</p>
-    </div>
-  )
-}
+const topics = ['A question about Kickback', 'Brand account', 'Creator account', 'Something is not working', 'Other']
 
 export function ContactPage() {
+  const [name, setName] = useState('')
+  const [email, setEmail] = useState('')
+  const [topic, setTopic] = useState(topics[0])
+  const [message, setMessage] = useState('')
+
+  function onSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    const body = `${message.trim()}\n\n${name.trim()}${email.trim() ? ` <${email.trim()}>` : ''}`
+    window.location.href = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(topic)}&body=${encodeURIComponent(body)}`
+  }
+
   return (
-    <div className="bb-page flex flex-col gap-10 px-4 py-6 md:px-6">
-      <section className="bb-surface bb-surface-pad">
-        <div className="pointer-events-none absolute inset-0 bb-spotlight" />
-        <div className="pointer-events-none absolute inset-0 bb-grid" />
-        <div className="pointer-events-none absolute inset-0 bb-noise" />
-        <div
-          className="pointer-events-none absolute -inset-24 bb-float opacity-60 blur-3xl"
-          style={{
-            background:
-              'conic-gradient(from 180deg at 50% 50%, rgba(99,102,241,0.14), rgba(56,189,248,0.12), rgba(255,255,255,0.05), rgba(99,102,241,0.14))',
-          }}
-        />
+    <section className="mx-auto grid max-w-6xl gap-12 px-4 pb-20 pt-14 sm:px-6 lg:grid-cols-[1fr_1.2fr] lg:pt-20">
+      <div className="bb-pop">
+        <p className="bb-eyebrow">Contact</p>
+        <h1 className="mt-4 text-4xl font-semibold leading-[1.1] tracking-tight sm:text-5xl">Get in touch</h1>
+        <p className="mt-5 max-w-md text-[17px] leading-7 text-bb-muted">
+          Questions about Kickback, help with your account, or feedback on the product. Tell us what you need and we will reply by email.
+        </p>
 
-        <div className="relative grid gap-10 lg:grid-cols-12 lg:items-start">
-          <div className="lg:col-span-5">
-            <span className="bb-chip">Contact</span>
-            <h1 className="bb-title mt-4">Let’s talk.</h1>
-            <p className="bb-p mt-4 max-w-xl">
-              Partnerships, onboarding, demos, or support. Send us the basics and we will respond quickly.
-            </p>
-          </div>
-
-          <div className="lg:col-span-7">
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Card title="Email" desc="contact@buyandbye.app" />
-              <Card title="Business" desc="partnerships@buyandbye.app" />
-              <Card title="Location" desc="France and Morocco" />
-              <Card title="Response time" desc="Usually within 24 to 48 hours" />
-            </div>
+        <div className="mt-8 flex items-center gap-3">
+          <span className="bb-stat-icon">
+            <EnvelopeIcon className="h-5 w-5" />
+          </span>
+          <div>
+            <p className="text-sm text-bb-muted">Email</p>
+            <a href={`mailto:${CONTACT_EMAIL}`} className="bb-link">
+              {CONTACT_EMAIL}
+            </a>
           </div>
         </div>
-      </section>
 
-      <Reveal>
-        <section className="grid gap-6 lg:grid-cols-2">
-          <div className="bb-card">
-            <h2 className="bb-h2">What to include</h2>
-            <p className="bb-p mt-3">A few details help us route your message and reply faster.</p>
-            <div className="mt-6 grid gap-3">
-              <Card title="Your profile" desc="Brand or influencer, plus your market or country." />
-              <Card title="Objective" desc="Sales, launch, awareness, or live commerce." />
-              <Card title="Scope" desc="Creators volume and expected duration." />
-            </div>
-          </div>
+        <p className="mt-8 max-w-md text-sm leading-6 text-bb-muted">
+          To help us answer quickly, say whether you are a brand or a creator, and include the campaign name if your question is about one.
+        </p>
+      </div>
 
-          <div className="bb-card">
-            <h2 className="bb-h2">We can help with</h2>
-            <p className="bb-p mt-3">Choosing the right setup for your goals and helping you onboard fast.</p>
-            <div className="mt-6 grid gap-3 sm:grid-cols-2">
-              <Card title="Brand onboarding" desc="Campaign structure, tracking method, and reporting setup." />
-              <Card title="Creator onboarding" desc="Profile guidance, collaboration flow, and payout clarity." />
-              <Card title="Partnerships" desc="Long term collaborations and custom workflows." />
-              <Card title="Support" desc="Product questions and account help." />
-            </div>
+      <form onSubmit={onSubmit} className="bb-card grid gap-4 p-6 sm:p-8">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label htmlFor="contact-name" className="bb-label">
+              Name
+            </label>
+            <input id="contact-name" className="bb-input" value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" required />
           </div>
-        </section>
-      </Reveal>
-    </div>
+          <div>
+            <label htmlFor="contact-email" className="bb-label">
+              Email
+            </label>
+            <input id="contact-email" type="email" className="bb-input" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" required />
+          </div>
+        </div>
+
+        <div>
+          <label htmlFor="contact-topic" className="bb-label">
+            Topic
+          </label>
+          <select id="contact-topic" className="bb-select w-full" value={topic} onChange={(e) => setTopic(e.target.value)}>
+            {topics.map((t) => (
+              <option key={t} value={t}>
+                {t}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label htmlFor="contact-message" className="bb-label">
+            Message
+          </label>
+          <textarea id="contact-message" className="bb-input" rows={6} value={message} onChange={(e) => setMessage(e.target.value)} required />
+        </div>
+
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-xs text-bb-muted">Sending opens your email app with this message filled in.</p>
+          <button type="submit" className="bb-btn-primary">
+            Send message
+          </button>
+        </div>
+      </form>
+    </section>
   )
 }

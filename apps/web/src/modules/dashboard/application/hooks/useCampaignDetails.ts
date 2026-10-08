@@ -30,7 +30,8 @@ async function fetchCampaign(id: string): Promise<CampaignDetails> {
 
 async function fetchAppliedAt(id: string): Promise<string | null> {
   const res = await httpClient.get<any>(`/api/v1/applications?page=1&size=200`)
-  const payload = (res as any).data ?? res
+  const body = res as any
+  const payload = { data: Array.isArray(body?.data) ? body.data : Array.isArray(body?.data?.data) ? body.data.data : Array.isArray(body) ? body : [] }
   const list = (payload?.data ?? []) as ApplicationItem[]
   const found = list.find((a) => a.campaign_id === id)
   return found?.created_at ?? null

@@ -12,17 +12,22 @@
   },
   "dependencies": {
     "@buyandbye/core": "workspace:*",
+    "@fontsource-variable/figtree": "^5.3.0",
     "@heroicons/react": "^2.2.0",
     "@types/react-router-dom": "^5.3.3",
+    "axios": "^1.20.0",
     "framer-motion": "^12.34.3",
+    "qrcode": "^1.5.4",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "react-router-dom": "^7.13.0"
+    "react-router-dom": "^7.13.0",
+    "recharts": "^3.10.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.13.0",
     "@tailwindcss/postcss": "^4.2.0",
     "@types/node": "^22.9.0",
+    "@types/qrcode": "^1.5.6",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.3",

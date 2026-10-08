@@ -4,9 +4,12 @@ import { ThemeContext, type ThemeMode } from './ThemeContext'
 const STORAGE_KEY = 'bb_theme'
 
 function readStored(): ThemeMode {
-  const raw = (localStorage.getItem(STORAGE_KEY) ?? '').toLowerCase()
-  if (raw === 'light') return 'light'
-  return 'dark'
+  let raw = ''
+  try {
+    raw = (localStorage.getItem(STORAGE_KEY) ?? '').toLowerCase()
+  } catch {}
+  if (raw === 'light' || raw === 'dark') return raw
+  return window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
 }
 
 function applyToDom(mode: ThemeMode) {

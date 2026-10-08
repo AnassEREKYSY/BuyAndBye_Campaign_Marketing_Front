@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { env } from '@/shared/config/env'
-import { Field, GhostButton, Input, PrimaryButton, SectionTitle, SubtleCard, Textarea } from './ui'
+import { EmptyState, Skeleton } from '@/shared/components/ui'
+import { Field, FormFooter, GhostButton, Input, PrimaryButton, SectionTitle, Textarea } from './ui'
 import { usePersonalInfoForm } from '../../application/hooks/usePersonalInfoForm'
 
 function toAbsolute(url: string) {
@@ -12,25 +13,27 @@ function toAbsolute(url: string) {
   return `${base}${path}`
 }
 
+function initials(s: string) {
+  const parts = (s ?? '').split(/[\s@._-]+/).filter(Boolean)
+  return ((parts[0]?.[0] ?? '') + (parts[1]?.[0] ?? '')).toUpperCase() || '?'
+}
+
 function Avatar({ url, fallback }: { url?: string | null; fallback: string }) {
   const src = toAbsolute(url ?? '')
   return (
-    <div className="flex items-center gap-4">
-      <div
-        className="h-14 w-14 overflow-hidden rounded-3xl border"
-        style={{
-          borderColor: 'rgb(var(--bb-border) / 0.10)',
-          backgroundColor: 'rgb(var(--bb-border) / 0.04)',
-          boxShadow: '0 18px 60px rgb(0 0 0 / 0.10)',
-        }}
-      >
-        {src ? (
-          <img src={src} alt="avatar" className="h-full w-full object-cover" />
-        ) : (
-          <div className="grid h-full w-full place-items-center text-sm font-extrabold" style={{ color: 'rgb(var(--bb-muted) / 0.90)' }}>
-            {fallback.slice(0, 2).toUpperCase()}
-          </div>
-        )}
+    <div className="bb-avatar h-14 w-14 text-base">
+      {src ? <img src={src} alt="" className="h-full w-full object-cover" /> : initials(fallback)}
+    </div>
+  )
+}
+
+function FilePreview({ src, name }: { src: string; name?: string }) {
+  return (
+    <div className="bb-soft-box mt-2 flex items-center gap-3 p-2.5">
+      <img src={src} alt="" className="h-9 w-9 rounded-[8px] object-cover" />
+      <div className="min-w-0">
+        <p className="truncate text-sm font-medium">{name}</p>
+        <p className="text-xs text-bb-muted">Uploaded when you save</p>
       </div>
     </div>
   )
@@ -81,65 +84,49 @@ export function PersonalInfoSection() {
 
   const header = useMemo(() => {
     if (!vm.profile) return null
-    const badge = vm.profile.role === 'brand' ? 'Brand account' : 'Influencer account'
+    const badge = vm.profile.role === 'brand' ? 'Brand' : 'Creator'
     return (
-      <SubtleCard>
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-4">
-            <Avatar url={vm.headerImageUrl} fallback={vm.profile.display_name || vm.profile.email} />
-            <div>
-              <div className="flex flex-wrap items-center gap-2">
-                <h2 className="text-lg font-extrabold bb-title-text">{vm.profile.display_name}</h2>
-                <span
-                  className="rounded-full border px-2.5 py-1 text-[11px] font-extrabold"
-                  style={{
-                    borderColor: 'rgb(var(--bb-border) / 0.10)',
-                    backgroundColor: 'rgb(var(--bb-border) / 0.04)',
-                    color: 'rgb(var(--bb-muted) / 0.90)',
-                  }}
-                >
-                  {badge}
-                </span>
-                <span
-                  className="rounded-full border px-2.5 py-1 text-[11px] font-extrabold"
-                  style={{
-                    borderColor: 'rgb(var(--bb-border) / 0.10)',
-                    backgroundColor: 'rgb(var(--bb-border) / 0.04)',
-                    color: 'rgb(var(--bb-muted) / 0.82)',
-                  }}
-                >
-                  Keep it complete ✨
-                </span>
-              </div>
-              <p className="mt-1 text-sm bb-subtle-text">{vm.profile.email}</p>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex min-w-0 items-center gap-4">
+          <Avatar url={vm.headerImageUrl} fallback={vm.profile.display_name || vm.profile.email} />
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="truncate text-lg font-semibold">{vm.profile.display_name}</h2>
+              <span className="bb-badge bb-badge-brown">{badge}</span>
             </div>
+            <p className="mt-0.5 truncate text-sm text-bb-muted">{vm.profile.email}</p>
           </div>
-
-          <GhostButton onClick={vm.refresh} disabled={vm.isLoading}>
-            Refresh
-          </GhostButton>
         </div>
-      </SubtleCard>
+        <GhostButton type="button" className="h-9" onClick={vm.refresh} disabled={vm.isLoading}>
+          Refresh
+        </GhostButton>
+      </div>
     )
   }, [vm.profile, vm.refresh, vm.isLoading, vm.headerImageUrl])
 
-  if (!vm.profile && vm.isLoading) return <div className="bb-subtle-text">Loading profile…</div>
-  if (!vm.profile && vm.error) return <div className="text-rose-200">{vm.error}</div>
-  if (!vm.profile) return <div className="bb-subtle-text">No profile loaded.</div>
+  if (!vm.profile && vm.isLoading)
+    return (
+      <div className="space-y-4">
+        <Skeleton className="h-14 w-64" />
+        <Skeleton className="h-40 w-full" />
+      </div>
+    )
+  if (!vm.profile && vm.error) return <div className="rounded-[10px] bg-bb-accent-soft p-4 text-sm text-bb-accent-strong">{vm.error}</div>
+  if (!vm.profile) return <EmptyState title="No profile loaded" text="Try refreshing the page." />
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {header}
 
       {vm.role === 'brand' ? (
         <form
-          className="space-y-6"
+          className="space-y-5 border-t border-bb-border/10 pt-6"
           onSubmit={async (e) => {
             e.preventDefault()
             await vm.submitBrand()
           }}
         >
-          <SectionTitle title="Brand profile" subtitle="Update your public brand identity and contact details." />
+          <SectionTitle title="Brand profile" subtitle="What creators see about your brand, and how to reach you." />
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <Field label="Brand name">
@@ -171,25 +158,7 @@ export function PersonalInfoSection() {
 
             <Field label="Brand logo" hint="PNG/JPG">
               <Input type="file" accept="image/*" onChange={(e) => vm.setLogo(e.target.files?.[0] ?? null)} />
-              {vm.brandForm.logoPreview ? (
-                <div
-                  className="mt-3 rounded-2xl border p-3"
-                  style={{ borderColor: 'rgb(var(--bb-border) / 0.10)', backgroundColor: 'rgb(var(--bb-border) / 0.04)' }}
-                >
-                  <div className="flex items-center gap-3">
-                    <div
-                      className="h-10 w-10 overflow-hidden rounded-2xl border"
-                      style={{ borderColor: 'rgb(var(--bb-border) / 0.10)', backgroundColor: 'rgb(var(--bb-border) / 0.04)' }}
-                    >
-                      <img src={vm.brandForm.logoPreview} alt="logo preview" className="h-full w-full object-cover" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-extrabold bb-title-text">{vm.brandForm.logo?.name}</p>
-                      <p className="text-xs bb-subtle-text">Ready to upload</p>
-                    </div>
-                  </div>
-                </div>
-              ) : null}
+              {vm.brandForm.logoPreview ? <FilePreview src={vm.brandForm.logoPreview} name={vm.brandForm.logo?.name} /> : null}
             </Field>
           </div>
 
@@ -198,52 +167,30 @@ export function PersonalInfoSection() {
               value={vm.brandForm.description}
               onChange={(e) => vm.setDescription(e.target.value)}
               rows={4}
-              placeholder="We sell amazing products…"
+              placeholder="What you sell and who it is for"
             />
           </Field>
 
-          <div
-            className="flex flex-col gap-3 rounded-3xl border p-4 sm:flex-row sm:items-center sm:justify-between"
-            style={{ borderColor: 'rgb(var(--bb-border) / 0.10)', backgroundColor: 'rgb(var(--bb-border) / 0.04)' }}
-          >
-            <p className="text-sm bb-subtle-text">Your changes will be saved securely.</p>
+          <FormFooter>
             <PrimaryButton type="submit" disabled={vm.isLoading}>
               Save changes
             </PrimaryButton>
-          </div>
+          </FormFooter>
         </form>
       ) : (
         <form
-          className="space-y-6"
+          className="space-y-5 border-t border-bb-border/10 pt-6"
           onSubmit={async (e) => {
             e.preventDefault()
             await vm.submitInfluencer()
           }}
         >
-          <SectionTitle title="Influencer profile" subtitle="Tell brands who you are and where you create content." />
+          <SectionTitle title="Creator profile" subtitle="What brands see when you apply to a campaign." />
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <Field label="Profile image" hint="PNG/JPG">
               <Input type="file" accept="image/*" onChange={(e) => vm.setPhoto(e.target.files?.[0] ?? null)} />
-              {vm.influencerForm.photoPreview ? (
-                <div
-                  className="mt-3 rounded-2xl border p-3"
-                  style={{ borderColor: 'rgb(var(--bb-border) / 0.10)', backgroundColor: 'rgb(var(--bb-border) / 0.04)' }}
-                >
-                  <div className="flex items-center gap-3">
-                    <div
-                      className="h-10 w-10 overflow-hidden rounded-2xl border"
-                      style={{ borderColor: 'rgb(var(--bb-border) / 0.10)', backgroundColor: 'rgb(var(--bb-border) / 0.04)' }}
-                    >
-                      <img src={vm.influencerForm.photoPreview} alt="photo preview" className="h-full w-full object-cover" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-extrabold bb-title-text">{vm.influencerForm.photo?.name}</p>
-                      <p className="text-xs bb-subtle-text">Ready to upload</p>
-                    </div>
-                  </div>
-                </div>
-              ) : null}
+              {vm.influencerForm.photoPreview ? <FilePreview src={vm.influencerForm.photoPreview} name={vm.influencerForm.photo?.name} /> : null}
             </Field>
 
             <Field label="Niche">
@@ -281,7 +228,7 @@ export function PersonalInfoSection() {
               <Input value={vm.influencerForm.youtube} onChange={(e) => vm.setYoutube(e.target.value)} placeholder="https://youtube.com/@username" />
             </Field>
 
-            <Field label="Followers Instagram">
+            <Field label="Instagram followers">
               <Input
                 value={vm.influencerForm.followersIg}
                 onChange={(e) => vm.setFollowersIg(e.target.value === '' ? '' : Number(e.target.value))}
@@ -290,7 +237,7 @@ export function PersonalInfoSection() {
               />
             </Field>
 
-            <Field label="Followers TikTok">
+            <Field label="TikTok followers">
               <Input
                 value={vm.influencerForm.followersTt}
                 onChange={(e) => vm.setFollowersTt(e.target.value === '' ? '' : Number(e.target.value))}
@@ -299,7 +246,7 @@ export function PersonalInfoSection() {
               />
             </Field>
 
-            <Field label="Followers YouTube">
+            <Field label="YouTube followers">
               <Input
                 value={vm.influencerForm.followersYt}
                 onChange={(e) => vm.setFollowersYt(e.target.value === '' ? '' : Number(e.target.value))}
@@ -308,7 +255,7 @@ export function PersonalInfoSection() {
               />
             </Field>
 
-            <Field label="Avg engagement rate (%)">
+            <Field label="Average engagement rate (%)">
               <Input
                 value={vm.influencerForm.engagement}
                 onChange={(e) => vm.setEngagement(e.target.value === '' ? '' : Number(e.target.value))}
@@ -319,15 +266,11 @@ export function PersonalInfoSection() {
             </Field>
           </div>
 
-          <div
-            className="flex flex-col gap-3 rounded-3xl border p-4 sm:flex-row sm:items-center sm:justify-between"
-            style={{ borderColor: 'rgb(var(--bb-border) / 0.10)', backgroundColor: 'rgb(var(--bb-border) / 0.04)' }}
-          >
-            <p className="text-sm bb-subtle-text">Your changes will be saved securely.</p>
+          <FormFooter>
             <PrimaryButton type="submit" disabled={vm.isLoading}>
               Save changes
             </PrimaryButton>
-          </div>
+          </FormFooter>
         </form>
       )}
     </div>
