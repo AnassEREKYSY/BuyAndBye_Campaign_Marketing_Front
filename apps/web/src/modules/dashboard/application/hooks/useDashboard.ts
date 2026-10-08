@@ -48,7 +48,8 @@ function cacheKey(role: UserRole, campaignStatus: string) {
 
 async function getInfluencerAppliesCountFast(): Promise<number> {
   const res = await httpClient.get<any>(`/api/v1/applications?page=1&size=1`)
-  const payload = (res as any).data ?? res
+  // HttpClient already returns the response body ({ data, meta, links }).
+  const payload = (res as any)?.meta ? res : ((res as any).data ?? res)
   const meta = payload?.meta ?? payload?.pagination ?? payload?.data?.meta ?? null
   const total = Number(meta?.total ?? payload?.total ?? payload?.data?.total ?? NaN)
   if (Number.isFinite(total)) return total
