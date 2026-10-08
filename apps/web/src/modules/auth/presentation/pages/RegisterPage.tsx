@@ -1,18 +1,22 @@
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
+import { MegaphoneIcon, SparklesIcon } from '@heroicons/react/24/outline'
 import { useAuth } from '@/modules/auth/application/context'
 import { UserRole } from '@core/modules/auth/domain/entities'
+import { AuthCard, errorMessage } from './AuthCard'
 
 type Role = 'brand' | 'influencer'
 const toUserRole = (role: Role) => (role === 'brand' ? UserRole.BRAND : UserRole.INFLUENCER)
 
 function parseRole(v: string | null): Role | null {
-  if (!v) return null
-  const x = v.toLowerCase()
-  if (x === 'brand') return 'brand'
-  if (x === 'influencer') return 'influencer'
-  return null
+  const x = (v ?? '').toLowerCase()
+  return x === 'brand' || x === 'influencer' ? x : null
 }
+
+const roles: Array<{ value: Role; title: string; text: string; icon: typeof MegaphoneIcon }> = [
+  { value: 'brand', title: "I'm a brand", text: 'Launch campaigns', icon: MegaphoneIcon },
+  { value: 'influencer', title: "I'm a creator", text: 'Promote and earn', icon: SparklesIcon },
+]
 
 export function RegisterPage() {
   const auth = useAuth()
@@ -23,19 +27,12 @@ export function RegisterPage() {
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     const next = parseRole(searchParams.get('role'))
     if (next && next !== role) setRole(next)
   }, [searchParams, role])
-
-  const roleLabel = useMemo(() => (role === 'brand' ? 'Brand' : 'Influencer'), [role])
-
-  async function onSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    await auth.register({ role: toUserRole(role), email, displayName: fullName, password })
-    navigate('/dashboard', { replace: true })
-  }
 
   function pickRole(next: Role) {
     setRole(next)
@@ -46,140 +43,80 @@ export function RegisterPage() {
     })
   }
 
-  const roleBtn = (active: boolean) =>
-    active
-      ? {
-          borderColor: 'rgb(var(--bb-accent) / 0.35)',
-          backgroundColor: 'rgb(var(--bb-border) / 0.04)',
-          color: 'rgb(var(--bb-text) / 0.92)',
-        }
-      : {
-          borderColor: 'rgb(var(--bb-border) / 0.10)',
-          backgroundColor: 'rgb(var(--bb-card) / 0.70)',
-          color: 'rgb(var(--bb-muted) / 0.90)',
-        }
+  async function onSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setError(null)
+    try {
+      await auth.register({ role: toUserRole(role), email, displayName: fullName, password })
+      navigate('/dashboard', { replace: true })
+    } catch (err) {
+      setError(errorMessage(err, 'Could not create the account. Please check the fields.'))
+    }
+  }
 
   return (
-    <div className="bb-page px-4 py-6 md:px-6">
-      <div className="bb-surface bb-surface-pad bb-pop">
-        <div className="pointer-events-none absolute inset-0 bb-spotlight" />
-        <div className="pointer-events-none absolute inset-0 bb-grid" />
-        <div className="pointer-events-none absolute inset-0 bb-noise" />
-
-        <div className="relative grid gap-10 lg:grid-cols-12 lg:items-center">
-          <div className="lg:col-span-5">
-            <span className="bb-chip">Get started</span>
-            <h1 className="bb-title mt-4">Create account</h1>
-            <p className="bb-p mt-4 max-w-xl">
-              Choose your profile:{' '}
-              <span style={{ color: 'rgb(var(--bb-text) / 0.95)' }} className="font-extrabold">
-                {roleLabel}
-              </span>
-              .
-            </p>
-
-            <div className="mt-8 grid gap-3 sm:grid-cols-2">
-              <div className="bb-card p-4">
-                <p className="text-sm font-extrabold" style={{ color: 'rgb(var(--bb-text) / 0.92)' }}>
-                  Clean onboarding
-                </p>
-                <p className="mt-2 text-sm leading-6" style={{ color: 'rgb(var(--bb-muted) / 0.90)' }}>
-                  Fast signup and a premium first impression.
-                </p>
-              </div>
-
-              <div className="bb-card p-4">
-                <p className="text-sm font-extrabold" style={{ color: 'rgb(var(--bb-text) / 0.92)' }}>
-                  Role based
-                </p>
-                <p className="mt-2 text-sm leading-6" style={{ color: 'rgb(var(--bb-muted) / 0.90)' }}>
-                  Brand and influencer experiences are tailored.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="lg:col-span-7">
-            <div className="bb-card">
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={() => pickRole('brand')}
-                  className="rounded-2xl border px-4 py-3 text-sm font-extrabold transition"
-                  style={roleBtn(role === 'brand')}
-                >
-                  Brand
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => pickRole('influencer')}
-                  className="rounded-2xl border px-4 py-3 text-sm font-extrabold transition"
-                  style={roleBtn(role === 'influencer')}
-                >
-                  Influencer
-                </button>
-              </div>
-
-              <form onSubmit={onSubmit} className="mt-6 grid gap-4">
-                <label className="grid gap-2 text-sm font-semibold" style={{ color: 'rgb(var(--bb-muted) / 0.90)' }}>
-                  Full name
-                  <input
-                    className="bb-input"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    placeholder="Your name"
-                    type="text"
-                    autoComplete="name"
-                    required
-                  />
-                </label>
-
-                <label className="grid gap-2 text-sm font-semibold" style={{ color: 'rgb(var(--bb-muted) / 0.90)' }}>
-                  Email
-                  <input
-                    className="bb-input"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="you@company.com"
-                    type="email"
-                    autoComplete="email"
-                    required
-                  />
-                </label>
-
-                <label className="grid gap-2 text-sm font-semibold" style={{ color: 'rgb(var(--bb-muted) / 0.90)' }}>
-                  Password
-                  <input
-                    className="bb-input"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Create a strong password"
-                    type="password"
-                    autoComplete="new-password"
-                    required
-                  />
-                </label>
-
-                <button disabled={auth.isLoading} className="bb-btn-primary mt-2" type="submit">
-                  {auth.isLoading ? 'Creating…' : 'Create account'}
-                </button>
-
-                <p className="mt-2 text-sm" style={{ color: 'rgb(var(--bb-muted) / 0.90)' }}>
-                  Already have an account?{' '}
-                  <Link
-                    to="/login"
-                    className="font-extrabold underline underline-offset-4"
-                    style={{ color: 'rgb(var(--bb-text) / 0.92)', textDecorationColor: 'rgb(var(--bb-border) / 0.25)' }}
-                  >
-                    Login
-                  </Link>
-                </p>
-              </form>
-            </div>
-          </div>
+    <AuthCard
+      title="Create your account"
+      subtitle="Free to use. Takes less than a minute."
+      footer={
+        <>
+          Already have an account?{' '}
+          <Link to="/login" className="bb-link">
+            Sign in
+          </Link>
+        </>
+      }
+    >
+      <form onSubmit={onSubmit} className="grid gap-4">
+        <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Account type">
+          {roles.map((r) => {
+            const active = role === r.value
+            const Icon = r.icon
+            return (
+              <button
+                key={r.value}
+                type="button"
+                role="radio"
+                aria-checked={active}
+                onClick={() => pickRole(r.value)}
+                className={`rounded-[10px] border p-3 text-left transition-colors ${
+                  active ? 'border-bb-primary bg-bb-primary-soft' : 'border-bb-border/15 hover:bg-bb-subtle'
+                }`}
+              >
+                <Icon className={`h-5 w-5 ${active ? 'text-bb-primary-strong' : 'text-bb-muted'}`} />
+                <span className="mt-2 block text-sm font-medium">{r.title}</span>
+                <span className="block text-xs text-bb-muted">{r.text}</span>
+              </button>
+            )
+          })}
         </div>
-      </div>
-    </div>
+
+        <div>
+          <label className="bb-label" htmlFor="name">
+            {role === 'brand' ? 'Brand name' : 'Full name'}
+          </label>
+          <input id="name" className="bb-input" value={fullName} onChange={(e) => setFullName(e.target.value)} type="text" autoComplete="name" required />
+        </div>
+        <div>
+          <label className="bb-label" htmlFor="email">
+            Email
+          </label>
+          <input id="email" className="bb-input" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@company.com" type="email" autoComplete="email" required />
+        </div>
+        <div>
+          <label className="bb-label" htmlFor="password">
+            Password
+          </label>
+          <input id="password" className="bb-input" value={password} onChange={(e) => setPassword(e.target.value)} type="password" autoComplete="new-password" minLength={8} required />
+          <p className="mt-1.5 text-xs text-bb-muted">At least 8 characters, with upper and lower case letters and a number.</p>
+        </div>
+
+        {error ? <p className="rounded-[10px] bg-bb-accent-soft px-3 py-2 text-sm text-bb-accent-strong">{error}</p> : null}
+
+        <button disabled={auth.isLoading} className="bb-btn-primary w-full" type="submit">
+          {auth.isLoading ? 'Creating account…' : 'Create account'}
+        </button>
+      </form>
+    </AuthCard>
   )
 }
